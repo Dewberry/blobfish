@@ -7,5 +7,5 @@ A collection of ontologies and scripts for generating mirrors for use in data pi
 
 Ontologies:
 
-[AORC](http://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/tree/mirror/aorc/semantics/html/aorc/index.html): Analysis of Record for Calibration precipitation and temperature datasets.
+[AORC](http://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html): Analysis of Record for Calibration precipitation and temperature datasets.
 
