@@ -1,0 +1,237 @@
+@prefix : <http://github.com/Dewberry/blobfish/semantics/rdf/aorc#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix aorc: <http://github.com/Dewberry/blobfish/semantics/rdf/aorc#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@base <http://github.com/Dewberry/blobfish/semantics/rdf/aorc#> .
+
+<http://github.com/Dewberry/blobfish/semantics/rdf/aorc#> rdf:type owl:Ontology .
+
+#################################################################
+#    Datatypes
+#################################################################
+
+###  http://www.w3.org/2001/XMLSchema#date
+xsd:date rdf:type rdfs:Datatype .
+
+
+#################################################################
+#    Object Properties
+#################################################################
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#IsMirrorURIOf
+aorc:IsMirrorURIOf rdf:type owl:ObjectProperty ;
+                   owl:inverseOf aorc:hasMirrorURI .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasCompositeGridURI
+aorc:hasCompositeGridURI rdf:type owl:ObjectProperty ;
+                         owl:inverseOf aorc:isCompositeGridURIOf ;
+                         rdfs:domain aorc:CompositeGrid ;
+                         rdfs:range aorc:CompositeGridURI .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasMirrorURI
+aorc:hasMirrorURI rdf:type owl:ObjectProperty ;
+                  rdfs:domain aorc:SourceDataset ;
+                  rdfs:range aorc:MirrorURI .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasRFC
+aorc:hasRFC rdf:type owl:ObjectProperty ;
+            owl:inverseOf aorc:isRFCOf ;
+            rdfs:domain aorc:SourceDataset ;
+            rdfs:range aorc:RFC .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasSourceGrid
+aorc:hasSourceGrid rdf:type owl:ObjectProperty ;
+                   owl:inverseOf aorc:isSourceGridOf ;
+                   rdfs:domain aorc:SourceDataset ;
+                   rdfs:range aorc:SourceGrid .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasSourceURI
+aorc:hasSourceURI rdf:type owl:ObjectProperty ;
+                  owl:inverseOf aorc:isSourceURIOf ;
+                  rdfs:domain aorc:SourceDataset ;
+                  rdfs:range aorc:SourceURI .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#isCompositeGridURIOf
+aorc:isCompositeGridURIOf rdf:type owl:ObjectProperty .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#isRFCOf
+aorc:isRFCOf rdf:type owl:ObjectProperty .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#isSourceGridOf
+aorc:isSourceGridOf rdf:type owl:ObjectProperty .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#isSourceURIOf
+aorc:isSourceURIOf rdf:type owl:ObjectProperty .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#wasCreatedBy
+aorc:wasCreatedBy rdf:type owl:ObjectProperty ;
+                  rdfs:domain aorc:CompositeGrid ;
+                  rdfs:range aorc:Script .
+
+
+#################################################################
+#    Data properties
+#################################################################
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasDateCreated
+aorc:hasDateCreated rdf:type owl:DatatypeProperty ;
+                    rdfs:domain aorc:CompositeGrid ;
+                    rdfs:range xsd:date .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasRFCAlias
+aorc:hasRFCAlias rdf:type owl:DatatypeProperty ;
+                 rdfs:domain aorc:RFC ;
+                 rdfs:range xsd:string .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasRFCName
+aorc:hasRFCName rdf:type owl:DatatypeProperty ;
+                rdfs:domain aorc:RFC ;
+                rdfs:range xsd:string .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasRefDate
+aorc:hasRefDate rdf:type owl:DatatypeProperty ;
+                rdfs:domain aorc:SourceDataset .
+
+
+#################################################################
+#    Classes
+#################################################################
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#CodeRepository
+aorc:CodeRepository rdf:type owl:Class ;
+                    rdfs:subClassOf aorc:Script ;
+                    rdfs:comment "Code repository identifies the location of the Script file used to create the CompositeGrid." .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#CommitHash
+aorc:CommitHash rdf:type owl:Class ;
+                rdfs:subClassOf aorc:CodeRepository ;
+                rdfs:comment "The CommitHash is provided for a code repository at the time the script was executed to ensure provenance and reproducibility are effectuated." .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#CompositeGrid
+aorc:CompositeGrid rdf:type owl:Class ;
+                   rdfs:subClassOf [ rdf:type owl:Restriction ;
+                                     owl:onProperty aorc:hasSourceGrid ;
+                                     owl:someValuesFrom aorc:SourceGrid
+                                   ] ,
+                                   [ rdf:type owl:Restriction ;
+                                     owl:onProperty aorc:wasCreatedBy ;
+                                     owl:someValuesFrom aorc:Script
+                                   ] ;
+                   rdfs:comment "CompositeGrid is the transformed dataset stored in the cloud mirror containing all of the RFC datasets (conus) merged into a continuous grid and converted to zarr format." ;
+                   owl:versionInfo "2023.01.17" .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#CompositeGridURI
+aorc:CompositeGridURI rdf:type owl:Class ;
+                      rdfs:subClassOf aorc:CompositeGrid ;
+                      owl:versionInfo "Dircect link to the CompositeGrid stored in the S3 mirror." .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#MirrorURI
+aorc:MirrorURI rdf:type owl:Class ;
+               rdfs:subClassOf aorc:SourceDataset ;
+               rdfs:comment "MirrorURI provides an access link to a copy of the SourceDataset which has been copied to the S3 mirror." .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#RFC
+aorc:RFC rdf:type owl:Class ;
+         rdfs:subClassOf [ rdf:type owl:Restriction ;
+                           owl:onProperty aorc:hasRFCAlias ;
+                           owl:someValuesFrom xsd:string
+                         ] ,
+                         [ rdf:type owl:Restriction ;
+                           owl:onProperty aorc:hasRFCName ;
+                           owl:someValuesFrom xsd:string
+                         ] ;
+         rdfs:comment "Datasets stored on the NOAA ftp server (http://hydrology.nws.noaa.gov/pub/aorc-historic) are stored hierarchicaly by Regional Forecast Center (RFC). THE RFC class is useful for scanning the ftp for identification and download of datasets." .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#Script
+aorc:Script rdf:type owl:Class ;
+            rdfs:comment "Script used to create a composite grid." .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#SourceDataset
+aorc:SourceDataset rdf:type owl:Class ;
+                   rdfs:subClassOf [ rdf:type owl:Restriction ;
+                                     owl:onProperty aorc:hasRFC ;
+                                     owl:someValuesFrom aorc:RFC
+                                   ] ,
+                                   [ rdf:type owl:Restriction ;
+                                     owl:onProperty aorc:hasSourceGrid ;
+                                     owl:someValuesFrom aorc:SourceGrid
+                                   ] ,
+                                   [ rdf:type owl:Restriction ;
+                                     owl:onProperty aorc:hasRefDate ;
+                                     owl:someValuesFrom xsd:date
+                                   ] ;
+                   rdfs:comment """SourceDataset is the fundamental source file for all SourceGrid's used to develop the CompositeGrid. 
+
+Alll SourceDatasets are zipfiles (available  at http://hydrology.nws.noaa.gov/pub/aorc-historic/) which contain hourly netcdf files (.nc4).
+
+SourceDatasets are named using the convention \"[RFCAlias]RFC_YYYYMM.zip\" beginning on 1979-02.""" .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#SourceGrid
+aorc:SourceGrid rdf:type owl:Class ;
+                rdfs:subClassOf aorc:SourceDataset ;
+                rdfs:comment "The source data provided on the NOAA AORC server is comprised of hourly records in netcdf format with extension .nc4 using the the following naming convention: AORC_APCP_[RFCAlias]RFC_1979022823.nc4" .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#SourceURI
+aorc:SourceURI rdf:type owl:Class ;
+               rdfs:subClassOf aorc:SourceDataset ;
+               rdfs:comment "SourceURI provides an access link to the original SourceDataset object." .
+
+
+#################################################################
+#    General axioms
+#################################################################
+
+[ rdf:type owl:AllDisjointClasses ;
+  owl:members ( aorc:MirrorURI
+                aorc:SourceGrid
+                aorc:SourceURI
+              )
+] .
+
+
+[ rdf:type owl:AllDisjointProperties ;
+  owl:members ( aorc:hasCompositeGridURI
+                aorc:hasMirrorURI
+                aorc:hasRFC
+                aorc:hasSourceGrid
+                aorc:hasSourceURI
+                aorc:wasCreatedBy
+              )
+] .
+
+
+[ rdf:type owl:AllDisjointProperties ;
+  owl:members ( aorc:hasDateCreated
+                aorc:hasRFCAlias
+                aorc:hasRFCName
+                aorc:hasRefDate
+              )
+] .
+
+
+###  Generated by the OWL API (version 4.5.9.2019-02-01T07:24:44Z) https://github.com/owlcs/owlapi
