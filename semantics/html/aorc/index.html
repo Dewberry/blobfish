@@ -1,0 +1,2104 @@
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>Ontospy > AORC Mirror</title>
+  <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+
+
+  <style type="text/css" media="screen">
+
+
+  body {
+	  margin-left: 6em;
+	  margin-right: 12em;
+	  text-align: justify;
+    padding: 2em 1em 2em 70px;
+    margin: 0;
+    font-family: sans-serif;
+    color: black;
+    background: white;
+    background-position: top left;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
+
+  :link { color: #00C; background: transparent }
+  :visited { color: #00C; background: transparent }
+  a:active { color: #C00; background: transparent }
+
+  a:link img, a:visited img { border-style: none } /* no border on img links */
+
+  a:hover {color: white; background: #00C; }
+  a.backlink:hover {color: white; background: grey; }
+  a.greylink:hover {color: white; background: grey; }
+
+  .margintop {
+  	 margin-top: 40px;
+  }
+
+
+  dt, dd { margin-top: 10px; margin-bottom: 0 } /* opera 3.50 */
+  dt { font-weight: bold }
+
+
+  h1, h2, h3, h4, h5, h6 { text-align: left }
+  /* background should be transparent, but WebTV has a bug */
+  h1, h2, h3, h4, h5 { color: #005A9C; background: white }
+  h1.title { font: 200% sans-serif }
+  h1 { font: 170% sans-serif }
+  h2 { font: 140% sans-serif }
+  h3 { font: 120% sans-serif }
+  h4 { font: bold 100% sans-serif }
+  h5 { font: italic 100% sans-serif }
+  h6 { font: small-caps 100% sans-serif }
+
+  .hide { display: none }
+
+
+  pre { margin-left: 2em }
+
+  pre, code { font-family: monospace } /* navigator 4 requires this */
+
+
+  .implementation {
+  	background: aliceblue;
+	padding: 10px;
+	margin-top: 5px;
+  }
+
+  fieldset {
+	  margin-top: 20px;
+	  padding: 13px;
+      text-align: left;
+  }
+
+  legend {
+	  text-transform: uppercase;
+  }
+
+  .entity-div {
+	  margin: 55px 10px 30px 10px;
+  }
+
+  .entity-section {
+	  margin-bottom: 0px;
+  }
+
+
+  a.backlink {
+	  font-size: 80%;
+	  color: grey;
+  }
+
+  a.greylink {
+	  color: grey;
+  }
+
+
+   .implementation_title {
+
+       font-weight: bold;
+       font-size: 100%;
+   }
+
+.section-desc {
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+
+
+
+        .tree-container {
+            width: 3000em;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+		.tree {margin: 10px 0px 30px -20px; padding: 0; display: inline-block;}
+
+		.tree ul {
+			padding-top: 20px; position: relative;
+
+			transition: all 0.5s;
+			-webkit-transition: all 0.5s;
+			-moz-transition: all 0.5s;
+		}
+
+		.tree li {
+			float: left; text-align: center;
+			list-style-type: none;
+			position: relative;
+			padding: 20px 5px 0 5px;
+
+			transition: all 0.5s;
+			-webkit-transition: all 0.5s;
+			-moz-transition: all 0.5s;
+		}
+
+		/*We will use ::before and ::after to draw the connectors*/
+
+		.tree li::before, .tree li::after{
+			content: '';
+			position: absolute; top: 0; right: 50%;
+			border-top: 1px solid #ccc;
+			width: 50%; height: 20px;
+		}
+		.tree li::after{
+			right: auto; left: 50%;
+			border-left: 1px solid #ccc;
+		}
+
+		/*We need to remove left-right connectors from elements without
+		any siblings*/
+		.tree li:only-child::after, .tree li:only-child::before {
+			display: none;
+		}
+
+		/*Remove space from the top of single children*/
+		.tree li:only-child{ padding-top: 0;}
+
+		/*Remove left connector from first child and
+		right connector from last child*/
+		.tree li:first-child::before, .tree li:last-child::after{
+			border: 0 none;
+		}
+		/*Adding back the vertical connector to the last nodes*/
+		.tree li:last-child::before{
+			border-right: 1px solid #ccc;
+			border-radius: 0 5px 0 0;
+			-webkit-border-radius: 0 5px 0 0;
+			-moz-border-radius: 0 5px 0 0;
+		}
+		.tree li:first-child::after{
+			border-radius: 5px 0 0 0;
+			-webkit-border-radius: 5px 0 0 0;
+			-moz-border-radius: 5px 0 0 0;
+		}
+
+		/*Time to add downward connectors from parents*/
+		.tree ul ul::before{
+			content: '';
+			position: absolute; top: 0; left: 50%;
+			border-left: 1px solid #ccc;
+			width: 0; height: 20px;
+		}
+
+		.tree li a{
+			border: 1px solid #ccc;
+			padding: 5px 10px;
+			text-decoration: none;
+			color: #666;
+			font-family: arial, verdana, tahoma;
+			font-size: 11px;
+			display: inline-block;
+
+			border-radius: 5px;
+			-webkit-border-radius: 5px;
+			-moz-border-radius: 5px;
+
+			transition: all 0.5s;
+			-webkit-transition: all 0.5s;
+			-moz-transition: all 0.5s;
+		}
+
+		/*Time for some hover effects*/
+		/*We will apply the hover effect the the lineage of the element also*/
+		.tree li a:hover, .tree li a:hover+ul li a {
+			background: #c8e4f8; color: #000; border: 1px solid #94a0b4;
+		}
+		/*Connector styles on hover*/
+		.tree li a:hover+ul li::after,
+		.tree li a:hover+ul li::before,
+		.tree li a:hover+ul::before,
+		.tree li a:hover+ul ul::before{
+			border-color:  #94a0b4;
+		}
+
+		/*Thats all. I hope you enjoyed it.
+		Thanks :)*/
+
+
+  </style>
+
+
+</head>
+
+
+<body>
+
+	
+	
+		
+			<h1 class="title"><a href="" target="_blank">AORC Mirror</a></h1>
+			<h3></h3>
+		
+
+	
+		
+		
+
+
+	<p><small>Ontology documentation automatically generated by <a class="greylink" href="http://lambdamusic.github.io/Ontospy/">Ontospy</a> on Thu, 19 Jan 2023 14:10:59</small></p>
+
+
+
+	
+
+
+	<hr class="margintop">
+
+	<h1><a name="toc">&nbsp;</a>Table of Content</h1>
+
+	<ul>
+		<li><a href="#ontologies">Ontologies</a></li>
+		<li><a href="#a-z">A-Z of Terms</a></li>
+		<li><a href="#classes">Classes</a></li>
+		<li><a href="#objproperties">Object Properties</a></li>
+		<li><a href="#dataproperties">Datatype properties</a></li>
+		
+		
+		
+	</ul>
+
+
+
+	
+
+	
+
+	<hr class="margintop">
+
+	<h1><a name="ontologies"></a>Ontologies</h1>
+
+		
+
+
+			<fieldset> <legend><h3><a href="http://github.com/Dewberry/blobfish/semantics/rdf/aorc#" target="_blank">http://github.com/Dewberry/blobfish/semantics/rdf/aorc#</a></h3></legend>
+
+			<h4 style="margin-top: -20px;"></h4>
+
+			
+			
+				
+					<dt>rdf:type</dt>
+				  
+			
+			<dd><p>http://www.w3.org/2002/07/owl#Ontology</p></dd>
+			
+
+			</fieldset>
+
+		
+
+	
+
+
+
+	
+
+	<hr class="margintop">
+	<h1><a  name="a-z">&nbsp;</a>A-Z of terms</h1>
+
+	<div id="azterms">
+
+	This is a complete alphabetical A-Z index of all terms, by main logical type.
+
+	
+		<fieldset> <legend>Classes (10)</legend>
+			<span><a href="#aorc:CodeRepository">aorc:CodeRepository</a></span>
+			|
+			<span><a href="#aorc:CommitHash">aorc:CommitHash</a></span>
+			|
+			<span><a href="#aorc:CompositeGrid">aorc:CompositeGrid</a></span>
+			|
+			<span><a href="#aorc:CompositeGridURI">aorc:CompositeGridURI</a></span>
+			|
+			<span><a href="#aorc:MirrorURI">aorc:MirrorURI</a></span>
+			|
+			<span><a href="#aorc:RFC">aorc:RFC</a></span>
+			|
+			<span><a href="#aorc:Script">aorc:Script</a></span>
+			|
+			<span><a href="#aorc:SourceDataset">aorc:SourceDataset</a></span>
+			|
+			<span><a href="#aorc:SourceGrid">aorc:SourceGrid</a></span>
+			|
+			<span><a href="#aorc:SourceURI">aorc:SourceURI</a></span>
+			
+			
+		</fieldset>
+	
+
+	
+
+	<fieldset> <legend>Object Properties (11)</legend>
+		&nbsp;<a href="#aorc:IsMirrorURIOf">aorc:IsMirrorURIOf</a>
+		|  <a href="#aorc:hasCompositeGridURI">aorc:hasCompositeGridURI</a>
+		|  <a href="#aorc:hasMirrorURI">aorc:hasMirrorURI</a>
+		|  <a href="#aorc:hasRFC">aorc:hasRFC</a>
+		|  <a href="#aorc:hasSourceGrid">aorc:hasSourceGrid</a>
+		|  <a href="#aorc:hasSourceURI">aorc:hasSourceURI</a>
+		|  <a href="#aorc:isCompositeGridURIOf">aorc:isCompositeGridURIOf</a>
+		|  <a href="#aorc:isRFCOf">aorc:isRFCOf</a>
+		|  <a href="#aorc:isSourceGridOf">aorc:isSourceGridOf</a>
+		|  <a href="#aorc:isSourceURIOf">aorc:isSourceURIOf</a>
+		|  <a href="#aorc:wasCreatedBy">aorc:wasCreatedBy</a>
+		  
+	</fieldset>
+
+	
+
+	
+	<fieldset> <legend>Datatype Properties (4)</legend>
+		&nbsp;<a href="#aorc:hasDateCreated">aorc:hasDateCreated</a>
+		|  <a href="#aorc:hasRFCAlias">aorc:hasRFCAlias</a>
+		|  <a href="#aorc:hasRFCName">aorc:hasRFCName</a>
+		|  <a href="#aorc:hasRefDate">aorc:hasRefDate</a>
+		  
+	</fieldset>
+	
+
+	
+
+	
+
+	
+
+	</div>
+
+
+
+	
+
+
+	
+
+		<hr class="margintop">
+		<h1 class="margintop" ><a name="classes">&nbsp;</a>Classes</h1>
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="aorc:CodeRepository" href="#aorc:CodeRepository">aorc:CodeRepository</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+                            <li> <a href="#aorc:Script">aorc:Script</a>
+
+                            <ul>
+
+                              <li><a style="font-weight: bold;">aorc:CodeRepository</a>
+
+                              
+                                  <ul>
+                                    <li><a href="#aorc:CommitHash">aorc:CommitHash</a></li>
+                                  </ul>
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                            
+
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>Code repository identifies the location of the Script file used to create the CompositeGrid.</p>
+                </p>
+
+                
+					<p class="section-desc"><b>Inherits from <small>(1)</small>:</b>
+                        <br />
+                        <a href="#aorc:Script">aorc:Script</a>  
+                    </p>
+				
+
+
+
+				
+
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .</p>
+
+<p>aorc:CodeRepository a owl:Class ;<br>
+    rdfs:comment &#34;Code repository identifies the location of the Script file used to create the CompositeGrid.&#34; ;<br>
+    rdfs:subClassOf aorc:Script .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="aorc:CommitHash" href="#aorc:CommitHash">aorc:CommitHash</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+                            <li> <a href="#aorc:CodeRepository">aorc:CodeRepository</a>
+
+                            <ul>
+
+                              <li><a style="font-weight: bold;">aorc:CommitHash</a>
+
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                            
+
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:CommitHash is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>The CommitHash is provided for a code repository at the time the script was executed to ensure provenance and reproducibility are effectuated.</p>
+                </p>
+
+                
+					<p class="section-desc"><b>Inherits from <small>(2)</small>:</b>
+                        <br />
+                        <a href="#aorc:CodeRepository">aorc:CodeRepository</a> | <a href="#aorc:Script">aorc:Script</a>  
+                    </p>
+				
+
+
+
+				
+
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .</p>
+
+<p>aorc:CommitHash a owl:Class ;<br>
+    rdfs:comment &#34;The CommitHash is provided for a code repository at the time the script was executed to ensure provenance and reproducibility are effectuated.&#34; ;<br>
+    rdfs:subClassOf aorc:CodeRepository .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="aorc:CompositeGrid" href="#aorc:CompositeGrid">aorc:CompositeGrid</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+
+                            <li href="#"><a>owl:Thing</a>
+
+                            <ul>
+                              <li><a style="font-weight: bold;">aorc:CompositeGrid</a>
+
+                              
+                                  <ul>
+                                    <li><a href="#aorc:CompositeGridURI">aorc:CompositeGridURI</a></li>
+                                  </ul>
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>CompositeGrid is the transformed dataset stored in the cloud mirror containing all of the RFC datasets (conus) merged into a continuous grid and converted to zarr format.</p>
+                </p>
+
+                
+                    <p class="section-desc"><b>Inherits from:</b> <br />owl:Thing</p>
+				
+
+
+
+				
+					<p class="section-desc"><b>Property Domain of:</b>
+                        <br>
+                        <a href="#aorc:hasDateCreated">aorc:hasDateCreated</a> | <a href="#aorc:hasCompositeGridURI">aorc:hasCompositeGridURI</a> | <a href="#aorc:wasCreatedBy">aorc:wasCreatedBy</a>  
+                    </p>
+				
+
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .</p>
+
+<p>aorc:CompositeGrid a owl:Class ;<br>
+    rdfs:comment &#34;CompositeGrid is the transformed dataset stored in the cloud mirror containing all of the RFC datasets (conus) merged into a continuous grid and converted to zarr format.&#34; ;<br>
+    rdfs:subClassOf [ a owl:Restriction ;<br>
+            owl:onProperty aorc:hasSourceGrid ;<br>
+            owl:someValuesFrom aorc:SourceGrid ],<br>
+        [ a owl:Restriction ;<br>
+            owl:onProperty aorc:wasCreatedBy ;<br>
+            owl:someValuesFrom aorc:Script ] ;<br>
+    owl:versionInfo &#34;2023.01.17&#34; .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="aorc:CompositeGridURI" href="#aorc:CompositeGridURI">aorc:CompositeGridURI</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+                            <li> <a href="#aorc:CompositeGrid">aorc:CompositeGrid</a>
+
+                            <ul>
+
+                              <li><a style="font-weight: bold;">aorc:CompositeGridURI</a>
+
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                            
+
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:CompositeGridURI is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+					<p class="section-desc"><b>Inherits from <small>(1)</small>:</b>
+                        <br />
+                        <a href="#aorc:CompositeGrid">aorc:CompositeGrid</a>  
+                    </p>
+				
+
+
+
+				
+
+				
+					<p class="section-desc"><b>Property Range of:</b>
+                        <br>
+                        <a href="#aorc:hasCompositeGridURI">aorc:hasCompositeGridURI</a>  
+                    </p>
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .</p>
+
+<p>aorc:CompositeGridURI a owl:Class ;<br>
+    rdfs:subClassOf aorc:CompositeGrid ;<br>
+    owl:versionInfo &#34;Dircect link to the CompositeGrid stored in the S3 mirror.&#34; .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="aorc:MirrorURI" href="#aorc:MirrorURI">aorc:MirrorURI</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+                            <li> <a href="#aorc:SourceDataset">aorc:SourceDataset</a>
+
+                            <ul>
+
+                              <li><a style="font-weight: bold;">aorc:MirrorURI</a>
+
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                            
+
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:MirrorURI is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>MirrorURI provides an access link to a copy of the SourceDataset which has been copied to the S3 mirror.</p>
+                </p>
+
+                
+					<p class="section-desc"><b>Inherits from <small>(1)</small>:</b>
+                        <br />
+                        <a href="#aorc:SourceDataset">aorc:SourceDataset</a>  
+                    </p>
+				
+
+
+
+				
+
+				
+					<p class="section-desc"><b>Property Range of:</b>
+                        <br>
+                        <a href="#aorc:hasMirrorURI">aorc:hasMirrorURI</a>  
+                    </p>
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .</p>
+
+<p>aorc:MirrorURI a owl:Class ;<br>
+    rdfs:comment &#34;MirrorURI provides an access link to a copy of the SourceDataset which has been copied to the S3 mirror.&#34; ;<br>
+    rdfs:subClassOf aorc:SourceDataset .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="aorc:RFC" href="#aorc:RFC">aorc:RFC</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+
+                            <li href="#"><a>owl:Thing</a>
+
+                            <ul>
+                              <li><a style="font-weight: bold;">aorc:RFC</a>
+
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:RFC is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>Datasets stored on the NOAA ftp server (http://hydrology.nws.noaa.gov/pub/aorc-historic) are stored hierarchicaly by Regional Forecast Center (RFC). THE RFC class is useful for scanning the ftp for identification and download of datasets.</p>
+                </p>
+
+                
+                    <p class="section-desc"><b>Inherits from:</b> <br />owl:Thing</p>
+				
+
+
+
+				
+					<p class="section-desc"><b>Property Domain of:</b>
+                        <br>
+                        <a href="#aorc:hasRFCAlias">aorc:hasRFCAlias</a> | <a href="#aorc:hasRFCName">aorc:hasRFCName</a>  
+                    </p>
+				
+
+				
+					<p class="section-desc"><b>Property Range of:</b>
+                        <br>
+                        <a href="#aorc:hasRFC">aorc:hasRFC</a>  
+                    </p>
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:RFC a owl:Class ;<br>
+    rdfs:comment &#34;Datasets stored on the NOAA ftp server (http://hydrology.nws.noaa.gov/pub/aorc-historic) are stored hierarchicaly by Regional Forecast Center (RFC). THE RFC class is useful for scanning the ftp for identification and download of datasets.&#34; ;<br>
+    rdfs:subClassOf [ a owl:Restriction ;<br>
+            owl:onProperty aorc:hasRFCAlias ;<br>
+            owl:someValuesFrom xsd:string ],<br>
+        [ a owl:Restriction ;<br>
+            owl:onProperty aorc:hasRFCName ;<br>
+            owl:someValuesFrom xsd:string ] .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="aorc:Script" href="#aorc:Script">aorc:Script</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+
+                            <li href="#"><a>owl:Thing</a>
+
+                            <ul>
+                              <li><a style="font-weight: bold;">aorc:Script</a>
+
+                              
+                                  <ul>
+                                    <li><a href="#aorc:CodeRepository">aorc:CodeRepository</a></li>
+                                  </ul>
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>Script used to create a composite grid.</p>
+                </p>
+
+                
+                    <p class="section-desc"><b>Inherits from:</b> <br />owl:Thing</p>
+				
+
+
+
+				
+
+				
+					<p class="section-desc"><b>Property Range of:</b>
+                        <br>
+                        <a href="#aorc:wasCreatedBy">aorc:wasCreatedBy</a>  
+                    </p>
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .</p>
+
+<p>aorc:Script a owl:Class ;<br>
+    rdfs:comment &#34;Script used to create a composite grid.&#34; .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="aorc:SourceDataset" href="#aorc:SourceDataset">aorc:SourceDataset</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+
+                            <li href="#"><a>owl:Thing</a>
+
+                            <ul>
+                              <li><a style="font-weight: bold;">aorc:SourceDataset</a>
+
+                              
+                                  <ul>
+                                    <li><a href="#aorc:MirrorURI">aorc:MirrorURI</a></li><li><a href="#aorc:SourceGrid">aorc:SourceGrid</a></li><li><a href="#aorc:SourceURI">aorc:SourceURI</a></li>
+                                  </ul>
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>SourceDataset is the fundamental source file for all SourceGrid&#39;s used to develop the CompositeGrid. </p>
+
+<p>Alll SourceDatasets are zipfiles (available  at http://hydrology.nws.noaa.gov/pub/aorc-historic/) which contain hourly netcdf files (.nc4).</p>
+
+<p>SourceDatasets are named using the convention &#34;[RFCAlias]RFC_YYYYMM.zip&#34; beginning on 1979-02.</p>
+                </p>
+
+                
+                    <p class="section-desc"><b>Inherits from:</b> <br />owl:Thing</p>
+				
+
+
+
+				
+					<p class="section-desc"><b>Property Domain of:</b>
+                        <br>
+                        <a href="#aorc:hasRefDate">aorc:hasRefDate</a> | <a href="#aorc:hasMirrorURI">aorc:hasMirrorURI</a> | <a href="#aorc:hasRFC">aorc:hasRFC</a> | <a href="#aorc:hasSourceGrid">aorc:hasSourceGrid</a> | <a href="#aorc:hasSourceURI">aorc:hasSourceURI</a>  
+                    </p>
+				
+
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:SourceDataset a owl:Class ;<br>
+    rdfs:comment &#34;&#34;&#34;SourceDataset is the fundamental source file for all SourceGrid&#39;s used to develop the CompositeGrid. </p>
+
+<p>Alll SourceDatasets are zipfiles (available  at http://hydrology.nws.noaa.gov/pub/aorc-historic/) which contain hourly netcdf files (.nc4).</p>
+
+<p>SourceDatasets are named using the convention &#34;[RFCAlias]RFC_YYYYMM.zip&#34; beginning on 1979-02.&#34;&#34;&#34; ;<br>
+    rdfs:subClassOf [ a owl:Restriction ;<br>
+            owl:onProperty aorc:hasRFC ;<br>
+            owl:someValuesFrom aorc:RFC ],<br>
+        [ a owl:Restriction ;<br>
+            owl:onProperty aorc:hasSourceGrid ;<br>
+            owl:someValuesFrom aorc:SourceGrid ],<br>
+        [ a owl:Restriction ;<br>
+            owl:onProperty aorc:hasRefDate ;<br>
+            owl:someValuesFrom xsd:date ] .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="aorc:SourceGrid" href="#aorc:SourceGrid">aorc:SourceGrid</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+                            <li> <a href="#aorc:SourceDataset">aorc:SourceDataset</a>
+
+                            <ul>
+
+                              <li><a style="font-weight: bold;">aorc:SourceGrid</a>
+
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                            
+
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:SourceGrid is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>The source data provided on the NOAA AORC server is comprised of hourly records in netcdf format with extension .nc4 using the the following naming convention: AORC_APCP_[RFCAlias]RFC_1979022823.nc4</p>
+                </p>
+
+                
+					<p class="section-desc"><b>Inherits from <small>(1)</small>:</b>
+                        <br />
+                        <a href="#aorc:SourceDataset">aorc:SourceDataset</a>  
+                    </p>
+				
+
+
+
+				
+
+				
+					<p class="section-desc"><b>Property Range of:</b>
+                        <br>
+                        <a href="#aorc:hasSourceGrid">aorc:hasSourceGrid</a>  
+                    </p>
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .</p>
+
+<p>aorc:SourceGrid a owl:Class ;<br>
+    rdfs:comment &#34;The source data provided on the NOAA AORC server is comprised of hourly records in netcdf format with extension .nc4 using the the following naming convention: AORC_APCP_[RFCAlias]RFC_1979022823.nc4&#34; ;<br>
+    rdfs:subClassOf aorc:SourceDataset .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="aorc:SourceURI" href="#aorc:SourceURI">aorc:SourceURI</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+                            <li> <a href="#aorc:SourceDataset">aorc:SourceDataset</a>
+
+                            <ul>
+
+                              <li><a style="font-weight: bold;">aorc:SourceURI</a>
+
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                            
+
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:SourceURI is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>SourceURI provides an access link to the original SourceDataset object.</p>
+                </p>
+
+                
+					<p class="section-desc"><b>Inherits from <small>(1)</small>:</b>
+                        <br />
+                        <a href="#aorc:SourceDataset">aorc:SourceDataset</a>  
+                    </p>
+				
+
+
+
+				
+
+				
+					<p class="section-desc"><b>Property Range of:</b>
+                        <br>
+                        <a href="#aorc:hasSourceURI">aorc:hasSourceURI</a>  
+                    </p>
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .</p>
+
+<p>aorc:SourceURI a owl:Class ;<br>
+    rdfs:comment &#34;SourceURI provides an access link to the original SourceDataset object.&#34; ;<br>
+    rdfs:subClassOf aorc:SourceDataset .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+
+			
+
+	
+
+
+
+	
+
+	
+
+		<hr class="margintop">
+		<h1 class="margintop"><a name="objproperties">&nbsp;</a>Object Properties</h1>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:IsMirrorURIOf" href="#aorc:IsMirrorURIOf">aorc:IsMirrorURIOf</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:IsMirrorURIOf is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .</p>
+
+<p>aorc:IsMirrorURIOf a owl:ObjectProperty ;<br>
+    owl:inverseOf aorc:hasMirrorURI .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:hasCompositeGridURI" href="#aorc:hasCompositeGridURI">aorc:hasCompositeGridURI</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:hasCompositeGridURI is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+					<p class="section-desc"><b>Class Domain for:</b>
+                        <br>
+                        <a href="#aorc:CompositeGrid">aorc:CompositeGrid</a>  </p>
+				
+
+				
+					<p class="section-desc"><b>Class Range for:</b>
+                        <br>
+                        <a href="#aorc:CompositeGridURI">aorc:CompositeGridURI</a>  </p>
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .</p>
+
+<p>aorc:hasCompositeGridURI a owl:ObjectProperty ;<br>
+    rdfs:domain aorc:CompositeGrid ;<br>
+    rdfs:range aorc:CompositeGridURI ;<br>
+    owl:inverseOf aorc:isCompositeGridURIOf .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:hasMirrorURI" href="#aorc:hasMirrorURI">aorc:hasMirrorURI</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:hasMirrorURI is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+					<p class="section-desc"><b>Class Domain for:</b>
+                        <br>
+                        <a href="#aorc:SourceDataset">aorc:SourceDataset</a>  </p>
+				
+
+				
+					<p class="section-desc"><b>Class Range for:</b>
+                        <br>
+                        <a href="#aorc:MirrorURI">aorc:MirrorURI</a>  </p>
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .</p>
+
+<p>aorc:hasMirrorURI a owl:ObjectProperty ;<br>
+    rdfs:domain aorc:SourceDataset ;<br>
+    rdfs:range aorc:MirrorURI .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:hasRFC" href="#aorc:hasRFC">aorc:hasRFC</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:hasRFC is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+					<p class="section-desc"><b>Class Domain for:</b>
+                        <br>
+                        <a href="#aorc:SourceDataset">aorc:SourceDataset</a>  </p>
+				
+
+				
+					<p class="section-desc"><b>Class Range for:</b>
+                        <br>
+                        <a href="#aorc:RFC">aorc:RFC</a>  </p>
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .</p>
+
+<p>aorc:hasRFC a owl:ObjectProperty ;<br>
+    rdfs:domain aorc:SourceDataset ;<br>
+    rdfs:range aorc:RFC ;<br>
+    owl:inverseOf aorc:isRFCOf .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:hasSourceGrid" href="#aorc:hasSourceGrid">aorc:hasSourceGrid</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:hasSourceGrid is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+					<p class="section-desc"><b>Class Domain for:</b>
+                        <br>
+                        <a href="#aorc:SourceDataset">aorc:SourceDataset</a>  </p>
+				
+
+				
+					<p class="section-desc"><b>Class Range for:</b>
+                        <br>
+                        <a href="#aorc:SourceGrid">aorc:SourceGrid</a>  </p>
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .</p>
+
+<p>aorc:hasSourceGrid a owl:ObjectProperty ;<br>
+    rdfs:domain aorc:SourceDataset ;<br>
+    rdfs:range aorc:SourceGrid ;<br>
+    owl:inverseOf aorc:isSourceGridOf .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:hasSourceURI" href="#aorc:hasSourceURI">aorc:hasSourceURI</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:hasSourceURI is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+					<p class="section-desc"><b>Class Domain for:</b>
+                        <br>
+                        <a href="#aorc:SourceDataset">aorc:SourceDataset</a>  </p>
+				
+
+				
+					<p class="section-desc"><b>Class Range for:</b>
+                        <br>
+                        <a href="#aorc:SourceURI">aorc:SourceURI</a>  </p>
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .</p>
+
+<p>aorc:hasSourceURI a owl:ObjectProperty ;<br>
+    rdfs:domain aorc:SourceDataset ;<br>
+    rdfs:range aorc:SourceURI ;<br>
+    owl:inverseOf aorc:isSourceURIOf .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:isCompositeGridURIOf" href="#aorc:isCompositeGridURIOf">aorc:isCompositeGridURIOf</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:isCompositeGridURIOf is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .</p>
+
+<p>aorc:isCompositeGridURIOf a owl:ObjectProperty .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:isRFCOf" href="#aorc:isRFCOf">aorc:isRFCOf</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:isRFCOf is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .</p>
+
+<p>aorc:isRFCOf a owl:ObjectProperty .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:isSourceGridOf" href="#aorc:isSourceGridOf">aorc:isSourceGridOf</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:isSourceGridOf is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .</p>
+
+<p>aorc:isSourceGridOf a owl:ObjectProperty .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:isSourceURIOf" href="#aorc:isSourceURIOf">aorc:isSourceURIOf</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:isSourceURIOf is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .</p>
+
+<p>aorc:isSourceURIOf a owl:ObjectProperty .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:wasCreatedBy" href="#aorc:wasCreatedBy">aorc:wasCreatedBy</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:wasCreatedBy is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+					<p class="section-desc"><b>Class Domain for:</b>
+                        <br>
+                        <a href="#aorc:CompositeGrid">aorc:CompositeGrid</a>  </p>
+				
+
+				
+					<p class="section-desc"><b>Class Range for:</b>
+                        <br>
+                        <a href="#aorc:Script">aorc:Script</a>  </p>
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .</p>
+
+<p>aorc:wasCreatedBy a owl:ObjectProperty ;<br>
+    rdfs:domain aorc:CompositeGrid ;<br>
+    rdfs:range aorc:Script .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+	
+
+
+
+
+
+
+
+	
+
+	
+
+		<hr class="margintop">
+		<h1 class="margintop"><a name="dataproperties">&nbsp;</a>Datatype Properties</h1>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Datatype Property: <a name="aorc:hasDateCreated" href="#aorc:hasDateCreated">aorc:hasDateCreated</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:hasDateCreated is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+					<p class="section-desc"><b>Class Domain for:</b>
+                        <br>
+                        <a href="#aorc:CompositeGrid">aorc:CompositeGrid</a>  </p>
+				
+
+				
+					<p class="section-desc"><b>Class Range for:</b>
+                        <br>
+                        <a href="#xsd:date">xsd:date</a>  </p>
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:hasDateCreated a owl:DatatypeProperty ;<br>
+    rdfs:domain aorc:CompositeGrid ;<br>
+    rdfs:range xsd:date .</p>
+
+<p></p></code>
+				</div>
+
+
+			</div>
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Datatype Property: <a name="aorc:hasRFCAlias" href="#aorc:hasRFCAlias">aorc:hasRFCAlias</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:hasRFCAlias is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+					<p class="section-desc"><b>Class Domain for:</b>
+                        <br>
+                        <a href="#aorc:RFC">aorc:RFC</a>  </p>
+				
+
+				
+					<p class="section-desc"><b>Class Range for:</b>
+                        <br>
+                        <a href="#xsd:string">xsd:string</a>  </p>
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:hasRFCAlias a owl:DatatypeProperty ;<br>
+    rdfs:domain aorc:RFC ;<br>
+    rdfs:range xsd:string .</p>
+
+<p></p></code>
+				</div>
+
+
+			</div>
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Datatype Property: <a name="aorc:hasRFCName" href="#aorc:hasRFCName">aorc:hasRFCName</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:hasRFCName is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+					<p class="section-desc"><b>Class Domain for:</b>
+                        <br>
+                        <a href="#aorc:RFC">aorc:RFC</a>  </p>
+				
+
+				
+					<p class="section-desc"><b>Class Range for:</b>
+                        <br>
+                        <a href="#xsd:string">xsd:string</a>  </p>
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:hasRFCName a owl:DatatypeProperty ;<br>
+    rdfs:domain aorc:RFC ;<br>
+    rdfs:range xsd:string .</p>
+
+<p></p></code>
+				</div>
+
+
+			</div>
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Datatype Property: <a name="aorc:hasRefDate" href="#aorc:hasRefDate">aorc:hasRefDate</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:hasRefDate is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+					<p class="section-desc"><b>Class Domain for:</b>
+                        <br>
+                        <a href="#aorc:SourceDataset">aorc:SourceDataset</a>  </p>
+				
+
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;http://github.com/Dewberry/blobfish/semantics/rdf/aorc#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .</p>
+
+<p>aorc:hasRefDate a owl:DatatypeProperty ;<br>
+    rdfs:domain aorc:SourceDataset .</p>
+
+<p></p></code>
+				</div>
+
+
+			</div>
+			
+
+	
+
+
+
+
+
+
+
+	
+
+	
+
+
+
+
+	
+
+
+	
+
+
+
+
+
+
+
+
+	
+
+
+	
+
+
+
+
+
+	<hr>
+	<small>Ontology documentation automatically generated by <a class="greylink"  href="http://lambdamusic.github.io/Ontospy/">Ontospy</a> v2.1.1 on Thu, 19 Jan 2023 14:10:59</small>
+
+
+</body>
+</html>
