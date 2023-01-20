@@ -110,6 +110,7 @@ def create_source_data_catalog(creation_date: str, dtype: str = "precipitation")
     # Create a new graph and add namespace mappings
     # g = a.graph
     g = Graph()
+    g = add_rfc_individuals(g)
 
     # Iterate over the RFC's and add each dataset (assumed to be on the ftp!) to the catalog file
     for rfc, _, _ in a.graph.triples((None, RDF.type, AORC.RFC)):
@@ -127,17 +128,17 @@ def create_source_data_catalog(creation_date: str, dtype: str = "precipitation")
             g.add((source_dataset, RDF.type, OWL.NamedIndividual))
             g.add((source_dataset, RDF.type, AORC.SourceDataset))
 
-            g.add((source_uri, RDF.type, OWL.NamedIndividual))
-            g.add((source_uri, RDF.type, AORC.SourceURI))
+            # g.add((source_uri, RDF.type, OWL.NamedIndividual))
+            # g.add((source_uri, RDF.type, AORC.SourceURI))
 
-            g.add((mirror_uri, RDF.type, OWL.NamedIndividual))
-            g.add((mirror_uri, RDF.type, AORC.MirrorURI))
+            # g.add((mirror_uri, RDF.type, OWL.NamedIndividual))
+            # g.add((mirror_uri, RDF.type, AORC.MirrorURI))
 
             # Add Object Properties
             g.add((source_dataset, AORC.hasRefDate, Literal(a.dtm_to_year_month(dtm), datatype=XSD.date)))
             g.add((source_dataset, AORC.hasRFC, rfc))
-            g.add((source_dataset, AORC.hasSourceURI, source_uri))
-            g.add((source_dataset, AORC.hasMirrorURI, mirror_uri))
+            g.add((source_dataset, AORC.hasSourceDatasetURI, source_uri))
+            g.add((source_dataset, AORC.hasMirrorDatasetURI, mirror_uri))
     return g
 
 
