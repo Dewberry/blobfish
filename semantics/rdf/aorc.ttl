@@ -142,7 +142,7 @@ aorc:CompositeGrid rdf:type owl:Class ;
 ###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#CompositeGridURI
 aorc:CompositeGridURI rdf:type owl:Class ;
                       rdfs:subClassOf aorc:CompositeGrid ;
-                      owl:versionInfo "Dircect link to the CompositeGrid stored in the S3 mirror." .
+                      rdfs:comment "Dircect link to the CompositeGrid stored in the S3 mirror." .
 
 
 ###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#MirrorURI
