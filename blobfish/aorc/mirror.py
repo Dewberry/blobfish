@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime
 import io
 from pandas import date_range
+import pathlib as pl
 import requests
 from rdflib import Graph, Namespace, URIRef, Literal
 from rdflib.namespace import RDF, XSD, OWL
@@ -20,11 +21,9 @@ from ..pyrdf._AORC import AORC
 from ..utils.blobstore import list_s3_keys, s3_key_exists
 
 from .const import (
-    FIRST_RECORD,
-    FTP_ROOT,
     MIRROR_ROOT,
-    RFC_INFO_LIST,
-    SOURCE_CATALOG,
+    COMPOSITE_CATALOG,
+    COMPOSITE_ROOT,
 )
 
 
@@ -48,42 +47,48 @@ class AORCMirror(AORC):
     ):
         # Mirror Resources (AWS)
         self._ontology_src = ontology_src
-        # self.ontology = Graph().parse(self._ontology_src, format="ttl")
+        self.ontology = Graph().parse(self._ontology_src, format="ttl")
         self.graph = Graph().parse(ftp_db_source, format="ttl")
         self.s3_client = session.client("s3")
         self.s3_resource = session.resource("s3")
         self.bucket_name = bucket_name
 
-    def copy_to_mirror(self, source_datasets: List[str], override: str = False):
+    def data_source_to_mirror(self, source_dataset: URIRef, override: str = False):
         """
         Copy SourceData files in a given list (source_datasets) from the ftp to an s3 mirror
         TODO: add override
         """
 
-        for dataset in source_datasets:
+        source_uri = self.graph.value(source_dataset, AORC.hasSourceDatasetURI)
+        mirror_uri = self.graph.value(source_dataset, AORC.hasMirrorDatasetURI)
 
-            source_uri = str(self.graph.value(dataset, AORC.hasSourceDatasetURI))
-            mirror_uri = self.graph.value(dataset, AORC.hasMirrorDatasetURI)
-            prefix = mirror_uri.replace(f"s3://{self.bucket_name}/", "")
-            if s3_key_exists(prefix) and not override:
-                print(f"s3mirror copy exists for: {prefix}")
-                continue
-            else:
-                print(f"no s3mirror for: {prefix}")
+        s3_prefix = mirror_uri.replace(f"s3://{self.bucket_name}/", "")
+        if s3_key_exists(s3_prefix) and not override:
+            print(f"s3mirror copy exists for: {s3_prefix}")
+        else:
+            print(f"no s3mirror for: {s3_prefix}")
 
-                r = requests.get(source_uri, stream=True, verify=False)
-                bucket = self.s3_resource.Bucket(self.bucket_name)
-                bucket.upload_fileobj(
-                    r.raw,
-                    prefix,
-                    ExtraArgs={"Metadata": {"source": dataset, "ontology": self.ontology._NS}},
-                )
-                print(r.text)
-                time.sleep(1)
-                # add graph upate here ?
-            # return self.s3_client.head_object(Bucket=self.bucket_name, Key=prefix)
+            r = requests.get(str(source_uri), stream=True, verify=False)
+            bucket = self.s3_resource.Bucket(self.bucket_name)
+            bucket.upload_fileobj(
+                r.raw,
+                s3_prefix,
+                ExtraArgs={"Metadata": {"source": source_dataset, "ontology": self.ontology._NS}},
+            )
+            return self.s3_client.head_object(Bucket=self.bucket_name, Key=s3_prefix)
 
-    def create_xrdataset_for_one_hour(self, file_map) -> xr.Dataset:
+    def ndata_sources_to_mirror(self, source_datasets: List[str], override: str = False):
+        """
+        Copy SourceData files in a given list (source_datasets) from the ftp to an s3 mirror
+        TODO: add override
+        """
+        responses = []
+        for source_dataset in source_datasets:
+            r = self.data_source_to_mirror(source_dataset)
+            responses.append(r)
+        return r
+
+    def create_composite_grid(self, file_map) -> xr.Dataset:
         """
         Opens files for a given hour and merges to return a single xarray dataset
         for all regions in the AORC dataset
@@ -107,7 +112,7 @@ class AORCMirror(AORC):
         print(f"returning xdatasets: {xdatasets}")
         return xr.merge(xdatasets, compat="no_conflicts", combine_attrs="drop_conflicts")
 
-    def write_zarrfile_to_mirror(self, xdata: xr.Dataset, s3_zarr_file: str):
+    def composite_grid_to_mirror(self, xdata: xr.Dataset, s3_zarr_file: str):
         """
         Write zarr file to S3
         """
@@ -115,47 +120,44 @@ class AORCMirror(AORC):
         store = zarr.storage.FSStore(s3_zarr_file)
         return xdata.to_zarr(store, mode="w")
 
+    def composite_grid_path(self, dtm: datetime):
+        date_string = dtm.strftime(format="%Y%m%d%H")
+        return f"s3://{self.bucket_name}/transforms/aorc/precipitation/{dtm.year}/{date_string}.zarr"
 
-# def copy_sources_to_mirror(self, source_datasets: List[str], dtm: datetime):
-#     """
-#     Copy multiple files from source to mirror
-#     """
-#     file_map = {}
-#     for dataset in source_datasets:
-#         s3_dataset_copy = self.graph.value(dataset, AORC.hasMirrorDatasetURI)
-#         rfc = self.graph.value(dataset, AORC.hasRFC)
-#         rfc_alias = self.graph.value(rfc, AORC.hasRFCAlias)
-#         date_string = dtm.strftime(format="%Y%m%d%H")
-#         dst_prefix = f"s3://{self.bucket_name}/transforms/aorc/precipitation/{dtm.year}/{date_string}.zarr"
-#         src_prefix = s3_dataset_copy.replace("s3://tempest/", "")
-#         file_map[src_prefix] = f"""AORC_APCP_{rfc_alias}RFC_{date_string}.nc4"""
-#     return dst_prefix, file_map
+    def data_source_map(self, source_datasets: List[str], dtm: datetime):
+        """
+        Create map of data_sources from FTP to Mirror
+        """
+        date_string = dtm.strftime(format="%Y%m%d%H")
+        file_map = {}
+        for dataset in source_datasets:
+            s3_mirror_dataset = self.graph.value(dataset, AORC.hasMirrorDatasetURI)
+            rfc = self.graph.value(dataset, AORC.hasRFC)
+            rfc_alias = self.graph.value(rfc, AORC.hasRFCAlias)
+            dst_prefix = self.composite_grid_path(dtm)
 
+            src_prefix = s3_mirror_dataset.replace("s3://tempest/", "")
 
-# def add_mirror_sources_to_graph(self, source_datasets: List[URIRef], dtm: datetime):
-#     """
-#     Copy file from source to mirror
-#     """
-#     # file_map = {}
-#     date_string = dtm.strftime(format="%Y%m%d%H")
-#     composite_grid_name = f"{dtm.year}/{date_string}.zarr"
-#     dst_s3_key = f"s3://{self.bucket_name}/transforms/aorc/{composite_grid_name}"
+            file_map[src_prefix] = f"""AORC_APCP_{rfc_alias}RFC_{date_string}.nc4"""
 
-#     composite_grid_uri = COMPOSITE_ROOT[composite_grid_name]
-#     self.graph.add((composite_grid_uri, RDF.type, AORC.CompositeGrid))
-#     self.graph.add((composite_grid_uri, AORC.hasCompositeGridURI, URIRef(dst_s3_key)))
+        return dst_prefix, file_map
 
-#     NS = AORC._NS
-#     for dataset in source_datasets:
-#         # s3_dataset_copy = self.graph.value(dataset, AORC.hasMirrorDatasetURI)
-#         # print(f"dataset {dataset}")
-#         rfc = self.graph.value(dataset, AORC.hasRFC)
-#         rfc_alias = self.graph.value(rfc, AORC.hasRFCAlias)
-#         source_grid = f"""AORC_APCP_{rfc_alias}RFC_{date_string}.nc4"""
-#         self.graph.add((NS[source_grid], RDF.type, AORC.SourceGrid))
-#         self.graph.add((NS[source_grid], AORC.isSourceGridOf, dataset))
-#         self.graph.add((MIRROR_ROOT[cg_name], AORC.hasSourceGrid, NS[source_grid]))
-#         # print(dataset, self.graph.value(dataset, AORC.hasSourceGrid))
-#         # src_prefix = s3_dataset_copy.replace("s3://tempest/", "")
-#         # file_map[src_prefix] = f"""AORC_APCP_{rfc_alias}RFC_{date_string}.nc4"""
-#     return dst_s3_key  # , file_map
+    def composite_grid_to_graph(self, dtm: datetime):
+        """
+        update graph
+        """
+        dst_s3_key = self.composite_grid_path(dtm)
+        composite_grid_uid = pl.Path(dst_s3_key).name
+        composite_grid_uri = COMPOSITE_ROOT[composite_grid_uid]
+        self.graph.add((COMPOSITE_CATALOG[composite_grid_uid], RDF.type, AORC.CompositeGrid))
+        self.graph.add((COMPOSITE_CATALOG[composite_grid_uid], AORC.hasCompositeGridURI, composite_grid_uri))
+        return composite_grid_uid
+
+    def link_composite_datasets(self, composite_grid_uid, source_datasets, dtm):
+        for source_dataset in source_datasets:
+            rfc = self.graph.value(source_dataset, AORC.hasRFC)
+            rfc_alias = self.graph.value(rfc, AORC.hasRFCAlias)
+            source_grid = f"""AORC_APCP_{rfc_alias}RFC_{dtm.strftime(format="%Y%m%d%H")}.nc4"""
+            # self.graph.add((MIRROR_ROOT[source_grid], RDF.type, AORC.SourceGrid))
+            self.graph.add((source_dataset, AORC.hasSourceGrid, MIRROR_ROOT[source_grid]))
+            self.graph.add((COMPOSITE_CATALOG[composite_grid_uid], AORC.hasSourceGrid, MIRROR_ROOT[source_grid]))
