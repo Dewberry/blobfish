@@ -6,7 +6,7 @@ from rdflib.namespace import DefinedNamespace
 class AORC(DefinedNamespace):         
 	"""         
 	AORC Ontology for S3 cloud mirror         
-	Created on 2023-01-19 09:14         
+	Created on 2023-01-21 08:58         
 	"""
          
 	#Classes
@@ -29,15 +29,19 @@ class AORC(DefinedNamespace):
 
 	#Object Properties
 	IsMirrorURIOf: URIRef
+	hasCodeRepositroy: URIRef
+	hasCommitHash: URIRef
 	hasCompositeGridURI: URIRef
+	hasCreationScript: URIRef
 	hasMirrorURI: URIRef
 	hasRFC: URIRef
 	hasSourceGrid: URIRef
 	hasSourceURI: URIRef
+	isCodeRepositoryOf: URIRef
+	isCommitHashOf: URIRef
 	isCompositeGridURIOf: URIRef
 	isRFCOf: URIRef
 	isSourceGridOf: URIRef
 	isSourceURIOf: URIRef
-	wasCreatedBy: URIRef
 
 	_NS = Namespace("http://github.com/Dewberry/blobfish/semantics/rdf/aorc#")

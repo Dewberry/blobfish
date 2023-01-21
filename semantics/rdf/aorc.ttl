@@ -26,11 +26,31 @@ aorc:IsMirrorURIOf rdf:type owl:ObjectProperty ;
                    owl:inverseOf aorc:hasMirrorURI .
 
 
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasCodeRepositroy
+aorc:hasCodeRepositroy rdf:type owl:ObjectProperty ;
+                       owl:inverseOf aorc:isCodeRepositoryOf ;
+                       rdfs:domain aorc:Script ;
+                       rdfs:range aorc:CodeRepository .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasCommitHash
+aorc:hasCommitHash rdf:type owl:ObjectProperty ;
+                   owl:inverseOf aorc:isCommitHashOf ;
+                   rdfs:domain aorc:Script ;
+                   rdfs:range aorc:CommitHash .
+
+
 ###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasCompositeGridURI
 aorc:hasCompositeGridURI rdf:type owl:ObjectProperty ;
                          owl:inverseOf aorc:isCompositeGridURIOf ;
                          rdfs:domain aorc:CompositeGrid ;
                          rdfs:range aorc:CompositeGridURI .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasCreationScript
+aorc:hasCreationScript rdf:type owl:ObjectProperty ;
+                       rdfs:domain aorc:CompositeGrid ;
+                       rdfs:range aorc:Script .
 
 
 ###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasMirrorURI
@@ -60,6 +80,14 @@ aorc:hasSourceURI rdf:type owl:ObjectProperty ;
                   rdfs:range aorc:SourceURI .
 
 
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#isCodeRepositoryOf
+aorc:isCodeRepositoryOf rdf:type owl:ObjectProperty .
+
+
+###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#isCommitHashOf
+aorc:isCommitHashOf rdf:type owl:ObjectProperty .
+
+
 ###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#isCompositeGridURIOf
 aorc:isCompositeGridURIOf rdf:type owl:ObjectProperty .
 
@@ -74,12 +102,6 @@ aorc:isSourceGridOf rdf:type owl:ObjectProperty .
 
 ###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#isSourceURIOf
 aorc:isSourceURIOf rdf:type owl:ObjectProperty .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#wasCreatedBy
-aorc:wasCreatedBy rdf:type owl:ObjectProperty ;
-                  rdfs:domain aorc:CompositeGrid ;
-                  rdfs:range aorc:Script .
 
 
 #################################################################
@@ -115,25 +137,29 @@ aorc:hasRefDate rdf:type owl:DatatypeProperty ;
 
 ###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#CodeRepository
 aorc:CodeRepository rdf:type owl:Class ;
-                    rdfs:subClassOf aorc:Script ;
+                    rdfs:subClassOf aorc:Script ,
+                                    [ rdf:type owl:Restriction ;
+                                      owl:onProperty aorc:hasCommitHash ;
+                                      owl:someValuesFrom aorc:CommitHash
+                                    ] ;
                     rdfs:comment "Code repository identifies the location of the Script file used to create the CompositeGrid." .
 
 
 ###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#CommitHash
 aorc:CommitHash rdf:type owl:Class ;
-                rdfs:subClassOf aorc:CodeRepository ;
+                rdfs:subClassOf aorc:Script ;
                 rdfs:comment "The CommitHash is provided for a code repository at the time the script was executed to ensure provenance and reproducibility are effectuated." .
 
 
 ###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#CompositeGrid
 aorc:CompositeGrid rdf:type owl:Class ;
                    rdfs:subClassOf [ rdf:type owl:Restriction ;
-                                     owl:onProperty aorc:hasSourceGrid ;
-                                     owl:someValuesFrom aorc:SourceGrid
+                                     owl:onProperty aorc:hasCreationScript ;
+                                     owl:someValuesFrom aorc:Script
                                    ] ,
                                    [ rdf:type owl:Restriction ;
-                                     owl:onProperty aorc:wasCreatedBy ;
-                                     owl:someValuesFrom aorc:Script
+                                     owl:onProperty aorc:hasSourceGrid ;
+                                     owl:someValuesFrom aorc:SourceGrid
                                    ] ;
                    rdfs:comment "CompositeGrid is the transformed dataset stored in the cloud mirror containing all of the RFC datasets (conus) merged into a continuous grid and converted to zarr format." ;
                    owl:versionInfo "2023.01.17" .
@@ -166,6 +192,14 @@ aorc:RFC rdf:type owl:Class ;
 
 ###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#Script
 aorc:Script rdf:type owl:Class ;
+            rdfs:subClassOf [ rdf:type owl:Restriction ;
+                              owl:onProperty aorc:hasCodeRepositroy ;
+                              owl:someValuesFrom aorc:CodeRepository
+                            ] ,
+                            [ rdf:type owl:Restriction ;
+                              owl:onProperty aorc:hasCommitHash ;
+                              owl:someValuesFrom aorc:CommitHash
+                            ] ;
             rdfs:comment "Script used to create a composite grid." .
 
 
@@ -216,11 +250,11 @@ aorc:SourceURI rdf:type owl:Class ;
 
 [ rdf:type owl:AllDisjointProperties ;
   owl:members ( aorc:hasCompositeGridURI
+                aorc:hasCreationScript
                 aorc:hasMirrorURI
                 aorc:hasRFC
                 aorc:hasSourceGrid
                 aorc:hasSourceURI
-                aorc:wasCreatedBy
               )
 ] .
 
