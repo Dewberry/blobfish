@@ -15,10 +15,14 @@ def list_s3_keys(s3_client: boto3.client, bucket_name: str, prefix="/", delimite
             yield content["Key"]
 
 
-def s3_key_exists(prefix: str) -> bool:
+def s3_key_exists(
+    prefix: str,
+    s3_client: boto3.client,
+    bucket_name: str,
+) -> bool:
     """
     Utility to check if file exists on S3
     """
-    if prefix in list_s3_keys(prefix=prefix):
+    if prefix in list_s3_keys(s3_client, bucket_name, prefix=prefix):
         return True
     return False
