@@ -2,7 +2,6 @@ from datetime import datetime
 from pandas import date_range
 from rdflib import Graph, Literal
 from rdflib.namespace import RDF, XSD, OWL
-import sys
 
 from .const import (
     FIRST_RECORD,
@@ -137,8 +136,8 @@ def create_source_data_catalog(creation_date: str, dtype: str = "precipitation")
             # Add Object Properties
             g.add((source_dataset, AORC.hasRefDate, Literal(a.dtm_to_year_month(dtm), datatype=XSD.date)))
             g.add((source_dataset, AORC.hasRFC, rfc))
-            g.add((source_dataset, AORC.hasSourceDatasetURI, source_uri))
-            g.add((source_dataset, AORC.hasMirrorDatasetURI, mirror_uri))
+            g.add((source_dataset, AORC.hasSourceURI, source_uri))
+            g.add((source_dataset, AORC.hasMirrorURI, mirror_uri))
     return g
 
 

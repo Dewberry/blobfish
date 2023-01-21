@@ -1,15 +1,13 @@
 import boto3
-from dataclasses import dataclass
 from datetime import datetime
 import io
-from pandas import date_range
 import pathlib as pl
 import requests
-from rdflib import Graph, Namespace, URIRef, Literal
-from rdflib.namespace import RDF, XSD, OWL
-import sys
-import time
-from typing import List, Iterator
+from requests.exceptions import Timeout
+from rdflib import Graph, URIRef, Literal
+from rdflib.namespace import RDF, OWL
+from typing import List
+from urllib3.exceptions import InsecureRequestWarning
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -17,8 +15,10 @@ import xarray as xr
 import zarr
 from zipfile import ZipFile
 
+requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+
 from ..pyrdf._AORC import AORC
-from ..utils.blobstore import list_s3_keys, s3_key_exists
+from ..utils.blobstore import s3_key_exists
 
 from .const import (
     MIRROR_ROOT,
@@ -59,23 +59,25 @@ class AORCMirror(AORC):
         TODO: add override
         """
 
-        source_uri = self.graph.value(source_dataset, AORC.hasSourceDatasetURI)
-        mirror_uri = self.graph.value(source_dataset, AORC.hasMirrorDatasetURI)
+        source_uri = self.graph.value(source_dataset, AORC.hasSourceURI)
+        mirror_uri = self.graph.value(source_dataset, AORC.hasMirrorURI)
 
         s3_prefix = mirror_uri.replace(f"s3://{self.bucket_name}/", "")
-        if s3_key_exists(s3_prefix) and not override:
-            print(f"s3mirror copy exists for: {s3_prefix}")
+        if s3_key_exists(s3_prefix, self.s3_client, self.bucket_name) and not override:
+            print(f"s3mirror copy exists (skipping): {s3_prefix}")
         else:
-            print(f"no s3mirror for: {s3_prefix}")
-
-            r = requests.get(str(source_uri), stream=True, verify=False)
-            bucket = self.s3_resource.Bucket(self.bucket_name)
-            bucket.upload_fileobj(
-                r.raw,
-                s3_prefix,
-                ExtraArgs={"Metadata": {"source": source_dataset, "ontology": self.ontology._NS}},
-            )
-            return self.s3_client.head_object(Bucket=self.bucket_name, Key=s3_prefix)
+            print(f"s3mirror copy not found (copying): {s3_prefix}")
+            try:
+                r = requests.get(str(source_uri), stream=True, verify=False, timeout=5)
+                bucket = self.s3_resource.Bucket(self.bucket_name)
+                bucket.upload_fileobj(
+                    r.raw,
+                    s3_prefix,
+                    ExtraArgs={"Metadata": {"source": source_dataset, "ontology": AORC._NS}},
+                )
+                return self.s3_client.head_object(Bucket=self.bucket_name, Key=s3_prefix)
+            except Timeout:
+                return Timeout
 
     def ndata_sources_to_mirror(self, source_datasets: List[str], override: str = False):
         """
@@ -99,7 +101,7 @@ class AORCMirror(AORC):
         date_string = dtm.strftime(format="%Y%m%d%H")
         file_map = {}
         for dataset in source_datasets:
-            s3_mirror_dataset = self.graph.value(dataset, AORC.hasMirrorDatasetURI)
+            s3_mirror_dataset = self.graph.value(dataset, AORC.hasMirrorURI)
             rfc = self.graph.value(dataset, AORC.hasRFC)
             rfc_alias = self.graph.value(rfc, AORC.hasRFCAlias)
             dst_prefix = self.composite_grid_path(dtm)
@@ -157,7 +159,7 @@ class AORCMirror(AORC):
         """
         xdatasets = []
         for s3_zip, netcdf_file in file_map.items():
-            if not self.s3_key_exists(s3_zip):
+            if not s3_key_exists(s3_zip, self.s3_client, self.bucket_name):
                 raise (KeyError(f"{s3_zip} does not exist in bucket {self.bucket_name}"))
             data = self.s3_client.get_object(
                 Bucket=self.bucket_name,
@@ -168,10 +170,10 @@ class AORCMirror(AORC):
             with ZipFile(io.BytesIO(bytes)) as zip_file:
                 ds = xr.open_dataset(zip_file.open(netcdf_file), chunks="auto")
                 ds.rio.write_crs(4326, inplace=True)
-            print(f"appending dataset {netcdf_file}")
+            # print(f"appending dataset {netcdf_file}")
             xdatasets.append(ds)
 
-        print(f"returning xdatasets: {xdatasets}")
+        # print(f"returning xdatasets: {xdatasets}")
         return xr.merge(xdatasets, compat="no_conflicts", combine_attrs="drop_conflicts")
 
     def composite_grid_to_mirror(self, xdata: xr.Dataset, s3_zarr_file: str):
