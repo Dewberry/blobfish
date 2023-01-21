@@ -6,7 +6,7 @@ from rdflib.namespace import DefinedNamespace
 class AORC(DefinedNamespace):         
 	"""         
 	AORC Ontology for S3 cloud mirror         
-	Created on 2023-01-21 08:58         
+	Created on 2023-01-21 16:04         
 	"""
          
 	#Classes

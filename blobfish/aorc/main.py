@@ -1,12 +1,14 @@
 import boto3
-import os
-from rdflib import Literal
-import pathlib as pl
-from rdflib.namespace import XSD
 from datetime import datetime, timedelta
+import json
+import logging
+import os
+from requests.exceptions import Timeout
+from rdflib import Literal
+from rdflib.namespace import XSD
 
 from ..pyrdf import AORC
-from ..utils import gitinfo
+from ..utils import gitinfo, logger
 from .mirror import AORCMirror
 from .source import AORCSource, create_source_data_catalog, source_catalog_to_file
 from .const import (
@@ -17,15 +19,13 @@ from .const import (
 
 from dotenv import load_dotenv, find_dotenv
 
-if __name__ == "__main__":
+
+def create_mirror():
     """
     Step 1: Create database (.ttl) of source datasets
     Step 2: Copy files from ftp (source-mirror)
     Step 3: Transform datasets (composite-mirror)
     """
-
-    load_dotenv(find_dotenv())
-
     # Copy info for processing script / repository
     script_path = gitinfo.script(__file__)
     git_repo_info = gitinfo.version()
@@ -37,9 +37,10 @@ if __name__ == "__main__":
 
     # Step 1
     creation_date = datetime.now().strftime(format="%Y-%m-%d")
-    print(f"Creating source catalog for AORC on {creation_date}")
     catalog_graph = create_source_data_catalog(creation_date)
-    source_catalog_to_file(catalog_graph, filepath="mirrors/AORC-ftp-db.ttl")
+    catalog_file = "mirrors/AORC-ftp-db.ttl"
+    source_catalog_to_file(catalog_graph, filepath=catalog_file)
+    logging.info(json.dumps({source_catalog_to_file.__name__: catalog_file}))
 
     mirror = AORCMirror(session)
     mirror.graph.bind("s3mirror", MIRROR_ROOT)
@@ -50,28 +51,31 @@ if __name__ == "__main__":
     end = datetime(1980, 2, 4)
 
     daydelta = timedelta(days=1)
-    hourdelta = timedelta(hours=1)
+    # hourdelta = timedelta(hours=1)
 
-    for day in range(start.year, end.year):
-
-        daydelta = timedelta(days=1)
-        hourdelta = timedelta(hours=1)
-
-        # iterate over range of dates required to create the datasets expected on the ftp and required
-        # to develop the gridtransform datasets
+    # _ = day
+    for _ in range(start.year, end.year):
+        """
+        iterate over range of dates required to create the datasets expected on the ftp
+        and required to develop the gridtransform datasets
+        """
         while dtm <= end:
             year = dtm.year
-            # print(f"Processing {dtm}")
             # copy source data from the ftp to the mirror for the first day of each month
             if dtm.day == 1:
                 xsd_date = Literal(dtm.strftime(format("%Y-%m-%d")), datatype=XSD.date)
-                print(f"searching for sources with hasRefDate={xsd_date}")
                 source_datsets = []
                 # Search the graph for all RFC data_sources for the given date
                 for s, _, _ in mirror.graph.triples((None, AORC.hasRefDate, xsd_date)):
-                    # print(f"\tcopying {s} to mirror")
-                    # mirror.copy_to_mirror(source_datsets)
-                    source_path = catalog_graph.value(s, AORC.hasSourceDatasetURI)
+                    r = mirror.data_source_to_mirror(s)
+                    if r == Timeout:
+                        dbfile = f"mirrors/ttl/AORC-mirror-db-part-{year}.ttl"
+                        logging.error(json.dumps({"ftp_error": f"part-{dbfile}"}))
+                        with open(dbfile, "w") as f:
+                            f.write(mirror.graph.serialize(format="ttl"))
+                        raise (r)
+
+                    catalog_graph.value(s, AORC.hasSourceURI)
                     source_datsets.append(s)
 
                 # print(source_datsets)
@@ -86,17 +90,27 @@ if __name__ == "__main__":
                 mirror.link_composite_grid_sources_in_graph(composite_grid_uid, source_datsets, dtmn)
 
                 # print(dst_prefix, file_map)
-                # xdata = mirror.create_composite_grid(file_map)
-                # s3zarr = mirror.write_zarrfile_to_mirror(xdata, dst_prefix)
-                # print(f"s3zarr: {s3zarr} complete")
+                xdata = mirror.create_composite_grid(file_map)
+                mirror.composite_grid_to_mirror(xdata, dst_prefix)
 
             dtm += daydelta
             if dtm.year != year:
-                dbfile = f"mirrors/AORC-mirror-db-{year}.ttl"
-                print(f"writing {dbfile}")
+                dbfile = f"mirrors/ttl/AORC-mirror-db-{year}.ttl"
                 with open(dbfile, "w") as f:
                     f.write(mirror.graph.serialize(format="ttl"))
+                logging.info(json.dumps({"writing-ttl": dbfile, "status": "complete"}))
 
                 mirror = AORCMirror(session)
                 mirror.graph.bind("s3mirror", MIRROR_ROOT)
                 mirror.graph.bind("ftpserver", FTP_ROOT)
+
+
+if __name__ == "__main__":
+
+    load_dotenv(find_dotenv())
+
+    runtime = datetime.now().strftime("%Y%m%d_%H%M")
+    logfile = f"mirrors/logs/aorc-mirror-{runtime}.log"
+    logs = logger.set_up_logger(filename=logfile)
+    logs.setLevel(logging.INFO)
+    create_mirror()

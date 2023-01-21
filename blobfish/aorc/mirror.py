@@ -1,6 +1,8 @@
 import boto3
 from datetime import datetime
 import io
+import json
+import logging
 import pathlib as pl
 import requests
 from requests.exceptions import Timeout
@@ -64,9 +66,8 @@ class AORCMirror(AORC):
 
         s3_prefix = mirror_uri.replace(f"s3://{self.bucket_name}/", "")
         if s3_key_exists(s3_prefix, self.s3_client, self.bucket_name) and not override:
-            print(f"s3mirror copy exists (skipping): {s3_prefix}")
+            logging.info(json.dumps({s3_key_exists.__name__: s3_prefix, "status": "skipping"}))
         else:
-            print(f"s3mirror copy not found (copying): {s3_prefix}")
             try:
                 r = requests.get(str(source_uri), stream=True, verify=False, timeout=5)
                 bucket = self.s3_resource.Bucket(self.bucket_name)
@@ -75,6 +76,7 @@ class AORCMirror(AORC):
                     s3_prefix,
                     ExtraArgs={"Metadata": {"source": source_dataset, "ontology": AORC._NS}},
                 )
+                logging.info(json.dumps({s3_key_exists.__name__: s3_prefix, "status": "copied"}))
                 return self.s3_client.head_object(Bucket=self.bucket_name, Key=s3_prefix)
             except Timeout:
                 return Timeout
@@ -180,6 +182,6 @@ class AORCMirror(AORC):
         """
         Write zarr file to S3
         """
-        print(f"Copying {s3_zarr_file} fo mirror")
         store = zarr.storage.FSStore(s3_zarr_file)
-        return xdata.to_zarr(store, mode="w")
+        xdata.to_zarr(store, mode="w")
+        logging.info(json.dumps({self.composite_grid_to_mirror.__name__: s3_zarr_file, "status": "complete"}))
