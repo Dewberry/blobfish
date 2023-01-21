@@ -22,11 +22,7 @@ requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 from ..pyrdf._AORC import AORC
 from ..utils.blobstore import s3_key_exists
 
-from .const import (
-    MIRROR_ROOT,
-    COMPOSITE_CATALOG,
-    COMPOSITE_ROOT,
-)
+from .const import MIRROR_ROOT, COMPOSITE_CATALOG
 
 
 class AORCMirror(AORC):
@@ -92,9 +88,15 @@ class AORCMirror(AORC):
             responses.append(r)
         return r
 
-    def composite_grid_path(self, dtm: datetime):
+    def composite_grid_id(self, dtm: datetime):
         date_string = dtm.strftime(format="%Y%m%d%H")
-        return f"s3://{self.bucket_name}/transforms/aorc/precipitation/{dtm.year}/{date_string}.zarr"
+        return f"{dtm.year}/{date_string}.zarr"
+
+    def composite_grid_prefix(self, dtm: datetime):
+        return f"transforms/aorc/precipitation/{self.composite_grid_id(dtm)}"
+
+    def composite_grid_path(self, dtm: datetime):
+        return f"s3://{self.bucket_name}/{self.composite_grid_prefix(dtm)}"
 
     def data_source_map(self, source_datasets: List[str], dtm: datetime):
         """
@@ -106,8 +108,7 @@ class AORCMirror(AORC):
             s3_mirror_dataset = self.graph.value(dataset, AORC.hasMirrorURI)
             rfc = self.graph.value(dataset, AORC.hasRFC)
             rfc_alias = self.graph.value(rfc, AORC.hasRFCAlias)
-            dst_prefix = self.composite_grid_path(dtm)
-
+            dst_prefix = self.composite_grid_prefix(dtm)
             src_prefix = s3_mirror_dataset.replace("s3://tempest/", "")
 
             file_map[src_prefix] = f"""AORC_APCP_{rfc_alias}RFC_{date_string}.nc4"""
@@ -133,9 +134,8 @@ class AORCMirror(AORC):
         """
         update graph
         """
-        dst_s3_key = self.composite_grid_path(dtm)
-        composite_grid_uid = pl.Path(dst_s3_key).name
-        composite_grid_uri = COMPOSITE_ROOT[composite_grid_uid]
+        composite_grid_uri = URIRef(self.composite_grid_path(dtm))
+        composite_grid_uid = self.composite_grid_id(dtm)
         self.graph.add((COMPOSITE_CATALOG[composite_grid_uid], RDF.type, AORC.CompositeGrid))
         self.graph.add((COMPOSITE_CATALOG[composite_grid_uid], AORC.hasCompositeGridURI, composite_grid_uri))
 

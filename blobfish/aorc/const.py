@@ -11,7 +11,7 @@ COMPOSITE_CATALOG = Namespace("s3://tempest/catalogs/aorc/precip/composite/#")
 # Root Directories for Data
 FTP_ROOT = Namespace("https://hydrology.nws.noaa.gov/pub/aorc-historic/")
 MIRROR_ROOT = Namespace("s3://tempest/mirrors/aorc/precip/")
-COMPOSITE_ROOT = Namespace("s3://tempest/composites/aorc/precip/")
+# COMPOSITE_ROOT = Namespace("s3://tempest/composites/aorc/precip/")
 
 
 @dataclass
