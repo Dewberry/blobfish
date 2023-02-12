@@ -130,3 +130,5 @@ dmypy.json
 .DS_Store
 mirrors/
 .vscode/
+scratch/
+scratch*
