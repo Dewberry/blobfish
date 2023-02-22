@@ -1,22 +1,42 @@
-import git
-from typing import Dict, Tuple
+from git.repo import Repo
+from typing import Dict
+from dataclasses import dataclass
 
 
-def version() -> Tuple:
+@dataclass
+class GitInfo:
+    origin_url: str
+    commit_hash: str
+    active_branch: str
+
+
+class UncommittedChangesError(Exception):
+    "There are uncommitted changes in the repo, commit hash pulled will not accurately reflect state of code"
+
+
+def version() -> GitInfo:
     """
     Returns relevant metadata for the git repository
     to comply with FAIR practices.
 
     """
-    repo = git.Repo(search_parent_directories=True)
-    # head = repo.branches[-1]
-    active_branch = repo.branches[0]
+    repo = Repo(search_parent_directories=True)
+    if repo.is_dirty():
+        pass
+        # raise UncommittedChangesError
+    info = GitInfo(
+        repo.remotes.origin.url.replace("git@github.com:", "https://github.com/"),
+        repo.active_branch.commit.hexsha,
+        repo.active_branch.name,
+    )
+    return info
 
-    commit_info = active_branch.object.name_rev.split(" ")
-    hash, branch_name = commit_info[0], commit_info[1]
-    return repo.remotes.origin.url.replace("git@github.com:", "http://github.com/"), hash, branch_name
 
-
-def script(fileame: str) -> str:
-    str_parser = fileame.index("blobfish")
-    return fileame[str_parser:]
+def script(filename: str) -> str:
+    script_relative_path = filename
+    repo = Repo(search_parent_directories=True)
+    if repo.working_tree_dir:
+        working_dir_str = str(repo.working_tree_dir)
+        git_dir_idx = filename.index(working_dir_str) + len(working_dir_str)
+        script_relative_path = filename[git_dir_idx:]
+    return script_relative_path
