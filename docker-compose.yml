@@ -1,0 +1,8 @@
+version: '3.8'
+
+services:
+  python:
+    build: .
+    volumes:
+      - ./blobfish:/proj/blobfish
+    tty: true
