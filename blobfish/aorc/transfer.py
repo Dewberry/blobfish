@@ -10,11 +10,20 @@ import tempfile
 from dotenv import load_dotenv
 from aiohttp import ClientSession, ServerDisconnectedError
 from aiofile import async_open
-from typing import List, IO
+from typing import List
 from requests import Session
 from boto3.resources.factory import ServiceResource
 from dateutil.relativedelta import relativedelta
-from const import RFC_INFO_LIST, RFCInfo, FIRST_RECORD, FTP_HOST
+from dataclasses import dataclass
+
+from .const import RFC_INFO_LIST, RFCInfo, FIRST_RECORD, FTP_HOST
+from ..utils.gitinfo import GitInfo
+
+
+@dataclass
+class SourceURLObject:
+    url: str
+    date: datetime.datetime
 
 
 class FTPError(Exception):
@@ -44,6 +53,8 @@ def get_sessioned_s3_resource() -> ServiceResource:
 class TransferHandler:
     def __init__(
         self,
+        gitinfo: GitInfo,
+        script_path: str,
         mirror_bucket_name: str,
         mirror_file_prefix: str,
         rfc_list: List[RFCInfo] = RFC_INFO_LIST,
@@ -66,6 +77,8 @@ class TransferHandler:
         self.start_date = start_date
         self.end_date = end_date
         self.semaphore_size = concurrency
+        self.gitinfo = gitinfo
+        self.script_path = script_path
 
     def __create_session(self) -> Session:
         session = requests.Session()
@@ -89,7 +102,7 @@ class TransferHandler:
                 if resp.status_code != 200:
                     raise FTPError
 
-    def __create_url_list(self) -> List[str]:
+    def __create_url_list(self) -> List[SourceURLObject]:
         urls = []
 
         file_template_url = "AORC_{0}RFC_4km/{0}RFC_precip_partition/AORC_APCP_4KM_{0}RFC_{1}.zip"
@@ -101,7 +114,7 @@ class TransferHandler:
                     file_formatted_url = (
                         f"{FTP_HOST}{file_template_url.format(rfc.alias, current_datetime.strftime('%Y%m'))}"
                     )
-                    urls.append(file_formatted_url)
+                    urls.append(SourceURLObject(file_formatted_url, current_datetime))
                     current_datetime += relativedelta(months=1)
         except FTPError:
             logging.error("expected file structure is not verified")
@@ -122,32 +135,32 @@ class TransferHandler:
                 await asyncio.sleep(3)
 
     async def __write_data(self, data: bytes, file):
-        """Function to write data to file in order to verify full receipt of data before s3 upload begins
-
-        Args:
-            data (bytes): _description_
-            file (_type_): _description_
-        """
         async with async_open(file, "wb") as outfile:
             await outfile.write(data)
 
-    async def __transfer_data(self, url: str, sem: asyncio.BoundedSemaphore, session: ClientSession):
+    async def __transfer_data(self, url_object: SourceURLObject, sem: asyncio.BoundedSemaphore, session: ClientSession):
+        mirror_uri = f"{self.mirror_file_prefix}/{url_object.url.replace(FTP_HOST, '')}"
+        upload_meta = {
+            "SourceURI": url_object.url,
+            "MirrorURI": mirror_uri,
+            "RefDate": url_object.date.strftime("%Y-%m-%d"),
+        }
         mirror_bucket = self.resource.Bucket(self.mirror_bucket_name)
         with tempfile.TemporaryFile() as fp:
-            data = await self.__get_data(url, sem, session)
+            data = await self.__get_data(url_object.url, sem, session)
             if data:
                 await self.__write_data(data, fp)
-                mirror_bucket.upload_fileobj(fp, f"{self.mirror_file_prefix}/{url.replace(FTP_HOST, '')}")
+                mirror_bucket.upload_fileobj(fp, mirror_uri, ExtraArgs=upload_meta)
             else:
-                logging.error(f"tried to transfer data for {url}, received no data")
+                logging.error(f"tried to transfer data for {url_object.url}, received no data")
 
     async def __gather_download_tasks(self) -> List[str]:
-        urls = self.__create_url_list()
+        url_objects = self.__create_url_list()
         tasks = []
         sem = asyncio.BoundedSemaphore(self.semaphore_size)
         session = ClientSession()
-        for url in urls:
-            task = asyncio.create_task(self.__transfer_data(url, sem, session))
+        for url_object in url_objects:
+            task = asyncio.create_task(self.__transfer_data(url_object, sem, session))
             tasks.append(task)
         download_paths = await asyncio.gather(*tasks)
         await session.close()
@@ -159,6 +172,10 @@ class TransferHandler:
 
 
 if __name__ == "__main__":
+    from ..utils.gitinfo import version, script
+
     load_dotenv()
-    transfer_handler = TransferHandler("tempest", "test", dev=True)
+    git_info = version()
+    script_path = script(__file__)
+    transfer_handler = TransferHandler(git_info, script_path, "tempest", "test", dev=True)
     transfer_handler.transfer_files()
