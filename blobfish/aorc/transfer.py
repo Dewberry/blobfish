@@ -6,13 +6,15 @@ import os
 import sys
 import logging
 import asyncio
+import tempfile
+from dotenv import load_dotenv
 from aiohttp import ClientSession, ServerDisconnectedError
 from aiofile import async_open
-from typing import List
+from typing import List, IO
 from requests import Session
 from boto3.resources.factory import ServiceResource
 from dateutil.relativedelta import relativedelta
-from const import RFC_INFO_LIST, RFCInfo
+from const import RFC_INFO_LIST, RFCInfo, FIRST_RECORD, FTP_HOST
 
 
 class FTPError(Exception):
@@ -39,12 +41,13 @@ def get_sessioned_s3_resource() -> ServiceResource:
     return s3
 
 
-class FTPHandler:
+class TransferHandler:
     def __init__(
         self,
-        out_dir: str,
+        mirror_bucket_name: str,
+        mirror_file_prefix: str,
         rfc_list: List[RFCInfo] = RFC_INFO_LIST,
-        start_date: datetime.datetime = datetime.datetime(1979, 2, 1),
+        start_date: datetime.datetime = datetime.datetime.strptime(FIRST_RECORD, "%Y-%m-%d"),
         end_date: datetime.datetime = datetime.datetime.today(),
         dev: bool = False,
         concurrency: int = 5,
@@ -54,8 +57,11 @@ class FTPHandler:
         self.__configure_warnings()
         # Make a requests session for handling requests
         self.requests_session = self.__create_session()
+        # Make s3 session
+        self.resource = get_sessioned_s3_resource()
         # Assign properties
-        self.out_dir = out_dir
+        self.mirror_bucket_name = mirror_bucket_name
+        self.mirror_file_prefix = mirror_file_prefix
         self.rfc_list = rfc_list
         self.start_date = start_date
         self.end_date = end_date
@@ -76,11 +82,9 @@ class FTPHandler:
             )
 
     def __verify(self) -> None:
-        directory_template_url = (
-            "https://hydrology.nws.noaa.gov/pub/aorc-historic/AORC_{0}RFC_4km/{0}RFC_precip_partition/"
-        )
+        directory_template_url = "AORC_{0}RFC_4km/{0}RFC_precip_partition/"
         for rfc in self.rfc_list:
-            directory_formatted_url = directory_template_url.format(rfc.alias)
+            directory_formatted_url = f"{FTP_HOST}{directory_template_url.format(rfc.alias)}"
             with self.requests_session.head(directory_formatted_url) as resp:
                 if resp.status_code != 200:
                     raise FTPError
@@ -88,13 +92,15 @@ class FTPHandler:
     def __create_url_list(self) -> List[str]:
         urls = []
 
-        file_template_url = "https://hydrology.nws.noaa.gov/pub/aorc-historic/AORC_{0}RFC_4km/{0}RFC_precip_partition/AORC_APCP_4KM_{0}RFC_{1}.zip"
+        file_template_url = "AORC_{0}RFC_4km/{0}RFC_precip_partition/AORC_APCP_4KM_{0}RFC_{1}.zip"
         try:
             self.__verify()
             for rfc in self.rfc_list:
                 current_datetime = self.start_date
                 while current_datetime <= self.end_date:
-                    file_formatted_url = file_template_url.format(rfc.alias, current_datetime.strftime("%Y%m"))
+                    file_formatted_url = (
+                        f"{FTP_HOST}{file_template_url.format(rfc.alias, current_datetime.strftime('%Y%m'))}"
+                    )
                     urls.append(file_formatted_url)
                     current_datetime += relativedelta(months=1)
         except FTPError:
@@ -102,26 +108,38 @@ class FTPHandler:
             sys.exit(1)
         return urls
 
-    async def __download_file(self, url: str, sem: asyncio.BoundedSemaphore, session: ClientSession) -> str | None:
-        fname = url.split("/")[-1]
-        full_path = os.path.join(self.out_dir, fname)
+    async def __get_data(self, url: str, sem: asyncio.BoundedSemaphore, session: ClientSession) -> bytes | None:
         data = None
         while True:
             try:
                 async with sem:
                     verify = not self.dev
                     async with session.get(url, ssl=verify) as resp:
-                        if resp.status == 200:
-                            data = await resp.read()
-                async with async_open(full_path, "wb") as outfile:
-                    if data:
-                        await outfile.write(data)
-                        return full_path
-                    else:
-                        logging.error({f"tried to download {fname} but received no data from url"})
-                break
+                        data = await resp.read()
+                        return data
+            # If server disconnects, sleep then retry
             except ServerDisconnectedError:
                 await asyncio.sleep(3)
+
+    async def __write_data(self, data: bytes, file):
+        """Function to write data to file in order to verify full receipt of data before s3 upload begins
+
+        Args:
+            data (bytes): _description_
+            file (_type_): _description_
+        """
+        async with async_open(file, "wb") as outfile:
+            await outfile.write(data)
+
+    async def __transfer_data(self, url: str, sem: asyncio.BoundedSemaphore, session: ClientSession):
+        mirror_bucket = self.resource.Bucket(self.mirror_bucket_name)
+        with tempfile.TemporaryFile() as fp:
+            data = await self.__get_data(url, sem, session)
+            if data:
+                await self.__write_data(data, fp)
+                mirror_bucket.upload_fileobj(fp, f"{self.mirror_file_prefix}/{url.replace(FTP_HOST, '')}")
+            else:
+                logging.error(f"tried to transfer data for {url}, received no data")
 
     async def __gather_download_tasks(self) -> List[str]:
         urls = self.__create_url_list()
@@ -129,30 +147,18 @@ class FTPHandler:
         sem = asyncio.BoundedSemaphore(self.semaphore_size)
         session = ClientSession()
         for url in urls:
-            task = asyncio.create_task(self.__download_file(url, sem, session))
+            task = asyncio.create_task(self.__transfer_data(url, sem, session))
             tasks.append(task)
         download_paths = await asyncio.gather(*tasks)
         await session.close()
         return download_paths
 
-    def download_files(self) -> List[str]:
-        os.makedirs(self.out_dir, exist_ok=True)
+    def transfer_files(self) -> List[str]:
         download_paths = asyncio.run(self.__gather_download_tasks())
         return download_paths
 
 
-class S3Handler:
-    def __init__(self, mirror_bucket: str) -> None:
-        self.resource = get_sessioned_s3_resource()
-        self.mirror_bucket = mirror_bucket
-
-    def upload_mirrors(self, source_paths: List[str]) -> None:
-        bucket = self.resource.Bucket(self.mirror_bucket)
-        for source_path in source_paths:
-            bucket.uploadfileobj(source_path)
-
-
 if __name__ == "__main__":
-    ftp_handler = FTPHandler(out_dir="blobfish/data", dev=True)
-    download_paths = ftp_handler.download_files()
-    s3_handler = S3Handler("tempest")
+    load_dotenv()
+    transfer_handler = TransferHandler("tempest", "test", dev=True)
+    transfer_handler.transfer_files()
