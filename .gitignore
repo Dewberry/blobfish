@@ -132,3 +132,6 @@ mirrors/
 .vscode/
 scratch/
 scratch*
+
+# Directory used for storing intermediary zip files
+blobfish/data
