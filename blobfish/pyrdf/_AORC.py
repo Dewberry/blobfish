@@ -13,6 +13,7 @@ class AORC(DefinedNamespace):
     CommitHash: URIRef
     CompositeGrid: URIRef
     CompositeGridURI: URIRef
+    MirrorDataset: URIRef
     MirrorURI: URIRef
     RFC: URIRef
     Script: URIRef
@@ -25,10 +26,10 @@ class AORC(DefinedNamespace):
     hasRFCAlias: URIRef
     hasRFCName: URIRef
     hasRefDate: URIRef
+    hasETag: URIRef
 
     # Object Properties
-    isMirrorURIOf: URIRef
-    hasCodeRepositroy: URIRef
+    hasCodeRepository: URIRef
     hasCommitHash: URIRef
     hasCompositeGridURI: URIRef
     hasCreationScript: URIRef
@@ -42,5 +43,7 @@ class AORC(DefinedNamespace):
     isRFCOf: URIRef
     isSourceGridOf: URIRef
     isSourceURIOf: URIRef
+    isMirrorURIOf: URIRef
+    isCreationScriptOf: URIRef
 
     _NS = Namespace("http://github.com/Dewberry/blobfish/semantics/rdf/aorc#")
