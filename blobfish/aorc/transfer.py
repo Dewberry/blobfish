@@ -25,10 +25,13 @@ from ..utils.gitinfo import GitInfo
 class SourceURLObject:
     url: str
     date: datetime.datetime
+    rfc: RFCInfo
 
 
 @dataclass
 class TransferMetadata:
+    rfc_name: str
+    rfc_alias: str
     source_uri: str
     mirror_uri: str
     ref_date: str
@@ -128,7 +131,7 @@ class TransferHandler:
                     file_formatted_url = (
                         f"{FTP_HOST}{file_template_url.format(rfc.alias, current_datetime.strftime('%Y%m'))}"
                     )
-                    urls.append(SourceURLObject(file_formatted_url, current_datetime))
+                    urls.append(SourceURLObject(file_formatted_url, current_datetime, rfc))
                     current_datetime += relativedelta(months=1)
                     if self.limit and len(urls) >= self.limit:
                         break
@@ -160,6 +163,8 @@ class TransferHandler:
         mirror_uri = f"{self.mirror_file_prefix}/{url_object.url.replace(FTP_HOST, '')}"
         full_mirror_uri = f"s3://{self.mirror_bucket_name}/{mirror_uri}"
         upload_meta = TransferMetadata(
+            url_object.rfc.name,
+            url_object.rfc.alias,
             url_object.url,
             full_mirror_uri,
             url_object.date.strftime("%Y-%m-%d"),
