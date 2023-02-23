@@ -227,10 +227,10 @@ if __name__ == "__main__":
 
     load_dotenv()
 
-    # git_info = version()
-    # script_path = script(__file__)
-    # transfer_handler = TransferHandler(git_info, script_path, "tempest", "test", dev=True)
-    # transfer_handler.transfer_files()
+    git_info = version()
+    script_path = script(__file__)
+    transfer_handler = TransferHandler(git_info, script_path, "tempest", "test", dev=True)
+    transfer_handler.transfer_files()
 
     # clear_downloads("tempest", "test/AORC")
-    view_downloads("tempest", "test/AORC")
+    # view_downloads("tempest", "test/AORC")

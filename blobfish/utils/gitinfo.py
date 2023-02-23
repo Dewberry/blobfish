@@ -22,8 +22,7 @@ def version() -> GitInfo:
     """
     repo = Repo(search_parent_directories=True)
     if repo.is_dirty():
-        pass
-        # raise UncommittedChangesError
+        raise UncommittedChangesError
     info = GitInfo(
         repo.remotes.origin.url.replace("git@github.com:", "https://github.com/"),
         repo.active_branch.commit.hexsha,
