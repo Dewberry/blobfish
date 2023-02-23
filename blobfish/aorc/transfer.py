@@ -1,3 +1,5 @@
+""" Script to handle transfer of data from FTP server to s3 with appropriate metadata """
+
 import requests
 import warnings
 import datetime
@@ -224,8 +226,11 @@ def view_downloads(bucket: str, prefix: str):
 
 if __name__ == "__main__":
     from ..utils.gitinfo import version, script
+    from ..utils.logger import set_up_logger
 
     load_dotenv()
+
+    set_up_logger("logs/test.log")
 
     git_info = version()
     script_path = script(__file__)
