@@ -1,5 +1,5 @@
+import logging
 from git.repo import Repo
-from typing import Dict
 from dataclasses import dataclass
 
 
@@ -22,6 +22,9 @@ def version() -> GitInfo:
     """
     repo = Repo(search_parent_directories=True)
     if repo.is_dirty():
+        logging.error(
+            f"git info fetched for script would not accurately reflect state of code due to uncommitted changes on branch {repo.active_branch}"
+        )
         raise UncommittedChangesError
     info = GitInfo(
         repo.remotes.origin.url.replace("git@github.com:", "https://github.com/"),
