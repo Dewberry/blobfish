@@ -114,6 +114,7 @@ def construct_aorc_mirror_graph(bucket: str, prefix: str):
         g.add((AORC.hasRFC, OWL.inverseOf, AORC.isRFCOf))
         g.add((AORC.hasSourceURI, OWL.inverseOf, AORC.isSourceURIOf))
         g.add((AORC.hasMirrorURI, OWL.inverseOf, AORC.isMirrorURIOf))
+    g.serialize("logs/big_graph.ttl", format="ttl")
 
 
 if __name__ == "__main__":
