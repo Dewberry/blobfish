@@ -79,7 +79,7 @@ def construct_aorc_mirror_graph(bucket: str, prefix: str):
         g.add((mirror_dataset_uri, RDF.type, AORC.MirrorDataset))
 
         # Add properties
-        g.add((source_uri_ref, RDF.type, AORC.SourceGrid))
+        g.add((source_uri_ref, RDF.type, AORC.SourceURI))
         g.add((mirror_uri_ref, RDF.type, AORC.MirrorURI))
         g.add((rfc_uri_ref, RDF.type, AORC.RFC))
         g.add((mirror_script_uri_ref, RDF.type, AORC.Script))
