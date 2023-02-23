@@ -9,7 +9,6 @@ import sys
 import logging
 import asyncio
 import tempfile
-from dotenv import load_dotenv
 from aiohttp import ClientSession, ServerDisconnectedError
 from aiofile import async_open
 from typing import List
@@ -225,6 +224,7 @@ def view_downloads(bucket: str, prefix: str):
 
 
 if __name__ == "__main__":
+    from dotenv import load_dotenv
     from ..utils.gitinfo import version, script
     from ..utils.logger import set_up_logger
 
@@ -234,7 +234,7 @@ if __name__ == "__main__":
 
     git_info = version()
     script_path = script(__file__)
-    transfer_handler = TransferHandler(git_info, script_path, "tempest", "test", dev=True)
+    transfer_handler = TransferHandler(git_info, script_path, "tempest", "test", dev=True, limit=10)
     transfer_handler.transfer_files()
 
     # clear_downloads("tempest", "test/AORC")
