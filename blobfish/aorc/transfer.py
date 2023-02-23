@@ -157,10 +157,11 @@ class TransferHandler:
             await outfile.write(data)
 
     async def __transfer_data(self, url_object: SourceURLObject, sem: asyncio.BoundedSemaphore, session: ClientSession):
-        mirror_uri = f"s3://{self.mirror_bucket_name}/{self.mirror_file_prefix}/{url_object.url.replace(FTP_HOST, '')}"
+        mirror_uri = f"{self.mirror_file_prefix}/{url_object.url.replace(FTP_HOST, '')}"
+        full_mirror_uri = f"s3://{self.mirror_bucket_name}/{mirror_uri}"
         upload_meta = TransferMetadata(
             url_object.url,
-            mirror_uri,
+            full_mirror_uri,
             url_object.date.strftime("%Y-%m-%d"),
             self.gitinfo.origin_url,
             self.gitinfo.commit_hash,
@@ -173,7 +174,7 @@ class TransferHandler:
             if data:
                 await self.__write_data(data, fp)
                 mirror_bucket.upload_fileobj(fp, mirror_uri, ExtraArgs={"Metadata": asdict(upload_meta)})
-                logging.info(f"data from {url_object.url} successfully transferred to {mirror_uri}")
+                logging.info(f"data from {url_object.url} successfully transferred to {full_mirror_uri}")
             else:
                 logging.error(f"tried to transfer data for {url_object.url}, received no data")
 
@@ -237,5 +238,5 @@ if __name__ == "__main__":
     transfer_handler = TransferHandler(git_info, script_path, "tempest", "test", dev=True, limit=10)
     transfer_handler.transfer_files()
 
-    # clear_downloads("tempest", "test/AORC")
     # view_downloads("tempest", "test/AORC")
+    # clear_downloads("tempest", "test/AORC")
