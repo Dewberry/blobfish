@@ -69,12 +69,12 @@ def construct_aorc_mirror_graph(bucket: str, prefix: str):
         active_branch_annotation = Literal(f"current branch {complete_metadata.mirror_active_branch}")
 
         # Named individuals for source and mirror datasets
-        # Format source dataset uri; ex: p198001AB - p = precipitation, 1980 = year, 01 = month, AB = RFC alias
-        source_dataset_uri = SOURCE_CATALOG[create_dataset_uri(complete_metadata)]
+        # Format source dataset uri; ex: pFTP198001AB - p = precipitation, FTP = source file from FTP server, 1980 = year, 01 = month, AB = RFC alias
+        source_dataset_uri = SOURCE_CATALOG[create_dataset_uri(complete_metadata, prefix="pFTP")]
         g.add((source_dataset_uri, RDF.type, OWL.NamedIndividual))
         g.add((source_dataset_uri, RDF.type, AORC.SourceDataset))
 
-        mirror_dataset_uri = MIRROR_CATALOG[create_dataset_uri(complete_metadata)]
+        mirror_dataset_uri = MIRROR_CATALOG[create_dataset_uri(complete_metadata, prefix="ps3")]
         g.add((mirror_dataset_uri, RDF.type, OWL.NamedIndividual))
         g.add((mirror_dataset_uri, RDF.type, AORC.MirrorDataset))
 
@@ -114,6 +114,7 @@ def construct_aorc_mirror_graph(bucket: str, prefix: str):
         g.add((AORC.hasRFC, OWL.inverseOf, AORC.isRFCOf))
         g.add((AORC.hasSourceURI, OWL.inverseOf, AORC.isSourceURIOf))
         g.add((AORC.hasMirrorURI, OWL.inverseOf, AORC.isMirrorURIOf))
+
     g.serialize("logs/big_graph.ttl", format="ttl")
 
 
