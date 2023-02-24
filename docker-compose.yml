@@ -6,3 +6,4 @@ services:
     volumes:
       - ./blobfish:/proj/blobfish
     tty: true
+    env_file: ./.env
