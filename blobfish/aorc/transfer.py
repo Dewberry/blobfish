@@ -9,10 +9,9 @@ import sys
 import logging
 import asyncio
 import tempfile
-from aiohttp import ClientSession, ServerDisconnectedError
+from aiohttp import ClientSession, ServerDisconnectedError, StreamReader
 from aiofile import async_open
-from typing import List
-from requests import Session
+from typing import List, cast
 from boto3.resources.factory import ServiceResource
 from dateutil.relativedelta import relativedelta
 from dataclasses import dataclass, asdict
@@ -39,6 +38,12 @@ class TransferMetadata:
     mirror_commit_hash: str
     mirror_script: str
     mirror_active_branch: str
+
+
+@dataclass
+class TransferContext:
+    relative_mirror_uri: str
+    metadata: TransferMetadata
 
 
 class FTPError(Exception):
@@ -78,12 +83,11 @@ class TransferHandler:
         dev: bool = False,
         concurrency: int = 5,
         limit: int | None = None,
+        max_retries: int = 10,
     ) -> None:
         # Settings for development vs production
         self.dev = dev
         self.__configure_warnings()
-        # Make a requests session for handling requests
-        self.requests_session = self.__create_session()
         # Make s3 session
         self.resource = get_sessioned_s3_resource()
         # Assign properties
@@ -96,13 +100,7 @@ class TransferHandler:
         self.gitinfo = gitinfo
         self.script_path = script_path
         self.limit = limit
-
-    def __create_session(self) -> Session:
-        session = requests.Session()
-        if self.dev:
-            session.verify = False
-            return session
-        return session
+        self.max_retries = max_retries
 
     def __configure_warnings(self) -> None:
         if self.dev:
@@ -114,8 +112,9 @@ class TransferHandler:
     def __verify(self) -> None:
         directory_template_url = "AORC_{0}RFC_4km/{0}RFC_precip_partition/"
         for rfc in self.rfc_list:
+            verify = not self.dev
             directory_formatted_url = f"{FTP_HOST}{directory_template_url.format(rfc.alias)}"
-            with self.requests_session.head(directory_formatted_url) as resp:
+            with requests.head(directory_formatted_url, verify=verify) as resp:
                 if resp.status_code != 200:
                     raise FTPError
         logging.info("expected file structure of FTP server verified")
@@ -142,24 +141,30 @@ class TransferHandler:
             sys.exit(1)
         return urls
 
-    async def __get_data(self, url: str, sem: asyncio.BoundedSemaphore, session: ClientSession) -> bytes | None:
-        data = None
-        while True:
+    async def __get_data(
+        self, url: str, sem: asyncio.BoundedSemaphore, session: ClientSession, stream: bool
+    ) -> bytes | StreamReader | None:
+        retries = 0
+        while retries < self.max_retries:
             try:
                 async with sem:
                     verify = not self.dev
-                    async with session.get(url, ssl=verify) as resp:
-                        data = await resp.read()
-                        return data
+                    resp = await session.get(url, ssl=verify)
+                    if stream:
+                        return resp.content
+                    data = await resp.read()
+                    return data
             # If server disconnects, sleep then retry
             except ServerDisconnectedError:
                 await asyncio.sleep(3)
+                retries += 1
+        return None
 
     async def __write_data(self, data: bytes, file):
         async with async_open(file, "wb") as outfile:
             await outfile.write(data)
 
-    async def __transfer_data(self, url_object: SourceURLObject, sem: asyncio.BoundedSemaphore, session: ClientSession):
+    def __set_up_transfer(self, url_object: SourceURLObject) -> TransferContext:
         mirror_uri = f"{self.mirror_file_prefix}/{url_object.url.replace(FTP_HOST, '')}"
         full_mirror_uri = f"s3://{self.mirror_bucket_name}/{mirror_uri}"
         upload_meta = TransferMetadata(
@@ -173,31 +178,63 @@ class TransferHandler:
             self.script_path,
             self.gitinfo.active_branch,
         )
+        context = TransferContext(mirror_uri, upload_meta)
+        return context
+
+    async def __write_out_data(
+        self, url_object: SourceURLObject, sem: asyncio.BoundedSemaphore, session: ClientSession
+    ):
+        context = self.__set_up_transfer(url_object)
         mirror_bucket = self.resource.Bucket(self.mirror_bucket_name)
         with tempfile.TemporaryFile() as fp:
-            data = await self.__get_data(url_object.url, sem, session)
+            data = await self.__get_data(url_object.url, sem, session, stream=False)
             if data:
-                await self.__write_data(data, fp)
-                mirror_bucket.upload_fileobj(fp, mirror_uri, ExtraArgs={"Metadata": asdict(upload_meta)})
-                logging.info(f"data from {url_object.url} successfully transferred to {full_mirror_uri}")
+                await self.__write_data(cast(bytes, data), fp)
+                mirror_bucket.upload_fileobj(
+                    fp, context.relative_mirror_uri, ExtraArgs={"Metadata": asdict(context.metadata)}
+                )
+                logging.info(f"data from {url_object.url} successfully transferred to {context.metadata.mirror_uri}")
             else:
                 logging.error(f"tried to transfer data for {url_object.url}, received no data")
 
-    async def __gather_download_tasks(self) -> List[str]:
+    """
+    Commenting out __stream_out_data() because it would require reworking script to use a version of boto which supports async syntax
+    """
+    # async def __stream_out_data(
+    #     self, url_object: SourceURLObject, sem: asyncio.BoundedSemaphore, session: ClientSession
+    # ):
+    #     context = self.__set_up_transfer(url_object)
+    #     mirror_bucket = self.resource.Bucket(self.mirror_bucket_name)
+    #     data = await self.__get_data(url_object.url, sem, session, stream=True)
+    #     if data:
+    #         print("data received")
+    #         mirror_bucket.upload_fileobj(
+    #             data, context.relative_mirror_uri, ExtraArgs={"Metadata": asdict(context.metadata)}
+    #         )
+    #         logging.info(f"data from {url_object.url} successfully transferred to {context.metadata.mirror_uri}")
+    #     else:
+    #         logging.error(f"tried to transfer data for {url_object.url}, received no data")
+
+    async def __gather_download_tasks(self, stream: bool) -> List[str]:
         url_objects = self.__create_url_list()
         tasks = []
         sem = asyncio.BoundedSemaphore(self.semaphore_size)
         async with ClientSession() as session:
             for url_object in url_objects:
-                task = asyncio.create_task(self.__transfer_data(url_object, sem, session))
+                if stream:
+                    print("Streaming from aiohttp content to boto3 file upload is not supported")
+                    raise NotImplementedError
+                    # task = asyncio.create_task(self.__stream_out_data(url_object, sem, session))
+                else:
+                    task = asyncio.create_task(self.__write_out_data(url_object, sem, session))
                 tasks.append(task)
                 logging.info(f"async task created to mirror data from {url_object.url}")
             download_paths = await asyncio.gather(*tasks)
             return download_paths
 
-    def transfer_files(self) -> List[str]:
+    def transfer_files(self, stream: bool = False) -> List[str]:
         logging.info("starting async task gathering")
-        download_paths = asyncio.run(self.__gather_download_tasks())
+        download_paths = asyncio.run(self.__gather_download_tasks(stream))
         return download_paths
 
 
