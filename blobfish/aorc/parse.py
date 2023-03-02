@@ -107,13 +107,13 @@ def construct_aorc_mirror_graph(bucket: str, prefix: str):
         g.add((rfc_uri_ref, AORC.hasRFCAlias, rfc_alias_literal))
         g.add((rfc_uri_ref, AORC.hasRFCName, rfc_name_literal))
 
-        # Assign properties to properties
-        g.add((AORC.hasCodeRepository, OWL.inverseOf, AORC.isCodeRepositoryOf))
-        g.add((AORC.hasCommitHash, OWL.inverseOf, AORC.isCommitHashOf))
-        g.add((AORC.hasCreationScript, OWL.inverseOf, AORC.isCreationScriptOf))
-        g.add((AORC.hasRFC, OWL.inverseOf, AORC.isRFCOf))
-        g.add((AORC.hasSourceURI, OWL.inverseOf, AORC.isSourceURIOf))
-        g.add((AORC.hasMirrorURI, OWL.inverseOf, AORC.isMirrorURIOf))
+        # # Assign properties to properties
+        # g.add((AORC.hasCodeRepository, OWL.inverseOf, AORC.isCodeRepositoryOf))
+        # g.add((AORC.hasCommitHash, OWL.inverseOf, AORC.isCommitHashOf))
+        # g.add((AORC.hasCreationScript, OWL.inverseOf, AORC.isCreationScriptOf))
+        # g.add((AORC.hasRFC, OWL.inverseOf, AORC.isRFCOf))
+        # g.add((AORC.hasSourceURI, OWL.inverseOf, AORC.isSourceURIOf))
+        # g.add((AORC.hasMirrorURI, OWL.inverseOf, AORC.isMirrorURIOf))
 
     g.serialize("logs/big_graph.ttl", format="ttl")
 
