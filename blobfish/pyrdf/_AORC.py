@@ -43,14 +43,14 @@ class AORC(DefinedNamespace):
     hasMirrorURI: URIRef  # -> DCAT.distribution
     hasRFC: URIRef  # -> DCTERMS.creator property associated with RFC catalog which holds all source datasets of interest
     hasSourceGrid: URIRef  # ->
-    hasSourceURI: URIRef  # -> from mirror dataset DCAT.Dataset, property PROV.wasGeneratedBy points to PROV.Activity for transfer job which has PROV.used property pointing towards PROV.Entity for source dataset
+    hasSourceURI: URIRef  # -> query values which use DCAT.distribution property to point towards source URI DCAT.Distributions; then use retrieved source dataset value to query PROV.Activity instances which have PROV.used property pointing towards sourced dataset value; then use retrieved transfer job PROV.Activity to get property PROV.generated, which points towards mirror dataset; then use mirror dataset DCAT.distribution property to get mirror URI
     isCodeRepositoryOf: URIRef  # -> from code repo DCAT.Catalog, property DCTERMS.hasVersion points to DCAT.Catalog entities for commit hashes that were used
     isCommitHashOf: URIRef  # -> from commit hash DCAT.Catalog, property DCTERMS.isVersionOf points to DCAT.Catalog entity for code repository
     isCompositeGridURIOf: URIRef  # ->
     isRFCOf: URIRef  # -> query values which use DCTERMS.creator to point towards RFC FOAF.Organization instance
     isSourceGridOf: URIRef  # ->
-    isSourceURIOf: URIRef  # -> query values which use DCAT.distribution to point towards source URI DCAT.Distribution instance; then use retrieved source dataset values to get PROV.Activity entities that have property PROV.used pointing to source dataset; then use transfer job activities retrieved to get values that point towards job activities with wasGeneratedBy property
-    isMirrorURIOf: URIRef  # -> query values which use DCAT.distribution to point towards mirror URI DCAT.Distribution instance; then use retrieved mirror dataset values to get PROV.wasGeneratedBy property pointing towards transfer job PROV.Activity; then use transfer job PROV.Activity to get PROV.used property to get source dataset; then use source dataset DCAT.Dataset property DCAT.distribution to get source URI
+    isSourceURIOf: URIRef  # -> query values which use DCAT.distribution to point towards source distribution DCAT.Distribution instance; then use retrieved source dataset values to get PROV.Activity entities that have property PROV.used pointing to source dataset; then use transfer job activity property PROV.generated to get mirror DCAT.Dataset value; then get dataset DCAT.distribution property to get mirror distribution
+    isMirrorURIOf: URIRef  # -> query values which use DCAT.distribution to point towards mirror distribution DCAT.Distribution instance; then use retrieved mirror dataset values to get PROV.wasGeneratedBy property pointing towards transfer job PROV.Activity; then use transfer job PROV.Activity to get PROV.used property to get source dataset; then use source dataset DCAT.Dataset property DCAT.distribution to get source URI
     isCreationScriptOf: URIRef  # -> query values which use DCAT.wasStartedBy to point towards script PROV.Entity / DCAT.Dataset; then use retrieved transfer job PROV.Activity instances to query values which use the PROV.wasGeneratedBy property to point towards PROV.Activities
 
     _NS = Namespace("http://github.com/Dewberry/blobfish/semantics/rdf/aorc#")
