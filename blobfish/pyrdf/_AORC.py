@@ -15,7 +15,7 @@ class AORC(DefinedNamespace):
     CommitHash: URIRef  # -> DCAT.Catalog with DCAT.landingPage of repo including /blob/{commitHash}, DCTERMS.identifier with commit hash, and DCT.isVersionOf pointing towards code repository
     CompositeGrid: URIRef  # ->
     CompositeGridURI: URIRef  # ->
-    MirrorDataset: URIRef  # -> DCAT.Dataset with DCAT.Distribution for s3 address (with format https://{bucketName}.s3-{awsRegionName}.amazonaws.com/), PROV.wasGeneratedBy pointing to PROV.Activity for transfer script execution, and DCTERMS.created for creation time
+    MirrorDataset: URIRef  # -> DCAT.Dataset with DCAT.Distribution for s3 address (with format https://{bucketName}.s3-{awsRegionName}.amazonaws.com/), PROV.wasGeneratedBy pointing to PROV.Activity for transfer script execution, DCTERMS.source pointing to FTP original dataset, and DCTERMS.created for creation time
     MirrorURI: URIRef  # -> DCAT.Distribution for s3 address (with format https://{bucketName}.s3-{awsRegionName}.amazonaws.com/)
     RFC: URIRef  # -> FOAF.Organization with DCTERMS.title for full name, DCTERMS.alternative for alias, and DCAT.landingPage for URL of weather.gov page for RFC office resources (https://www.weather.gov/{alternativeAlias}/)
     Script: URIRef  # -> DCTERM.Software && DCAT.Resource && PROV.Entity which is recorded as member of DCAT.Catalog CommitHash; also pointed towards from transfer job PROV.Activity property PROV.wasStartedBy
@@ -30,10 +30,10 @@ class AORC(DefinedNamespace):
     """
 
     # Data Properties
-    hasDateCreated: URIRef  # -> PROV.atTime, used in PROV.qualifiedGeneration to reference datetime of creation
-    hasRFCAlias: URIRef  # -> DCTERMS.alternative
-    hasRFCName: URIRef  # -> DCTERMS.title
-    hasRefDate: URIRef  # -> DCTERMS.temporal
+    hasDateCreated: URIRef  # -> DCAT.created associated with mirror dataset
+    hasRFCAlias: URIRef  # -> DCTERMS.alternative associated with RFC
+    hasRFCName: URIRef  # -> DCTERMS.title associated with RFC
+    hasRefDate: URIRef  # -> DCTERMS.temporal associated with FTP source and mirror
 
     # Object Properties
     hasCodeRepository: URIRef  # -> create CodeRepository as DCAT.Catalog, add property DCAT.dataset with scripts of interest to record membership
@@ -43,14 +43,16 @@ class AORC(DefinedNamespace):
     hasMirrorURI: URIRef  # -> DCAT.distribution
     hasRFC: URIRef  # -> DCTERMS.creator property associated with RFC catalog which holds all source datasets of interest
     hasSourceGrid: URIRef  # ->
-    hasSourceURI: URIRef  # -> query values which use DCAT.distribution property to point towards source URI DCAT.Distributions; then use retrieved source dataset value to query PROV.Activity instances which have PROV.used property pointing towards sourced dataset value; then use retrieved transfer job PROV.Activity to get property PROV.generated, which points towards mirror dataset; then use mirror dataset DCAT.distribution property to get mirror URI
+    hasSourceURI: URIRef  # -> DCAT.distribution
     isCodeRepositoryOf: URIRef  # -> from code repo DCAT.Catalog, property DCTERMS.hasVersion points to DCAT.Catalog entities for commit hashes that were used
     isCommitHashOf: URIRef  # -> from commit hash DCAT.Catalog, property DCTERMS.isVersionOf points to DCAT.Catalog entity for code repository
     isCompositeGridURIOf: URIRef  # ->
     isRFCOf: URIRef  # -> query values which use DCTERMS.creator to point towards RFC FOAF.Organization instance
     isSourceGridOf: URIRef  # ->
-    isSourceURIOf: URIRef  # -> query values which use DCAT.distribution to point towards source distribution DCAT.Distribution instance; then use retrieved source dataset values to get PROV.Activity entities that have property PROV.used pointing to source dataset; then use transfer job activity property PROV.generated to get mirror DCAT.Dataset value; then get dataset DCAT.distribution property to get mirror distribution
-    isMirrorURIOf: URIRef  # -> query values which use DCAT.distribution to point towards mirror distribution DCAT.Distribution instance; then use retrieved mirror dataset values to get PROV.wasGeneratedBy property pointing towards transfer job PROV.Activity; then use transfer job PROV.Activity to get PROV.used property to get source dataset; then use source dataset DCAT.Dataset property DCAT.distribution to get source URI
+    isSourceURIOf: URIRef  # -> query values which use DCAT.distribution to point towards source distribution DCAT.Distribution instance
+    # To get mirror URI of source URI, query value using DCAT.distribution property to point towards source distribution DCAT.Distribution instance; then use retrieved source dataset value to query for entities that use the DCT.source property to point towards source dataset; then use the retrieved DCAT.Dataset instance for the mirror dataset to get its DCAT.distribution property, yielding mirror URI
+    isMirrorURIOf: URIRef  # -> query value which uses DCAT.distribution to point towards mirror distribution DCAT.Distribution instance
+    # To get source URI of mirror URI, query value which uses DCAT.distribution to point towards mirror distribution DCAT.Distribution instance; then use retrieved mirror DCAT.Dataset instance and get its source property; Then use the source DCAT.Dataset instance to get the distribution property, yiedling the source URI
     isCreationScriptOf: URIRef  # -> query values which use DCAT.wasStartedBy to point towards script PROV.Entity / DCAT.Dataset; then use retrieved transfer job PROV.Activity instances to query values which use the PROV.wasGeneratedBy property to point towards PROV.Activities
 
     _NS = Namespace("http://github.com/Dewberry/blobfish/semantics/rdf/aorc#")
