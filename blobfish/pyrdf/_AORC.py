@@ -8,18 +8,16 @@ class AORC(DefinedNamespace):
     Created on 2023-01-21 16:04
     """
 
-    # DCTERMS.
-
     # Classes
-    CodeRepository: URIRef  # -> DCAT.Catalog with DCAT.landingPage for web address, DCTERMS.license for license, and DCAT.Dataset recording script
-    CommitHash: URIRef  # -> DCAT.Catalog with DCAT.landingPage of repo including /blob/{commitHash}, DCTERMS.identifier with commit hash, and DCT.isVersionOf pointing towards code repository
+    CodeRepository: URIRef  # -> DCAT.Catalog with DCAT.landingPage for web address, DCTERMS.license for license
+    CommitHash: URIRef  # -> DCAT.Catalog with DCAT.landingPage of repo including /blob/{commitHash}, DCTERMS.identifier with commit hash, DCTERMS.isVersionOf pointing towards code repository, and DCAT.Dataset recording script
     CompositeGrid: URIRef  # ->
     CompositeGridURI: URIRef  # ->
     MirrorDataset: URIRef  # -> DCAT.Dataset with DCAT.Distribution for s3 address (with format https://{bucketName}.s3-{awsRegionName}.amazonaws.com/), PROV.wasGeneratedBy pointing to PROV.Activity for transfer script execution, DCTERMS.source pointing to FTP original dataset, and DCTERMS.created for creation time
     MirrorURI: URIRef  # -> DCAT.Distribution for s3 address (with format https://{bucketName}.s3-{awsRegionName}.amazonaws.com/)
     RFC: URIRef  # -> FOAF.Organization with DCTERMS.title for full name, DCTERMS.alternative for alias, and DCAT.landingPage for URL of weather.gov page for RFC office resources (https://www.weather.gov/{alternativeAlias}/)
     Script: URIRef  # -> DCTERM.Software && DCAT.Resource && PROV.Entity which is recorded as member of DCAT.Catalog CommitHash; also pointed towards from transfer job PROV.Activity property PROV.wasStartedBy
-    SourceDataset: URIRef  # -> PROV.Entity && DCAT.Dataset with DCAT.distribution for FTP NOAA address, DCTERMS.accrualPeriodicity for frequency of publication of .zip files (1 month), DCTERMS.creator referencing RFC office, and is pointed towards from transfer job PROV.Activity property PROV.used
+    SourceDataset: URIRef  # -> PROV.Entity && DCAT.Dataset with DCAT.distribution for FTP NOAA address, DCTERMS.accrualPeriodicity for frequency of publication of .zip files (1 month), DCTERMS.creator referencing RFC office, DCAT.compressFormat referencing zip file <https://www.iana.org/assignments/media-types/application/zip>, DCAT.packageFormat referencing netCDF file <https://publications.europa.eu/resource/authority/file-type/NETCDF>, and is pointed towards from transfer job PROV.Activity property PROV.used
     SourceGrid: URIRef  # ->
     SourceURI: URIRef  # DCAT.Distribution for FTP NOAA address with DCAT.downloadURL, DCTERMS.modified for last date of modification, DCAT.byteSize, DCAT.compressFormat of application/zip
     """___New "Classes":___
