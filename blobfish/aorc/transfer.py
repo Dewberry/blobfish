@@ -11,7 +11,7 @@ import asyncio
 import tempfile
 from aiohttp import ClientSession, ServerDisconnectedError, StreamReader
 from aiofile import async_open
-from typing import List, cast
+from typing import List, Tuple, cast
 from boto3.resources.factory import ServiceResource
 from dateutil.relativedelta import relativedelta
 from dataclasses import dataclass, asdict
@@ -22,7 +22,9 @@ from ..utils.gitinfo import GitInfo
 
 @dataclass
 class SourceURLObject:
-    url: str
+    rfc_catalog_relative_url: str
+    precip_partition_relative_url: str
+    source_relative_url: str
     date: datetime.datetime
     rfc: RFCInfo
 
@@ -31,13 +33,17 @@ class SourceURLObject:
 class TransferMetadata:
     rfc_name: str
     rfc_alias: str
+    rfc_catalog_uri: str
+    precip_partition_uri: str
     source_uri: str
     mirror_uri: str
     ref_date: str
     mirror_repository: str
     mirror_commit_hash: str
     mirror_script: str
-    mirror_active_branch: str
+    source_last_modified: str | None = None
+    source_bytes: str | None = None
+    aorc_historic_uri: str = FTP_HOST
 
 
 @dataclass
@@ -113,7 +119,7 @@ class TransferHandler:
         directory_template_url = "AORC_{0}RFC_4km/{0}RFC_precip_partition/"
         for rfc in self.rfc_list:
             verify = not self.dev
-            directory_formatted_url = f"{FTP_HOST}{directory_template_url.format(rfc.alias)}"
+            directory_formatted_url = f"{FTP_HOST}/{directory_template_url.format(rfc.alias)}"
             with requests.head(directory_formatted_url, verify=verify) as resp:
                 if resp.status_code != 200:
                     raise FTPError
@@ -121,16 +127,23 @@ class TransferHandler:
 
     def __create_url_list(self) -> List[SourceURLObject]:
         urls = []
-        file_template_url = "AORC_{0}RFC_4km/{0}RFC_precip_partition/AORC_APCP_4KM_{0}RFC_{1}.zip"
+        rfc_catalog_url = "/AORC_{0}RFC_4km"
+        precip_partition_url = "/{0}RFC_precip_partition"
+        source_file_url = "/AORC_APCP_4KM_{0}RFC_{1}.zip"
         try:
             self.__verify()
             for rfc in self.rfc_list:
                 current_datetime = self.start_date
                 while current_datetime <= self.end_date:
-                    file_formatted_url = (
-                        f"{FTP_HOST}{file_template_url.format(rfc.alias, current_datetime.strftime('%Y%m'))}"
+                    urls.append(
+                        SourceURLObject(
+                            rfc_catalog_url.format(rfc.alias),
+                            precip_partition_url.format(rfc.alias),
+                            source_file_url.format(rfc.alias, current_datetime.strftime("%Y%m")),
+                            current_datetime,
+                            rfc,
+                        )
                     )
-                    urls.append(SourceURLObject(file_formatted_url, current_datetime, rfc))
                     current_datetime += relativedelta(months=1)
                     if self.limit and len(urls) >= self.limit:
                         break
@@ -143,40 +156,43 @@ class TransferHandler:
 
     async def __get_data(
         self, url: str, sem: asyncio.BoundedSemaphore, session: ClientSession, stream: bool
-    ) -> bytes | StreamReader | None:
+    ) -> Tuple[bytes | StreamReader | None, str | None, str | None]:
         retries = 0
         while retries < self.max_retries:
             try:
                 async with sem:
                     verify = not self.dev
                     resp = await session.get(url, ssl=verify)
+                    last_modified = resp.headers.get("Last-Modified")
+                    content_length = resp.headers.get("Content-Length")
                     if stream:
-                        return resp.content
+                        return resp.content, last_modified, content_length
                     data = await resp.read()
-                    return data
+                    return data, last_modified, content_length
             # If server disconnects, sleep then retry
             except ServerDisconnectedError:
                 await asyncio.sleep(3)
                 retries += 1
-        return None
+        return None, None, None
 
     async def __write_data(self, data: bytes, file):
         async with async_open(file, "wb") as outfile:
             await outfile.write(data)
 
     def __set_up_transfer(self, url_object: SourceURLObject) -> TransferContext:
-        mirror_uri = f"{self.mirror_file_prefix}/{url_object.url.replace(FTP_HOST, '')}"
+        mirror_uri = f"{self.mirror_file_prefix}{url_object.rfc_catalog_relative_url}{url_object.precip_partition_relative_url}{url_object.source_relative_url}"
         full_mirror_uri = f"s3://{self.mirror_bucket_name}/{mirror_uri}"
         upload_meta = TransferMetadata(
             url_object.rfc.name,
             url_object.rfc.alias,
-            url_object.url,
+            url_object.rfc_catalog_relative_url,
+            url_object.precip_partition_relative_url,
+            url_object.source_relative_url,
             full_mirror_uri,
             url_object.date.strftime("%Y-%m-%d"),
             self.gitinfo.origin_url,
             self.gitinfo.commit_hash,
             self.script_path,
-            self.gitinfo.active_branch,
         )
         context = TransferContext(mirror_uri, upload_meta)
         return context
@@ -187,15 +203,20 @@ class TransferHandler:
         context = self.__set_up_transfer(url_object)
         mirror_bucket = self.resource.Bucket(self.mirror_bucket_name)
         with tempfile.TemporaryFile() as fp:
-            data = await self.__get_data(url_object.url, sem, session, stream=False)
-            if data:
+            full_url = f"{context.metadata.aorc_historic_uri}{url_object.rfc_catalog_relative_url}{url_object.precip_partition_relative_url}{url_object.source_relative_url}"
+            data, last_modified, content_length = await self.__get_data(full_url, sem, session, stream=False)
+            if data and last_modified and content_length:
                 await self.__write_data(cast(bytes, data), fp)
+                context.metadata.source_bytes = content_length
+                context.metadata.source_last_modified = last_modified
                 mirror_bucket.upload_fileobj(
                     fp, context.relative_mirror_uri, ExtraArgs={"Metadata": asdict(context.metadata)}
                 )
-                logging.info(f"data from {url_object.url} successfully transferred to {context.metadata.mirror_uri}")
+                logging.info(f"data from {full_url} successfully transferred to {context.metadata.mirror_uri}")
+            elif last_modified and content_length:
+                logging.error(f"tried to transfer data for {full_url}, received no data")
             else:
-                logging.error(f"tried to transfer data for {url_object.url}, received no data")
+                logging.error(f"tried to transfer data for {full_url}, could not parse content headers")
 
     """
     Commenting out __stream_out_data() because it would require reworking script to use a version of boto which supports async syntax
@@ -228,7 +249,7 @@ class TransferHandler:
                 else:
                     task = asyncio.create_task(self.__write_out_data(url_object, sem, session))
                 tasks.append(task)
-                logging.info(f"async task created to mirror data from {url_object.url}")
+                logging.info(f"async task created to mirror data from {url_object.source_relative_url}")
             download_paths = await asyncio.gather(*tasks)
             return download_paths
 

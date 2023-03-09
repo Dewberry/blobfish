@@ -5,7 +5,7 @@ from rdflib import Namespace
 FIRST_RECORD = "1979-02-01"
 
 # FTP server host common prefix
-FTP_HOST = "https://hydrology.nws.noaa.gov/pub/aorc-historic/"
+FTP_HOST = "https://hydrology.nws.noaa.gov/pub/aorc-historic"
 
 # Dataset Namespaces
 SOURCE_CATALOG = Namespace("s3://tempest/catalogs/aorc/precip/source/#")
