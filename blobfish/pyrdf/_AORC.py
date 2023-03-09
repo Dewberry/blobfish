@@ -8,9 +8,41 @@ class AORC(DefinedNamespace):
     Created on 2023-01-21 16:04
     """
 
+    """
+    Classes:
+    CodeRepository - equivalent to DCAT.Catalog with property DCAT.landingPage and DCTERMS.license
+    CommitHash - equivalent to DCAT.Catalog with property DCAT.landing, DCTERMS.identifier, DCTERMS.hasPart, and DCTERMS.isVersionOf
+    MirrorDataset - equivalent to DCAT.Dataset with property PROV.wasGeneratedBy, DCTERMS.source, and DCTERMS.created
+    MirrorURI - equivalent to DCAT.Distribution with property DCAT.downloadURL
+    RFC - equivalent to FOAF.Organization with property DCTERMS.title, DCTERMS.alternative, and DCAT.landingPage
+    TransferScript - equivalent to DCMIType Software and DCAT.Resource with property PROV.started
+    SourceDataset -> equivalent to DCAT.Dataset with property DCTERMS.accrualPeriodicity, DCTERMS.creator, and DCTERMS.temporal
+    SourceURI - equivalent to DCAT.Distribution with property DCAT.downloadURL, DCAT.byteSize, DCAT.compressionFormat, DCAT.packageFormat, and DCTERMS.modified
+    PrecipPartition - equivalent to DCAT.Catalog
+    TransferJob - equivalent to PROV.Activity with property PROV.generated, PROV.used, PROV.wasStartedBy
+
+    Data Properties
+    hasDateCreated - equivalent to DCTERMS.created
+    hasRFCAlias - equivalent to DCTERMS.alternative
+    hasRFCName - equivalent to DCTERMS.title
+
+    Object Properties
+    hasCodeRepository - equivalent to DCTERMS.isVersionOf, property of CommitHash
+    hasCreationScript - no equivalent, could be replaced by hasCreationActivity pointing to transfer activity which would be equivalent to PROV.wasGeneratedBy, which could then point to creationScript using PROV.wasStartedBy
+    hasMirrorUri - no equivalent
+    hasRFC - equivalent to DCTERMS.creator
+    hasSourceUri - no equivalent, could be replaced by hasSourceDataset which would be equivalent to DCTERMS.source
+    isCodeRepositoryOf - equivalent to DCTERMS.hasVersion
+    isCommitHashOf - equivalent to DCTERMS.hasPart
+    isRFCOf - no equivalent
+    isSourceUriOf - no equivalent
+    isMirrorUriOf - no equivalent, could be replaced by isMirrorDatasetOf which would be equivalent to DCTERMS.source
+    isCreationScriptOf - equivalent to PROV.started
+    """
+
     # Classes
     CodeRepository: URIRef  # -> DCAT.Catalog with DCAT.landingPage for web address, DCTERMS.license for license
-    CommitHash: URIRef  # -> DCAT.Catalog with DCAT.landingPage of repo including /blob/{commitHash}, DCTERMS.identifier with commit hash, DCTERMS.isVersionOf pointing towards code repository, and DCAT.Dataset recording script
+    CommitHash: URIRef  # -> DCAT.Catalog with DCAT.landingPage of repo including /blob/{commitHash}, DCTERMS.identifier with commit hash, DCTERMS.isVersionOf pointing towards code repository, and DCAT.Resource recording script
     CompositeGrid: URIRef  # ->
     CompositeGridURI: URIRef  # ->
     MirrorDataset: URIRef  # -> DCAT.Dataset with DCAT.Distribution for s3 address (with format https://{bucketName}.s3-{awsRegionName}.amazonaws.com/), PROV.wasGeneratedBy pointing to PROV.Activity for transfer script execution, DCTERMS.source pointing to FTP original dataset, and DCTERMS.created for creation time
