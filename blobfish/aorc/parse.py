@@ -18,7 +18,7 @@ from ..utils.logger import set_up_logger
 
 @dataclass
 class CompletedTransferMetadata(TransferMetadata):
-    mirror_last_modified: str = ""
+    mirror_last_modified: str
     mirror_public_uri: str = field(init=False)
     ref_end_date: str = field(init=False)
     rfc_office_uri: str = field(init=False)
@@ -98,6 +98,9 @@ def construct_mirror_graph(bucket: str, prefix: str) -> None:
 
 
 def create_graph_triples(meta: CompletedTransferMetadata, g: rdflib.Graph) -> rdflib.Graph:
+    # Create URI for DCMI type Software
+    software_type_uri = URIRef("http://purl.org/dc/dcmitype/Software")
+
     # Create source dataset instance, properties
     source_dataset_node = BNode()
     g.add((source_dataset_node, RDF.type, DCAT.Dataset))
@@ -148,33 +151,38 @@ def create_graph_triples(meta: CompletedTransferMetadata, g: rdflib.Graph) -> rd
     # Associate mirror distribution with mirror dataset
     g.add((mirror_dataset_uri, DCAT.distribution, mirror_distribution_uri))
 
-    # Create code repo instance and properties
-    code_repo_uri = URIRef(meta.mirror_repository)
-    g.add((code_repo_uri, RDF.type, DCAT.Catalog))
-    code_repo_license = URIRef(f"{meta.mirror_repository}/blob/main/LICENSE")
-    g.add((code_repo_license, RDF.type, DCTERMS.LicenseDocument))
-    g.add((code_repo_uri, DCTERMS.license, code_repo_license))
+    # # Create code repo instance and properties
+    # code_repo_uri = URIRef(meta.mirror_repository)
+    # g.add((code_repo_uri, RDF.type, DCAT.Catalog))
+    # code_repo_license = URIRef(f"{meta.mirror_repository}/blob/main/LICENSE")
+    # g.add((code_repo_license, RDF.type, DCTERMS.LicenseDocument))
+    # g.add((code_repo_uri, DCTERMS.license, code_repo_license))
 
-    # Create transfer script instance
-    script_uri = URIRef(f"{meta.mirror_repository}/blob/{meta.mirror_commit_hash}{meta.mirror_script}")
-    software_type_uri = URIRef("http://purl.org/dc/dcmitype/Software")
-    g.add((script_uri, RDF.type, software_type_uri))
-    g.add((script_uri, RDF.type, DCAT.Resource))
+    # # Create transfer script instance
+    # script_uri = URIRef(f"{meta.mirror_repository}/blob/{meta.mirror_commit_hash}{meta.mirror_script}")
 
-    # Create commit hash instance, properties
-    commit_hash_uri = URIRef(f"{meta.mirror_repository}/tree/{meta.mirror_commit_hash}")
-    g.add((commit_hash_uri, RDF.type, DCAT.Catalog))
-    g.add((commit_hash_uri, DCTERMS.isVersionOf, code_repo_uri))
-    g.add((commit_hash_uri, DCTERMS.hasPart, script_uri))
-    commit_hash_id_uri = URIRef(meta.mirror_commit_hash)
-    g.add((commit_hash_uri, DCTERMS.identifier, commit_hash_id_uri))
+    # g.add((script_uri, RDF.type, software_type_uri))
+    # g.add((script_uri, RDF.type, DCAT.Resource))
+
+    # # Create commit hash instance, properties
+    # commit_hash_uri = URIRef(f"{meta.mirror_repository}/tree/{meta.mirror_commit_hash}")
+    # g.add((commit_hash_uri, RDF.type, DCAT.Catalog))
+    # g.add((commit_hash_uri, DCTERMS.isVersionOf, code_repo_uri))
+    # g.add((commit_hash_uri, DCTERMS.hasPart, script_uri))
+    # commit_hash_id_uri = URIRef(meta.mirror_commit_hash)
+    # g.add((commit_hash_uri, DCTERMS.identifier, commit_hash_id_uri))
+
+    # Create docker image instance, properties
+    docker_image_uri = URIRef(meta.docker_image_url)
+    g.add((docker_image_uri, RDF.type, software_type_uri))
 
     # Create transfer job activity instance, properties
     transfer_job_node = BNode()
     g.add((transfer_job_node, RDF.type, PROV.Activity))
     g.add((transfer_job_node, PROV.generated, mirror_dataset_uri))
     g.add((transfer_job_node, PROV.used, source_dataset_node))
-    g.add((transfer_job_node, PROV.wasStartedBy, script_uri))
+    # g.add((transfer_job_node, PROV.wasStartedBy, script_uri))
+    g.add((transfer_job_node, PROV.wasStartedBy, docker_image_uri))
 
     # Create RFC office instance
     rfc_office_uri = URIRef(meta.rfc_office_uri)

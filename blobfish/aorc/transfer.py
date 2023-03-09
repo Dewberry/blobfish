@@ -14,10 +14,11 @@ from aiofile import async_open
 from typing import List, Tuple, cast
 from boto3.resources.factory import ServiceResource
 from dateutil.relativedelta import relativedelta
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 
 from .const import RFC_INFO_LIST, RFCInfo, FIRST_RECORD, FTP_HOST
-from ..utils.gitinfo import GitInfo
+
+# from ..utils.gitinfo import GitInfo
 
 
 @dataclass
@@ -30,7 +31,9 @@ class SourceURLObject:
 
 
 @dataclass
-class TransferMetadata:
+class BaseTransferMetadata:
+    """Class to package metadata available using presumed FTP structure and information provided to TransferHandler object"""
+
     rfc_name: str
     rfc_alias: str
     rfc_catalog_uri: str
@@ -38,18 +41,27 @@ class TransferMetadata:
     source_uri: str
     mirror_uri: str
     ref_date: str
-    mirror_repository: str
-    mirror_commit_hash: str
+    docker_image_url: str
     mirror_script: str
-    source_last_modified: str | None = None
-    source_bytes: str | None = None
-    aorc_historic_uri: str = FTP_HOST
+    aorc_historic_uri: str = field(init=False)
+
+    def __post_init__(self):
+        """AORC historic URI is presumed to be the same as constant variable FTP_HOST"""
+        self.aorc_historic_uri = FTP_HOST
+
+
+@dataclass
+class TransferMetadata(BaseTransferMetadata):
+    """Class to package metadata available after the source file has been queried with an HTTP request"""
+    aorc_historic_uri: str
+    source_last_modified: str
+    source_bytes: str
 
 
 @dataclass
 class TransferContext:
     relative_mirror_uri: str
-    metadata: TransferMetadata
+    metadata: BaseTransferMetadata
 
 
 class FTPError(Exception):
@@ -79,10 +91,11 @@ def get_sessioned_s3_resource() -> ServiceResource:
 class TransferHandler:
     def __init__(
         self,
-        gitinfo: GitInfo,
+        # gitinfo: GitInfo,
         script_path: str,
         mirror_bucket_name: str,
         mirror_file_prefix: str,
+        docker_image_url: str,
         rfc_list: List[RFCInfo] = RFC_INFO_LIST,
         start_date: datetime.datetime = datetime.datetime.strptime(FIRST_RECORD, "%Y-%m-%d"),
         end_date: datetime.datetime = datetime.datetime.today(),
@@ -99,11 +112,11 @@ class TransferHandler:
         # Assign properties
         self.mirror_bucket_name = mirror_bucket_name
         self.mirror_file_prefix = mirror_file_prefix
+        self.docker_image_url = docker_image_url
         self.rfc_list = rfc_list
         self.start_date = start_date
         self.end_date = end_date
         self.semaphore_size = concurrency
-        self.gitinfo = gitinfo
         self.script_path = script_path
         self.limit = limit
         self.max_retries = max_retries
@@ -182,7 +195,7 @@ class TransferHandler:
     def __set_up_transfer(self, url_object: SourceURLObject) -> TransferContext:
         mirror_uri = f"{self.mirror_file_prefix}{url_object.rfc_catalog_relative_url}{url_object.precip_partition_relative_url}{url_object.source_relative_url}"
         full_mirror_uri = f"s3://{self.mirror_bucket_name}/{mirror_uri}"
-        upload_meta = TransferMetadata(
+        upload_meta = BaseTransferMetadata(
             url_object.rfc.name,
             url_object.rfc.alias,
             url_object.rfc_catalog_relative_url,
@@ -190,8 +203,7 @@ class TransferHandler:
             url_object.source_relative_url,
             full_mirror_uri,
             url_object.date.strftime("%Y-%m-%d"),
-            self.gitinfo.origin_url,
-            self.gitinfo.commit_hash,
+            self.docker_image_url,
             self.script_path,
         )
         context = TransferContext(mirror_uri, upload_meta)
@@ -207,12 +219,14 @@ class TransferHandler:
             data, last_modified, content_length = await self.__get_data(full_url, sem, session, stream=False)
             if data and last_modified and content_length:
                 await self.__write_data(cast(bytes, data), fp)
-                context.metadata.source_bytes = content_length
-                context.metadata.source_last_modified = last_modified
+                context_meta_dict = asdict(context.metadata)
+                context_meta_dict["source_bytes"] = content_length
+                context_meta_dict["source_last_modified"] = last_modified
+                transfer_metadata = TransferMetadata(**context_meta_dict)
                 mirror_bucket.upload_fileobj(
-                    fp, context.relative_mirror_uri, ExtraArgs={"Metadata": asdict(context.metadata)}
+                    fp, context.relative_mirror_uri, ExtraArgs={"Metadata": asdict(transfer_metadata)}
                 )
-                logging.info(f"data from {full_url} successfully transferred to {context.metadata.mirror_uri}")
+                logging.info(f"data from {full_url} successfully transferred to {transfer_metadata.mirror_uri}")
             elif last_modified and content_length:
                 logging.error(f"tried to transfer data for {full_url}, received no data")
             else:
@@ -296,9 +310,11 @@ if __name__ == "__main__":
 
     set_up_logger("logs/test.log")
 
-    git_info = version()
+    docker_url = "https://hub.docker.com/layers/njroberts/blobfish-python/latest/images/sha256-9ecd2b40bb0ea12f8504c3f38bd47153879dbc26844b92dfaffa0d5eb4e357ba?context=repo"
+
+    # git_info = version()
     script_path = script(__file__)
-    transfer_handler = TransferHandler(git_info, script_path, "tempest", "test", dev=True, limit=10)
+    transfer_handler = TransferHandler(script_path, "tempest", "test", docker_url, dev=True, limit=10)
     transfer_handler.transfer_files()
 
     # view_downloads("tempest", "test/AORC")
