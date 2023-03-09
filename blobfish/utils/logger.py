@@ -2,7 +2,7 @@ import logging
 import json
 
 
-def set_up_logger(filename: str = None):
+def set_up_logger(filename: str | None = None):
     logging.getLogger("boto3").setLevel(logging.WARNING)
     logging.getLogger("botocore").setLevel(logging.WARNING)
 
