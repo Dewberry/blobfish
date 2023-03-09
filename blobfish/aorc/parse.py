@@ -57,7 +57,7 @@ def construct_mirror_graph(bucket: str, prefix: str) -> None:
         meta = complete_metadata(object)
 
         # Create source dataset instance, properties
-        source_dataset_unique_id = f"precip_{meta.rfc_alias}_{meta.ref_date}_dats"
+        source_dataset_unique_id = f"source_precip_{meta.rfc_alias}_{meta.ref_date}_dats"
         source_dataset_uri = URIRef(source_dataset_unique_id)
         g.add((source_dataset_uri, RDF.type, OWL.NamedIndividual))
         g.add((source_dataset_uri, RDF.type, DCAT.Dataset))
@@ -69,7 +69,49 @@ def construct_mirror_graph(bucket: str, prefix: str) -> None:
         g.add((source_dataset_period_of_time, DCAT.endDate, source_dataset_period_end))
 
         # Create source dataset distribution instance, properties
-        source_distribution_uri = f"precip_{meta.rfc_alias}_{meta.ref_date}_dist"
+        source_distribution_unique_id = f"precip_{meta.rfc_alias}_{meta.ref_date}_dist"
+        source_distribution_uri = URIRef(source_distribution_unique_id)
+        g.add((source_distribution_uri, RDF.type, OWL.NamedIndividual))
+        g.add((source_distribution_uri, RDF.type, DCAT.Distribution))
+        source_download_url = URIRef(meta.source_uri)
+        g.add((source_distribution_uri, DCAT.downloadURL, source_download_url))
+        source_distribution_byte_size = Literal(meta.source_bytes, XSD.positiveInteger)
+        g.add((source_distribution_uri, DCAT.byteSize, source_distribution_byte_size))
+        source_last_modified = Literal(meta.source_last_modified, XSD.dateTime)
+        g.add((source_distribution_uri, DCTERMS.modified, source_last_modified))
+        zip_compression = URIRef("https://www.iana.org/assignments/media-types/application/zip")
+        g.add((source_distribution_uri, DCAT.compressFormat, zip_compression))
+        netcdf_format = URIRef("https://publications.europa.eu/resource/authority/file-type/NETCDF")
+        g.add((source_distribution_uri, DCAT.packageFormat, netcdf_format))
+
+        # Associate distribution with dataset
+        g.add((source_dataset_uri, DCAT.distribution, source_distribution_uri))
+
+        # Create mirror dataset instance, properties
+        mirror_dataset_unique_id = f"mirror_precip_{meta.rfc_alias}_{meta.ref_date}_dats"
+        mirror_dataset_uri = URIRef(mirror_dataset_unique_id)
+        g.add((mirror_dataset_uri, RDF.type, OWL.NamedIndividual))
+        g.add((mirror_dataset_uri, RDF.type, DCAT.Dataset))
+        mirror_last_modified = Literal(meta.mirror_last_modified, XSD.dateTime)
+        g.add((mirror_dataset_uri, DCTERMS.created, mirror_last_modified))
+        access_description = Literal(
+            "Access is restricted based on users credentials for AWS bucket holding data", XSD.string
+        )
+        g.add((mirror_dataset_uri, OWL.Annotation, access_description))
+
+        # Associate mirror dataset with source dataset
+        g.add((mirror_dataset_uri, DCTERMS.source, source_dataset_uri))
+
+        # Create mirror distribution instance, properties
+        mirror_distribution_unique_id = f"mirror_precip_{meta.rfc_alias}_{meta.ref_date}_dist"
+        mirror_distribution_uri = URIRef(mirror_distribution_unique_id)
+        g.add((mirror_distribution_uri, RDF.type, OWL.NamedIndividual))
+        g.add((mirror_distribution_uri, RDF.type, DCAT.Distribution))
+        mirror_download_uri = URIRef(meta.mirror_public_uri)
+        g.add((mirror_distribution_uri, DCAT.downloadURL, mirror_download_uri))
+
+        # Associate mirror distribution with mirror dataset
+        g.add((mirror_dataset_uri, DCAT.distribution, mirror_distribution_uri))
 
     # def construct_aorc_mirror_graph(bucket: str, prefix: str):
     #     def create_dataset_uri(metadata: CompletedTransferMetadata, prefix: str = "p"):
