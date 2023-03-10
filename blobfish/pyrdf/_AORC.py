@@ -1,4 +1,4 @@
-from rdflib import DCAT, DCTERMS, PROV, FOAF, RDF, URIRef, Namespace
+from rdflib import URIRef, Namespace
 from rdflib.namespace import DefinedNamespace
 
 
@@ -10,12 +10,11 @@ class AORC(DefinedNamespace):
 
     """
     Classes:
-    CodeRepository - equivalent to DCAT.Catalog with property DCAT.landingPage and DCTERMS.license
-    CommitHash - equivalent to DCAT.Catalog with property DCAT.landing, DCTERMS.identifier, DCTERMS.hasPart, and DCTERMS.isVersionOf
+    DockerImage - equivalent to DCMITTYPE.Software with property DCTERMS.hasPart
     MirrorDataset - equivalent to DCAT.Dataset with property PROV.wasGeneratedBy, DCTERMS.source, and DCTERMS.created
     MirrorURI - equivalent to DCAT.Distribution with property DCAT.downloadURL
     RFC - equivalent to FOAF.Organization with property DCTERMS.title, DCTERMS.alternative, and DCAT.landingPage
-    TransferScript - equivalent to DCMIType Software and DCAT.Resource with property PROV.started
+    TransferScript - equivalent to DCMITYPE.Software with property PROV.started, DCTERMS.isPartOf
     SourceDataset -> equivalent to DCAT.Dataset with property DCTERMS.accrualPeriodicity, DCTERMS.creator, and DCTERMS.temporal
     SourceURI - equivalent to DCAT.Distribution with property DCAT.downloadURL, DCAT.byteSize, DCAT.compressionFormat, DCAT.packageFormat, and DCTERMS.modified
     PrecipPartition - equivalent to DCAT.Catalog
@@ -49,14 +48,14 @@ class AORC(DefinedNamespace):
     MirrorURI: URIRef  # -> DCAT.Distribution for s3 address (with format https://{bucketName}.s3-{awsRegionName}.amazonaws.com/)
     RFC: URIRef  # -> FOAF.Organization with DCTERMS.title for full name, DCTERMS.alternative for alias, and DCAT.landingPage for URL of weather.gov page for RFC office resources (https://www.weather.gov/{alternativeAlias}/)
     Script: URIRef  # -> DCTERM.Software && DCAT.Resource && PROV.Entity which is recorded as member of DCAT.Catalog CommitHash; also pointed towards from transfer job PROV.Activity property PROV.wasStartedBy
-    SourceDataset: URIRef  # -> PROV.Entity && DCAT.Dataset with DCAT.distribution for FTP NOAA address, DCTERMS.accrualPeriodicity for frequency of publication of .zip files (1 month), DCTERMS.creator referencing RFC office, and is pointed towards from transfer job PROV.Activity property PROV.used
+    SourceDataset: URIRef  # -> PROV.Entity && DCAT.Dataset with DCAT.distribution for FTP NOAA address, DCTERMS.accrualPeriodicity for frequency of publication of .zip files (1 month), and is pointed towards from transfer job PROV.Activity property PROV.used
     SourceGrid: URIRef  # ->
     SourceURI: URIRef  # DCAT.Distribution for FTP NOAA address with DCAT.downloadURL, DCTERMS.modified for last date of modification, DCAT.byteSize, DCAT.compressFormat referencing zip file <https://www.iana.org/assignments/media-types/application/zip>, DCAT.packageFormat referencing netCDF file <https://publications.europa.eu/resource/authority/file-type/NETCDF>
     """___New "Classes":___
     - TransferJob: PROV.Activity with PROV.wasStartedBy pointing towards PROV.Entity for script used in transfer, PROV.used pointing towards PROV.Entity for source dataset
     - HistoricCatalog: DCAT.Catalog with DCAT.landingPage pointing towards FTP server hosting the AORC historic data directories for all RFC offices and DCAT.catalog with RFC office catalogs
     - RFCCatalog: DCAT.Catalog with DCAT.landingPage pointing towards FTP directory for all monthly temperature zip files and precip_partition directory, DCTERMS.creator referencing RFC office, DCAT.catalog referencing precip partition directory
-    - PrecipPartition: DCAT.Catalog with DCAT.landingPage pointing toward FTP directory for all monthly precip zip file source datasets, DCAT.keyword literal "precipitation", and DCAT.dataset referencing all source datsets
+    - PrecipPartition: DCAT.Catalog with DCTERMS.creator pointing towards RFC office organization, DCAT.landingPage pointing toward FTP directory for all monthly precip zip file source datasets, DCAT.keyword literal "precipitation", and DCAT.dataset referencing all source datsets
     """
 
     # Data Properties

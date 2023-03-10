@@ -18,8 +18,6 @@ from dataclasses import dataclass, asdict, field
 
 from .const import RFC_INFO_LIST, RFCInfo, FIRST_RECORD, FTP_HOST
 
-# from ..utils.gitinfo import GitInfo
-
 
 @dataclass
 class SourceURLObject:
@@ -53,6 +51,7 @@ class BaseTransferMetadata:
 @dataclass
 class TransferMetadata(BaseTransferMetadata):
     """Class to package metadata available after the source file has been queried with an HTTP request"""
+
     aorc_historic_uri: str
     source_last_modified: str
     source_bytes: str
@@ -95,7 +94,7 @@ class TransferHandler:
         script_path: str,
         mirror_bucket_name: str,
         mirror_file_prefix: str,
-        docker_image_url: str,
+        tagged_docker_image: str,
         rfc_list: List[RFCInfo] = RFC_INFO_LIST,
         start_date: datetime.datetime = datetime.datetime.strptime(FIRST_RECORD, "%Y-%m-%d"),
         end_date: datetime.datetime = datetime.datetime.today(),
@@ -112,7 +111,7 @@ class TransferHandler:
         # Assign properties
         self.mirror_bucket_name = mirror_bucket_name
         self.mirror_file_prefix = mirror_file_prefix
-        self.docker_image_url = docker_image_url
+        self.docker_image_url = tagged_docker_image
         self.rfc_list = rfc_list
         self.start_date = start_date
         self.end_date = end_date
@@ -303,19 +302,19 @@ def view_downloads(bucket: str, prefix: str):
 
 if __name__ == "__main__":
     from dotenv import load_dotenv
-    from ..utils.gitinfo import version, script
+    from ..utils.dockerinfo import script
     from ..utils.logger import set_up_logger
 
     load_dotenv()
 
     set_up_logger("logs/test.log")
 
-    docker_url = "https://hub.docker.com/layers/njroberts/blobfish-python/latest/images/sha256-9ecd2b40bb0ea12f8504c3f38bd47153879dbc26844b92dfaffa0d5eb4e357ba?context=repo"
-
     # git_info = version()
-    script_path = script(__file__)
-    transfer_handler = TransferHandler(script_path, "tempest", "test", docker_url, dev=True, limit=10)
-    transfer_handler.transfer_files()
+    script_path = script(__file__, workdir="proj")
+    docker_url = f"https://hub.docker.com/layers/njroberts/blobfish-python/{os.environ['TAG']}/images/{os.environ['HASH']}?context=repo"
+    if script_path:
+        transfer_handler = TransferHandler(script_path, "tempest", "test", docker_url, dev=True, limit=10)
+        transfer_handler.transfer_files()
 
     # view_downloads("tempest", "test/AORC")
     # clear_downloads("tempest", "test/AORC")

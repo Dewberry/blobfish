@@ -8,10 +8,11 @@ import logging
 from dateutil import relativedelta
 from dataclasses import dataclass, field
 from typing import Generator, cast
-from rdflib import RDF, OWL, XSD, DCAT, DCTERMS, PROV, FOAF, Literal, URIRef, BNode
+from rdflib import RDF, OWL, XSD, DCAT, DCTERMS, DCMITYPE, PROV, FOAF, Literal, URIRef, BNode
 
 from .transfer import TransferMetadata
-from .const import SOURCE_CATALOG, MIRROR_CATALOG
+
+# from .const import SOURCE_CATALOG, MIRROR_CATALOG
 from ..pyrdf import AORC
 from ..utils.logger import set_up_logger
 
@@ -90,6 +91,7 @@ def construct_mirror_graph(bucket: str, prefix: str) -> None:
     g.bind("dct", DCTERMS)
     g.bind("prov", PROV)
     g.bind("foaf", FOAF)
+    g.bind("dcmi", DCMITYPE)
     for object in get_mirrored_content(bucket, prefix):
         meta = complete_metadata(object)
         if meta:
@@ -98,9 +100,6 @@ def construct_mirror_graph(bucket: str, prefix: str) -> None:
 
 
 def create_graph_triples(meta: CompletedTransferMetadata, g: rdflib.Graph) -> rdflib.Graph:
-    # Create URI for DCMI type Software
-    software_type_uri = URIRef("http://purl.org/dc/dcmitype/Software")
-
     # Create source dataset instance, properties
     source_dataset_node = BNode()
     g.add((source_dataset_node, RDF.type, DCAT.Dataset))
@@ -158,10 +157,9 @@ def create_graph_triples(meta: CompletedTransferMetadata, g: rdflib.Graph) -> rd
     # g.add((code_repo_license, RDF.type, DCTERMS.LicenseDocument))
     # g.add((code_repo_uri, DCTERMS.license, code_repo_license))
 
-    # # Create transfer script instance
-    # script_uri = URIRef(f"{meta.mirror_repository}/blob/{meta.mirror_commit_hash}{meta.mirror_script}")
-
-    # g.add((script_uri, RDF.type, software_type_uri))
+    # Create transfer script instance
+    script_uri = URIRef(meta.mirror_script)
+    g.add((script_uri, RDF.type, DCMITYPE.Software))
     # g.add((script_uri, RDF.type, DCAT.Resource))
 
     # # Create commit hash instance, properties
@@ -174,15 +172,15 @@ def create_graph_triples(meta: CompletedTransferMetadata, g: rdflib.Graph) -> rd
 
     # Create docker image instance, properties
     docker_image_uri = URIRef(meta.docker_image_url)
-    g.add((docker_image_uri, RDF.type, software_type_uri))
+    g.add((docker_image_uri, RDF.type, DCMITYPE.Software))
+    g.add((docker_image_uri, DCTERMS.hasPart, script_uri))
 
     # Create transfer job activity instance, properties
     transfer_job_node = BNode()
     g.add((transfer_job_node, RDF.type, PROV.Activity))
     g.add((transfer_job_node, PROV.generated, mirror_dataset_uri))
     g.add((transfer_job_node, PROV.used, source_dataset_node))
-    # g.add((transfer_job_node, PROV.wasStartedBy, script_uri))
-    g.add((transfer_job_node, PROV.wasStartedBy, docker_image_uri))
+    g.add((transfer_job_node, PROV.wasStartedBy, script_uri))
 
     # Create RFC office instance
     rfc_office_uri = URIRef(meta.rfc_office_uri)
@@ -192,16 +190,14 @@ def create_graph_triples(meta: CompletedTransferMetadata, g: rdflib.Graph) -> rd
     rfc_office_alias = Literal(meta.rfc_alias, datatype=XSD.string)
     g.add((rfc_office_uri, DCTERMS.alternative, rfc_office_alias))
 
-    # Associate RFC office with source dataset
-    g.add((source_dataset_node, DCTERMS.creator, rfc_office_uri))
-
-    # Create precip partition catalog instance
+    # Create precip partition catalog instance, properties
     precip_partition_uri = URIRef("".join([meta.aorc_historic_uri, meta.rfc_catalog_uri, meta.precip_partition_uri]))
     precip_keyword_uri = Literal("precipitation", datatype=XSD.string)
     g.add((precip_partition_uri, RDF.type, DCAT.Catalog))
     g.add((precip_partition_uri, DCAT.keyword, precip_keyword_uri))
+    g.add((precip_partition_uri, DCTERMS.creator, rfc_office_uri))
 
-    # Associate precip partiotion catalog with source dataset it holds
+    # Associate precip partition catalog with source dataset it holds
     g.add((precip_partition_uri, DCAT.dataset, source_dataset_node))
 
     return g

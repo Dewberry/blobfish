@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from rdflib import Namespace
+
+# from rdflib import Namespace
 
 # First available dataset in the AORC repository
 FIRST_RECORD = "1979-02-01"
@@ -7,9 +8,10 @@ FIRST_RECORD = "1979-02-01"
 # FTP server host common prefix
 FTP_HOST = "https://hydrology.nws.noaa.gov/pub/aorc-historic"
 
-# Dataset Namespaces
-SOURCE_CATALOG = Namespace("s3://tempest/catalogs/aorc/precip/source/#")
-MIRROR_CATALOG = Namespace("s3://tempest/catalogs/aorc/precip/mirror/#")
+
+# # Dataset Namespaces
+# SOURCE_CATALOG = Namespace("s3://tempest/catalogs/aorc/precip/source/#")
+# MIRROR_CATALOG = Namespace("s3://tempest/catalogs/aorc/precip/mirror/#")
 # COMPOSITE_CATALOG = Namespace("s3://tempest/catalogs/aorc/precip/composite/#")
 
 # # Root Directories for Data
