@@ -1,0 +1,139 @@
+@prefix aorc: <https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+aorc:DockerImage a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "A docker image hosted on a repository that can be used to generate mirror datasets"^^xsd:string ;
+    rdfs:subClassOf <http://purl.org/dc/dcmitype/Software> .
+
+aorc:MirrorDataset a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "An AORC dataset that has been copied from its original location on NOAA servers to s3"^^xsd:string ;
+    rdfs:subClassOf <http://www.w3.org/ns/dcat#Dataset> .
+
+aorc:MirrorDistribution a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The access point for the mirrored dataset on s3"^^xsd:string ;
+    rdfs:subClassOf <http://www.w3.org/ns/dcat#Distribution> .
+
+aorc:PrecipPartition a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The directory which directly holds all source datasets which are published by the creator RFC office associated with the PrecipPartition"^^xsd:string ;
+    rdfs:subClassOf <http://www.w3.org/ns/dcat#Catalog> .
+
+aorc:RFC a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The River Forecast Center which is associated with the coverage area for a catalog of precipitation data"^^xsd:string ;
+    rdfs:subClassOf <http://xmlns.com/foaf/0.1/Organization> .
+
+aorc:SourceDataset a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The AORC dataset in its original location on the NOAA servers"^^xsd:string ;
+    rdfs:subClassOf <http://www.w3.org/ns/dcat#Dataset> .
+
+aorc:SourceDistribution a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The access point for the mirrored dataset on s3"^^xsd:string ;
+    rdfs:subClassOf <http://www.w3.org/ns/dcat#Distribution> .
+
+aorc:TransferJob a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The execution of the transfer script on the docker image instance which generated the mirror dataset(s)"^^xsd:string ;
+    rdfs:subClassOf <http://www.w3.org/ns/prov#Activity> .
+
+aorc:TransferScript a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "A script contained within the docker image which was executed in order to mirror the dataset(s)"^^xsd:string ;
+    rdfs:subClassOf <http://purl.org/dc/dcmitype/Software> .
+
+aorc: a owl:Ontology .
+
+aorc:hasMirrorDataset a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what mirror dataset the subject source dataset was used to generate"^^xsd:string ;
+    owl:inverseOf aorc:hasSourceDataset .
+
+aorc:hasRFCAlias a owl:DatatypeProperty ;
+    rdfs:comment "The 2 character alias assigned to an RFC office (ex: 'LM' for Lower Mississippi River Forecast Office)"^^xsd:string ;
+    owl:equivalentProperty <http://purl.org/dc/terms/alternative> .
+
+aorc:hasRFCName a owl:DatatypeProperty ;
+    rdfs:comment "The full region name for the RFC office (ex: 'LOWER MISSISSIPPI for Lower Mississippi River Forecast Center)"^^xsd:string ;
+    owl:equivalentProperty <http://purl.org/dc/terms/title> .
+
+aorc:isDockerImageOf a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what software belong to the docker image"^^xsd:string ;
+    rdfs:subPropertyOf <http://purl.org/dc/terms/hasPart> ;
+    owl:inverseOf aorc:hasDockerImage .
+
+aorc:isMirrorDatasetOf a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the origin of the subject mirrored dataset"^^xsd:string ;
+    rdfs:domain aorc:MirrorDataset ;
+    rdfs:range aorc:SourceDataset ;
+    rdfs:subPropertyOf <http://purl.org/dc/terms/source> .
+
+aorc:isRFCOf a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the data resources that have been published by the subject RFC Office"^^xsd:string ;
+    owl:inverseOf aorc:hasRFC .
+
+aorc:isSourceDatasetOf a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what mirror dataset the subject source dataset was used to generate"^^xsd:string ;
+    owl:inverseOf aorc:hasSourceDataset .
+
+aorc:isTransferScriptOf a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates to what software the script belongs"^^xsd:string ;
+    rdfs:subPropertyOf <http://purl.org/dc/terms/isPartOf> ;
+    owl:inverseOf aorc:hasTransferScript .
+
+aorc:wasTransferredBy a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the job that was responsible for transferring the subject mirror dataset"^^xsd:string ;
+    rdfs:subPropertyOf <http://www.w3.org/ns/prov#wasGeneratedBy> ;
+    owl:inverseOf aorc:transferred .
+
+aorc:hasDockerImage a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what docker image to which the software belongs"^^xsd:string ;
+    rdfs:domain <http://purl.org/dc/dcmitype/Software> ;
+    rdfs:range aorc:DockerImage ;
+    rdfs:subPropertyOf <http://purl.org/dc/terms/isPartOf> .
+
+aorc:hasRFC a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the RFC Office responsible for the publication of the subject data resource"^^xsd:string ;
+    rdfs:domain <http://www.w3.org/ns/dcat#Resource> ;
+    rdfs:range aorc:RFC ;
+    rdfs:subPropertyOf <http://purl.org/dc/terms/creator> .
+
+aorc:hasTransferScript a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what scripts belong to the software"^^xsd:string ;
+    rdfs:domain <http://purl.org/dc/dcmitype/Software> ;
+    rdfs:range aorc:TransferScript ;
+    rdfs:subPropertyOf <http://purl.org/dc/terms/hasPart> .
+
+aorc:transferred a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the mirror dataset that the subject job transferred"^^xsd:string ;
+    rdfs:domain aorc:TransferJob ;
+    rdfs:range aorc:MirrorDataset ;
+    rdfs:subPropertyOf <http://www.w3.org/ns/prov#generated> .
+
+aorc:hasSourceDataset a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the origin of the subject mirrored dataset"^^xsd:string ;
+    rdfs:domain aorc:MirrorDataset ;
+    rdfs:range aorc:SourceDataset ;
+    rdfs:subPropertyOf <http://purl.org/dc/terms/source> .
+
+[] a owl:AllDisjointClasses ;
+    owl:members ( aorc:DockerImage aorc:MirrorDataset aorc:MirrorDistribution aorc:PrecipPartition aorc:RFC aorc:SourceDataset aorc:SourceDistribution aorc:TransferJob aorc:TransferScript ) .
+
