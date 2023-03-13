@@ -1,6 +1,6 @@
 import os
 import ontospy
-from ontospy.gendocs.viz.viz_html_single import *
+from ontospy.gendocs.viz.viz_html_single import HTMLVisualizer
 
 # example usage: python docgen.py atlas14 semantics/rdf/atlas14.ttl
 

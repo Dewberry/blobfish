@@ -4,6 +4,6 @@ services:
   python:
     image: "njroberts/blobfish-python@${HASH}"
     volumes:
-      - ./blobfish:/proj/blobfish
+      - ./:/proj
     tty: true
     env_file: ./.env
