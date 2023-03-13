@@ -5,7 +5,7 @@ from typing import List
 from rdflib import RDFS, RDF, OWL, DCAT, DCTERMS, DCMITYPE, PROV, FOAF, XSD, URIRef, Literal, BNode
 from rdflib.collection import Collection
 
-from ..pyrdf._new import newAorc
+from ..pyrdf._AORC import AORC
 
 
 @dataclass
@@ -34,41 +34,41 @@ def define_subclasses(graph: rdflib.Graph) -> None:
     # Define classes of AORC namespace as subclasses of existing ontologies which they closely resemble
     subclass_comment_list = [
         AORCParentRelation(
-            newAorc.DockerImage,
+            AORC.DockerImage,
             DCMITYPE.Software,
             "A docker image hosted on a repository that can be used to generate mirror datasets",
         ),
         AORCParentRelation(
-            newAorc.MirrorDataset,
+            AORC.MirrorDataset,
             DCAT.Dataset,
             "An AORC dataset that has been copied from its original location on NOAA servers to s3",
         ),
         AORCParentRelation(
-            newAorc.MirrorDistribution, DCAT.Distribution, "The access point for the mirrored dataset on s3"
+            AORC.MirrorDistribution, DCAT.Distribution, "The access point for the mirrored dataset on s3"
         ),
         AORCParentRelation(
-            newAorc.PrecipPartition,
+            AORC.PrecipPartition,
             DCAT.Catalog,
             "The directory which directly holds all source datasets which are published by the creator RFC office associated with the PrecipPartition",
         ),
         AORCParentRelation(
-            newAorc.RFC,
+            AORC.RFC,
             FOAF.Organization,
             "The River Forecast Center which is associated with the coverage area for a catalog of precipitation data",
         ),
         AORCParentRelation(
-            newAorc.SourceDataset, DCAT.Dataset, "The AORC dataset in its original location on the NOAA servers"
+            AORC.SourceDataset, DCAT.Dataset, "The AORC dataset in its original location on the NOAA servers"
         ),
         AORCParentRelation(
-            newAorc.SourceDistribution, DCAT.Distribution, "The access point for the mirrored dataset on s3"
+            AORC.SourceDistribution, DCAT.Distribution, "The access point for the mirrored dataset on s3"
         ),
         AORCParentRelation(
-            newAorc.TransferJob,
+            AORC.TransferJob,
             PROV.Activity,
             "The execution of the transfer script on the docker image instance which generated the mirror dataset(s)",
         ),
         AORCParentRelation(
-            newAorc.TransferScript,
+            AORC.TransferScript,
             DCMITYPE.Software,
             "A script contained within the docker image which was executed in order to mirror the dataset(s)",
         ),
@@ -93,12 +93,12 @@ def define_datatype_properties(graph: rdflib.Graph) -> None:
     # Define the data properties using equivalent properties
     data_properties_to_assign = [
         AORCDatatypePropertyRelation(
-            newAorc.hasRFCAlias,
+            AORC.hasRFCAlias,
             DCTERMS.alternative,
             "The 2 character alias assigned to an RFC office (ex: 'LM' for Lower Mississippi River Forecast Office)",
         ),
         AORCDatatypePropertyRelation(
-            newAorc.hasRFCName,
+            AORC.hasRFCName,
             DCTERMS.title,
             "The full region name for the RFC office (ex: 'LOWER MISSISSIPPI for Lower Mississippi River Forecast Center)",
         ),
@@ -119,57 +119,57 @@ def define_object_properties(graph: rdflib.Graph) -> None:
     # Define the object properties
     for prop in [
         ObjectPropertyDescription(
-            newAorc.hasDockerImage,
+            AORC.hasDockerImage,
             "Indicates what docker image to which the software belongs",
             DCMITYPE.Software,
-            newAorc.DockerImage,
+            AORC.DockerImage,
         ),
         ObjectPropertyDescription(
-            newAorc.isDockerImageOf,
+            AORC.isDockerImageOf,
             "Indicates what software belong to the docker image",
         ),
         ObjectPropertyDescription(
-            newAorc.hasSourceDataset,
+            AORC.hasSourceDataset,
             "Indicates the origin of the subject mirrored dataset",
-            newAorc.MirrorDataset,
-            newAorc.SourceDataset,
+            AORC.MirrorDataset,
+            AORC.SourceDataset,
         ),
         ObjectPropertyDescription(
-            newAorc.isSourceDatasetOf, "Indicates what mirror dataset the subject source dataset was used to generate"
+            AORC.isSourceDatasetOf, "Indicates what mirror dataset the subject source dataset was used to generate"
         ),
         ObjectPropertyDescription(
-            newAorc.hasMirrorDataset, "Indicates what mirror dataset the subject source dataset was used to generate"
+            AORC.hasMirrorDataset, "Indicates what mirror dataset the subject source dataset was used to generate"
         ),
         ObjectPropertyDescription(
-            newAorc.isMirrorDatasetOf,
+            AORC.isMirrorDatasetOf,
             "Indicates the origin of the subject mirrored dataset",
-            newAorc.MirrorDataset,
-            newAorc.SourceDataset,
+            AORC.MirrorDataset,
+            AORC.SourceDataset,
         ),
         ObjectPropertyDescription(
-            newAorc.hasRFC,
+            AORC.hasRFC,
             "Indicates the RFC Office responsible for the publication of the subject data resource",
             DCAT.Resource,
-            newAorc.RFC,
+            AORC.RFC,
         ),
         ObjectPropertyDescription(
-            newAorc.isRFCOf, "Indicates the data resources that have been published by the subject RFC Office"
+            AORC.isRFCOf, "Indicates the data resources that have been published by the subject RFC Office"
         ),
         ObjectPropertyDescription(
-            newAorc.hasTransferScript,
+            AORC.hasTransferScript,
             "Indicates what scripts belong to the software",
             DCMITYPE.Software,
-            newAorc.TransferScript,
+            AORC.TransferScript,
         ),
-        ObjectPropertyDescription(newAorc.isTransferScriptOf, "Indicates to what software the script belongs"),
+        ObjectPropertyDescription(AORC.isTransferScriptOf, "Indicates to what software the script belongs"),
         ObjectPropertyDescription(
-            newAorc.transferred,
+            AORC.transferred,
             "Indicates the mirror dataset that the subject job transferred",
-            newAorc.TransferJob,
-            newAorc.MirrorDataset,
+            AORC.TransferJob,
+            AORC.MirrorDataset,
         ),
         ObjectPropertyDescription(
-            newAorc.wasTransferredBy,
+            AORC.wasTransferredBy,
             "Indicates the job that was responsible for transferring the subject mirror dataset",
         ),
     ]:
@@ -182,34 +182,34 @@ def define_object_properties(graph: rdflib.Graph) -> None:
             graph.add((prop.aorc_object_property, RDFS.range, prop.range))
 
     # Relate object properties to existing properties
-    graph.add((newAorc.hasDockerImage, RDFS.subPropertyOf, DCTERMS.isPartOf))
-    graph.add((newAorc.isDockerImageOf, RDFS.subPropertyOf, DCTERMS.hasPart))
-    graph.add((newAorc.isDockerImageOf, OWL.inverseOf, newAorc.hasDockerImage))
-    graph.add((newAorc.hasSourceDataset, RDFS.subPropertyOf, DCTERMS.source))
-    graph.add((newAorc.isSourceDatasetOf, OWL.inverseOf, newAorc.hasSourceDataset))
-    graph.add((newAorc.hasMirrorDataset, OWL.inverseOf, newAorc.hasSourceDataset))
-    graph.add((newAorc.isMirrorDatasetOf, RDFS.subPropertyOf, DCTERMS.source))
-    graph.add((newAorc.hasRFC, RDFS.subPropertyOf, DCTERMS.creator))
-    graph.add((newAorc.isRFCOf, OWL.inverseOf, newAorc.hasRFC))
-    graph.add((newAorc.hasTransferScript, RDFS.subPropertyOf, DCTERMS.hasPart))
-    graph.add((newAorc.isTransferScriptOf, RDFS.subPropertyOf, DCTERMS.isPartOf))
-    graph.add((newAorc.isTransferScriptOf, OWL.inverseOf, newAorc.hasTransferScript))
-    graph.add((newAorc.transferred, RDFS.subPropertyOf, PROV.generated))
-    graph.add((newAorc.wasTransferredBy, RDFS.subPropertyOf, PROV.wasGeneratedBy))
-    graph.add((newAorc.wasTransferredBy, OWL.inverseOf, newAorc.transferred))
+    graph.add((AORC.hasDockerImage, RDFS.subPropertyOf, DCTERMS.isPartOf))
+    graph.add((AORC.isDockerImageOf, RDFS.subPropertyOf, DCTERMS.hasPart))
+    graph.add((AORC.isDockerImageOf, OWL.inverseOf, AORC.hasDockerImage))
+    graph.add((AORC.hasSourceDataset, RDFS.subPropertyOf, DCTERMS.source))
+    graph.add((AORC.isSourceDatasetOf, OWL.inverseOf, AORC.hasSourceDataset))
+    graph.add((AORC.hasMirrorDataset, OWL.inverseOf, AORC.hasSourceDataset))
+    graph.add((AORC.isMirrorDatasetOf, RDFS.subPropertyOf, DCTERMS.source))
+    graph.add((AORC.hasRFC, RDFS.subPropertyOf, DCTERMS.creator))
+    graph.add((AORC.isRFCOf, OWL.inverseOf, AORC.hasRFC))
+    graph.add((AORC.hasTransferScript, RDFS.subPropertyOf, DCTERMS.hasPart))
+    graph.add((AORC.isTransferScriptOf, RDFS.subPropertyOf, DCTERMS.isPartOf))
+    graph.add((AORC.isTransferScriptOf, OWL.inverseOf, AORC.hasTransferScript))
+    graph.add((AORC.transferred, RDFS.subPropertyOf, PROV.generated))
+    graph.add((AORC.wasTransferredBy, RDFS.subPropertyOf, PROV.wasGeneratedBy))
+    graph.add((AORC.wasTransferredBy, OWL.inverseOf, AORC.transferred))
 
 
 def disjoint_classes(graph: rdflib.Graph):
     aorc_classes = [
-        newAorc.DockerImage,
-        newAorc.MirrorDataset,
-        newAorc.MirrorDistribution,
-        newAorc.PrecipPartition,
-        newAorc.RFC,
-        newAorc.SourceDataset,
-        newAorc.SourceDistribution,
-        newAorc.TransferJob,
-        newAorc.TransferScript,
+        AORC.DockerImage,
+        AORC.MirrorDataset,
+        AORC.MirrorDistribution,
+        AORC.PrecipPartition,
+        AORC.RFC,
+        AORC.SourceDataset,
+        AORC.SourceDistribution,
+        AORC.TransferJob,
+        AORC.TransferScript,
     ]
     list_item = BNode()
     Collection(graph, list_item, aorc_classes)
@@ -221,13 +221,13 @@ def disjoint_classes(graph: rdflib.Graph):
 def create_graph(output_file: str, format: str = "ttl") -> None:
     # Create new graph object, bind prefixes
     g = rdflib.Graph()
-    g.bind("aorc", newAorc)
+    g.bind("aorc", AORC)
     g.bind("rdf", RDF)
     g.bind("rdfs", RDFS)
     g.bind("owl", OWL)
 
     # Define namespace as new ontology
-    namespace_uri = URIRef(newAorc._NS)
+    namespace_uri = URIRef(AORC._NS)
     g.add((namespace_uri, RDF.type, OWL.Ontology))
 
     # Define AORC classes as subclasses of well-established ontologies they resemble
