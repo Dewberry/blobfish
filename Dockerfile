@@ -1,6 +1,6 @@
 FROM python:3.11-slim-bullseye
 
-RUN apt update
+RUN apt-get update
 
 RUN mkdir proj
 WORKDIR /proj
