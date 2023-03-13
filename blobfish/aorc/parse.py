@@ -13,7 +13,7 @@ from rdflib import RDF, OWL, XSD, DCAT, DCTERMS, DCMITYPE, PROV, FOAF, Literal, 
 from .transfer import TransferMetadata
 
 # from .const import SOURCE_CATALOG, MIRROR_CATALOG
-from ..pyrdf import AORC
+from ..pyrdf import newAorc
 from ..utils.logger import set_up_logger
 
 
@@ -87,11 +87,6 @@ def complete_metadata(mirror_object: dict) -> CompletedTransferMetadata | None:
 
 def construct_mirror_graph(bucket: str, prefix: str) -> None:
     g = rdflib.Graph()
-    g.bind("dcat", DCAT)
-    g.bind("dct", DCTERMS)
-    g.bind("prov", PROV)
-    g.bind("foaf", FOAF)
-    g.bind("dcmi", DCMITYPE)
     for object in get_mirrored_content(bucket, prefix):
         meta = complete_metadata(object)
         if meta:
@@ -102,7 +97,7 @@ def construct_mirror_graph(bucket: str, prefix: str) -> None:
 def create_graph_triples(meta: CompletedTransferMetadata, g: rdflib.Graph) -> rdflib.Graph:
     # Create source dataset instance, properties
     source_dataset_node = BNode()
-    g.add((source_dataset_node, RDF.type, DCAT.Dataset))
+    g.add((source_dataset_node, RDF.type, newAorc.SourceDataset))
     source_dataset_period_of_time_node = BNode()
     g.add((source_dataset_node, DCTERMS.temporal, source_dataset_period_of_time_node))
     source_dataset_period_start = Literal(meta.ref_date, datatype=XSD.date)
@@ -114,7 +109,7 @@ def create_graph_triples(meta: CompletedTransferMetadata, g: rdflib.Graph) -> rd
     source_distribution_uri = URIRef(
         "".join([meta.aorc_historic_uri, meta.rfc_catalog_uri, meta.precip_partition_uri, meta.source_uri])
     )
-    g.add((source_distribution_uri, RDF.type, DCAT.Distribution))
+    g.add((source_distribution_uri, RDF.type, newAorc.SourceDistribution))
     source_distribution_byte_size = Literal(meta.source_bytes, datatype=XSD.positiveInteger)
     g.add((source_distribution_uri, DCAT.byteSize, source_distribution_byte_size))
     source_last_modified = Literal(meta.source_last_modified, datatype=XSD.dateTime)
@@ -140,7 +135,7 @@ def create_graph_triples(meta: CompletedTransferMetadata, g: rdflib.Graph) -> rd
     g.add((mirror_dataset_uri, OWL.Annotation, access_description))
 
     # Associate mirror dataset with source dataset
-    g.add((mirror_dataset_uri, DCTERMS.source, source_dataset_node))
+    g.add((mirror_dataset_uri, newAorc.hasSourceDataset, source_dataset_node))
 
     # Create mirror distribution instance, properties
     mirror_distribution_uri = URIRef(meta.mirror_public_uri)
@@ -150,52 +145,36 @@ def create_graph_triples(meta: CompletedTransferMetadata, g: rdflib.Graph) -> rd
     # Associate mirror distribution with mirror dataset
     g.add((mirror_dataset_uri, DCAT.distribution, mirror_distribution_uri))
 
-    # # Create code repo instance and properties
-    # code_repo_uri = URIRef(meta.mirror_repository)
-    # g.add((code_repo_uri, RDF.type, DCAT.Catalog))
-    # code_repo_license = URIRef(f"{meta.mirror_repository}/blob/main/LICENSE")
-    # g.add((code_repo_license, RDF.type, DCTERMS.LicenseDocument))
-    # g.add((code_repo_uri, DCTERMS.license, code_repo_license))
-
     # Create transfer script instance
     script_uri = URIRef(meta.mirror_script)
-    g.add((script_uri, RDF.type, DCMITYPE.Software))
-    # g.add((script_uri, RDF.type, DCAT.Resource))
-
-    # # Create commit hash instance, properties
-    # commit_hash_uri = URIRef(f"{meta.mirror_repository}/tree/{meta.mirror_commit_hash}")
-    # g.add((commit_hash_uri, RDF.type, DCAT.Catalog))
-    # g.add((commit_hash_uri, DCTERMS.isVersionOf, code_repo_uri))
-    # g.add((commit_hash_uri, DCTERMS.hasPart, script_uri))
-    # commit_hash_id_uri = URIRef(meta.mirror_commit_hash)
-    # g.add((commit_hash_uri, DCTERMS.identifier, commit_hash_id_uri))
+    g.add((script_uri, newAorc.hasTransferScript, newAorc.TransferScript))
 
     # Create docker image instance, properties
     docker_image_uri = URIRef(meta.docker_image_url)
-    g.add((docker_image_uri, RDF.type, DCMITYPE.Software))
-    g.add((docker_image_uri, DCTERMS.hasPart, script_uri))
+    g.add((docker_image_uri, RDF.type, newAorc.DockerImage))
+    g.add((docker_image_uri, newAorc.hasTransferScript, script_uri))
 
     # Create transfer job activity instance, properties
     transfer_job_node = BNode()
-    g.add((transfer_job_node, RDF.type, PROV.Activity))
-    g.add((transfer_job_node, PROV.generated, mirror_dataset_uri))
+    g.add((transfer_job_node, RDF.type, newAorc.TransferJob))
+    g.add((transfer_job_node, newAorc.transferred, mirror_dataset_uri))
     g.add((transfer_job_node, PROV.used, source_dataset_node))
     g.add((transfer_job_node, PROV.wasStartedBy, script_uri))
 
     # Create RFC office instance
     rfc_office_uri = URIRef(meta.rfc_office_uri)
-    g.add((rfc_office_uri, RDF.type, FOAF.Organization))
+    g.add((rfc_office_uri, RDF.type, newAorc.RFC))
     rfc_office_title = Literal(meta.rfc_name, datatype=XSD.string)
-    g.add((rfc_office_uri, DCTERMS.title, rfc_office_title))
+    g.add((rfc_office_uri, newAorc.hasRFCName, rfc_office_title))
     rfc_office_alias = Literal(meta.rfc_alias, datatype=XSD.string)
-    g.add((rfc_office_uri, DCTERMS.alternative, rfc_office_alias))
+    g.add((rfc_office_uri, newAorc.hasRFCAlias, rfc_office_alias))
 
     # Create precip partition catalog instance, properties
     precip_partition_uri = URIRef("".join([meta.aorc_historic_uri, meta.rfc_catalog_uri, meta.precip_partition_uri]))
     precip_keyword_uri = Literal("precipitation", datatype=XSD.string)
-    g.add((precip_partition_uri, RDF.type, DCAT.Catalog))
+    g.add((precip_partition_uri, RDF.type, newAorc.PrecipPartition))
     g.add((precip_partition_uri, DCAT.keyword, precip_keyword_uri))
-    g.add((precip_partition_uri, DCTERMS.creator, rfc_office_uri))
+    g.add((precip_partition_uri, newAorc.hasRFC, rfc_office_uri))
 
     # Associate precip partition catalog with source dataset it holds
     g.add((precip_partition_uri, DCAT.dataset, source_dataset_node))
