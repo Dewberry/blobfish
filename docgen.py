@@ -1,4 +1,5 @@
 import os
+import sys
 import ontospy
 from ontospy.gendocs.viz.viz_html_single import HTMLVisualizer
 
