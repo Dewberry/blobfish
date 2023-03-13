@@ -106,7 +106,7 @@ def define_datatype_properties(graph: rdflib.Graph) -> None:
     for relation_object in data_properties_to_assign:
         graph.add((relation_object.aorc_datatype_property, RDF.type, OWL.DatatypeProperty))
         graph.add((relation_object.aorc_datatype_property, OWL.equivalentProperty, relation_object.equivalent_property))
-        graph.add((newAorc.hasRFCAlias, RDFS.comment, Literal(relation_object.comment, datatype=XSD.string)))
+        graph.add((relation_object.aorc_datatype_property, RDFS.comment, Literal(relation_object.comment, datatype=XSD.string)))
 
 
 def define_object_properties(graph: rdflib.Graph) -> None:
@@ -169,6 +169,7 @@ def define_object_properties(graph: rdflib.Graph) -> None:
     ]:
         graph.add((prop.aorc_object_property, RDF.type, OWL.ObjectProperty))
         graph.add((prop.aorc_object_property, RDF.type, RDF.Property))
+        graph.add((prop.aorc_object_property, RDFS.comment, Literal(prop.comment, datatype=XSD.string)))
         if prop.domain:
             graph.add((prop.aorc_object_property, RDFS.domain, prop.domain))
         if prop.range:
