@@ -58,6 +58,34 @@ class CompletedTransferMetadata(TransferMetadata):
             raise requests.exceptions.RequestException
 
 
+class NodeNamer:
+    def __init__(self) -> None:
+        self.name_set = set()
+
+
+    def __verify_name(self, new_name: str) -> None:
+        if new_name in self.name_set:
+            logging.error("Duplicate name already exists: {0}".format(new_name))
+            raise ValueError
+        self.name_set.add(new_name)
+
+    def name_source_ds(self, meta: CompletedTransferMetadata) -> str:
+        fn_index = meta.source_uri.rfind("/") + 1
+        fn = meta.source_uri[fn_index:].replace(".zip", "")
+        self.__verify_name(fn)
+        return fn
+
+    def name_ds_period(self, meta: CompletedTransferMetadata) -> str:
+        name = f"{meta.ref_date}_{meta.ref_end_date}"
+        return name
+
+    def name_transfer(self, meta: CompletedTransferMetadata):
+        fn_index = meta.source_uri.rfind("/") + 1
+        fn = meta.source_uri[fn_index:].replace(".zip", "")
+        name = f"{meta.mirror_script}_{fn}"
+        return name
+
+
 def get_mirrored_content(bucket: str, prefix: str) -> Generator[dict, None, None]:
     client = boto3.client(
         service_name="s3",
@@ -91,18 +119,21 @@ def construct_mirror_graph(bucket: str, prefix: str, outfile: str) -> None:
     g.bind("prov", PROV)
     g.bind("dct", DCTERMS)
     g.bind("aorc", AORC)
+
+    namer = NodeNamer()
+
     for object in get_mirrored_content(bucket, prefix):
         meta = complete_metadata(object)
         if meta:
-            create_graph_triples(meta, g)
+            create_graph_triples(meta, g, namer)
     g.serialize(outfile, format="ttl")
 
 
-def create_graph_triples(meta: CompletedTransferMetadata, g: rdflib.Graph) -> rdflib.Graph:
+def create_graph_triples(meta: CompletedTransferMetadata, g: rdflib.Graph, node_namer: NodeNamer) -> rdflib.Graph:
     # Create source dataset instance, properties
-    source_dataset_node = BNode()
+    source_dataset_node = BNode(node_namer.name_source_ds(meta))
     g.add((source_dataset_node, RDF.type, AORC.SourceDataset))
-    source_dataset_period_of_time_node = BNode()
+    source_dataset_period_of_time_node = BNode(node_namer.name_ds_period(meta))
     g.add((source_dataset_node, DCTERMS.temporal, source_dataset_period_of_time_node))
     source_dataset_period_start = Literal(meta.ref_date, datatype=XSD.date)
     g.add((source_dataset_period_of_time_node, DCAT.startDate, source_dataset_period_start))
@@ -159,7 +190,7 @@ def create_graph_triples(meta: CompletedTransferMetadata, g: rdflib.Graph) -> rd
     g.add((docker_image_uri, AORC.hasTransferScript, script_uri))
 
     # Create transfer job activity instance, properties
-    transfer_job_node = BNode()
+    transfer_job_node = BNode(node_namer.name_transfer(meta))
     g.add((transfer_job_node, RDF.type, AORC.TransferJob))
     g.add((transfer_job_node, AORC.transferred, mirror_dataset_uri))
     g.add((transfer_job_node, PROV.used, source_dataset_node))
