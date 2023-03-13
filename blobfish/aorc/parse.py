@@ -8,12 +8,12 @@ import logging
 from dateutil import relativedelta
 from dataclasses import dataclass, field
 from typing import Generator, cast
-from rdflib import RDF, OWL, XSD, DCAT, DCTERMS, DCMITYPE, PROV, FOAF, Literal, URIRef, BNode
+from rdflib import RDF, OWL, XSD, DCAT, DCTERMS, PROV, Literal, URIRef, BNode
 
 from .transfer import TransferMetadata
 
 # from .const import SOURCE_CATALOG, MIRROR_CATALOG
-from ..pyrdf import newAorc
+from ..pyrdf import AORC
 from ..utils.logger import set_up_logger
 
 
@@ -85,19 +85,23 @@ def complete_metadata(mirror_object: dict) -> CompletedTransferMetadata | None:
         return None
 
 
-def construct_mirror_graph(bucket: str, prefix: str) -> None:
+def construct_mirror_graph(bucket: str, prefix: str, outfile: str) -> None:
     g = rdflib.Graph()
+    g.bind("dcat", DCAT)
+    g.bind("prov", PROV)
+    g.bind("dct", DCTERMS)
+    g.bind("aorc", AORC)
     for object in get_mirrored_content(bucket, prefix):
         meta = complete_metadata(object)
         if meta:
             create_graph_triples(meta, g)
-    g.serialize("logs/test.ttl", format="ttl")
+    g.serialize(outfile, format="ttl")
 
 
 def create_graph_triples(meta: CompletedTransferMetadata, g: rdflib.Graph) -> rdflib.Graph:
     # Create source dataset instance, properties
     source_dataset_node = BNode()
-    g.add((source_dataset_node, RDF.type, newAorc.SourceDataset))
+    g.add((source_dataset_node, RDF.type, AORC.SourceDataset))
     source_dataset_period_of_time_node = BNode()
     g.add((source_dataset_node, DCTERMS.temporal, source_dataset_period_of_time_node))
     source_dataset_period_start = Literal(meta.ref_date, datatype=XSD.date)
@@ -109,7 +113,7 @@ def create_graph_triples(meta: CompletedTransferMetadata, g: rdflib.Graph) -> rd
     source_distribution_uri = URIRef(
         "".join([meta.aorc_historic_uri, meta.rfc_catalog_uri, meta.precip_partition_uri, meta.source_uri])
     )
-    g.add((source_distribution_uri, RDF.type, newAorc.SourceDistribution))
+    g.add((source_distribution_uri, RDF.type, AORC.SourceDistribution))
     source_distribution_byte_size = Literal(meta.source_bytes, datatype=XSD.positiveInteger)
     g.add((source_distribution_uri, DCAT.byteSize, source_distribution_byte_size))
     source_last_modified = Literal(meta.source_last_modified, datatype=XSD.dateTime)
@@ -126,7 +130,7 @@ def create_graph_triples(meta: CompletedTransferMetadata, g: rdflib.Graph) -> rd
 
     # Create mirror dataset instance, properties
     mirror_dataset_uri = URIRef(meta.mirror_uri)
-    g.add((mirror_dataset_uri, RDF.type, DCAT.Dataset))
+    g.add((mirror_dataset_uri, RDF.type, AORC.MirrorDataset))
     mirror_last_modified = Literal(meta.mirror_last_modified, datatype=XSD.dateTime)
     g.add((mirror_dataset_uri, DCTERMS.created, mirror_last_modified))
     access_description = Literal(
@@ -135,46 +139,46 @@ def create_graph_triples(meta: CompletedTransferMetadata, g: rdflib.Graph) -> rd
     g.add((mirror_dataset_uri, OWL.Annotation, access_description))
 
     # Associate mirror dataset with source dataset
-    g.add((mirror_dataset_uri, newAorc.hasSourceDataset, source_dataset_node))
+    g.add((mirror_dataset_uri, AORC.hasSourceDataset, source_dataset_node))
 
     # Create mirror distribution instance, properties
     mirror_distribution_uri = URIRef(meta.mirror_public_uri)
     # g.add((mirror_distribution_uri, RDF.type, OWL.NamedIndividual))
-    g.add((mirror_distribution_uri, RDF.type, DCAT.Distribution))
+    g.add((mirror_distribution_uri, RDF.type, AORC.MirrorDistribution))
 
     # Associate mirror distribution with mirror dataset
     g.add((mirror_dataset_uri, DCAT.distribution, mirror_distribution_uri))
 
     # Create transfer script instance
     script_uri = URIRef(meta.mirror_script)
-    g.add((script_uri, newAorc.hasTransferScript, newAorc.TransferScript))
+    g.add((script_uri, AORC.hasTransferScript, AORC.TransferScript))
 
     # Create docker image instance, properties
     docker_image_uri = URIRef(meta.docker_image_url)
-    g.add((docker_image_uri, RDF.type, newAorc.DockerImage))
-    g.add((docker_image_uri, newAorc.hasTransferScript, script_uri))
+    g.add((docker_image_uri, RDF.type, AORC.DockerImage))
+    g.add((docker_image_uri, AORC.hasTransferScript, script_uri))
 
     # Create transfer job activity instance, properties
     transfer_job_node = BNode()
-    g.add((transfer_job_node, RDF.type, newAorc.TransferJob))
-    g.add((transfer_job_node, newAorc.transferred, mirror_dataset_uri))
+    g.add((transfer_job_node, RDF.type, AORC.TransferJob))
+    g.add((transfer_job_node, AORC.transferred, mirror_dataset_uri))
     g.add((transfer_job_node, PROV.used, source_dataset_node))
     g.add((transfer_job_node, PROV.wasStartedBy, script_uri))
 
     # Create RFC office instance
     rfc_office_uri = URIRef(meta.rfc_office_uri)
-    g.add((rfc_office_uri, RDF.type, newAorc.RFC))
+    g.add((rfc_office_uri, RDF.type, AORC.RFC))
     rfc_office_title = Literal(meta.rfc_name, datatype=XSD.string)
-    g.add((rfc_office_uri, newAorc.hasRFCName, rfc_office_title))
+    g.add((rfc_office_uri, AORC.hasRFCName, rfc_office_title))
     rfc_office_alias = Literal(meta.rfc_alias, datatype=XSD.string)
-    g.add((rfc_office_uri, newAorc.hasRFCAlias, rfc_office_alias))
+    g.add((rfc_office_uri, AORC.hasRFCAlias, rfc_office_alias))
 
     # Create precip partition catalog instance, properties
     precip_partition_uri = URIRef("".join([meta.aorc_historic_uri, meta.rfc_catalog_uri, meta.precip_partition_uri]))
     precip_keyword_uri = Literal("precipitation", datatype=XSD.string)
-    g.add((precip_partition_uri, RDF.type, newAorc.PrecipPartition))
+    g.add((precip_partition_uri, RDF.type, AORC.PrecipPartition))
     g.add((precip_partition_uri, DCAT.keyword, precip_keyword_uri))
-    g.add((precip_partition_uri, newAorc.hasRFC, rfc_office_uri))
+    g.add((precip_partition_uri, AORC.hasRFC, rfc_office_uri))
 
     # Associate precip partition catalog with source dataset it holds
     g.add((precip_partition_uri, DCAT.dataset, source_dataset_node))
@@ -189,4 +193,4 @@ if __name__ == "__main__":
 
     set_up_logger()
 
-    construct_mirror_graph("tempest", "test/AORC")
+    construct_mirror_graph("tempest", "test/AORC", "mirrors/test.ttl")
