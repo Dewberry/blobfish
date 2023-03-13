@@ -40,4 +40,4 @@ def pull_hash(image: str, tag: str) -> None:
     stdout, _ = process.communicate()
     digest_line = stdout.splitlines()[1].decode()
     hash = digest_line.replace("Digest: ", "", 1)
-    os.environ["DOCKER_HASH"] = hash
+    os.environ["HASH"] = hash
