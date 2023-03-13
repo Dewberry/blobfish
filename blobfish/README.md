@@ -1,5 +1,6 @@
 ### Summary
 
+#### aorc/
  aorc/const - constants used in transfer
 
  aorc/main - old script which stitches together const, mirror, and source
@@ -12,9 +13,12 @@
 
  aorc/source - old script used to generate graph objects used in main.py
 
-
+#### pyrdf/
 pyrdf - Defines ontologies used in metadata creation
 
+#### utils/
 utils/blobstore - utility for dealing with s3 key listing
+
 utils/dockerinfo - utility for getting script name relative to docker working directory, docker tag
+
 utils/logger - utility for logging setup
