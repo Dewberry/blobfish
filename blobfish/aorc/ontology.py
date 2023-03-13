@@ -1,6 +1,7 @@
 """ Script to write an ontology that is useful for dealing with AORC data sources """
 import rdflib
 from dataclasses import dataclass
+from typing import List
 from rdflib import RDFS, RDF, OWL, DCAT, DCTERMS, DCMITYPE, PROV, FOAF, XSD, URIRef, Literal, BNode
 from rdflib.collection import Collection
 
@@ -191,6 +192,25 @@ def define_object_properties(graph: rdflib.Graph) -> None:
     graph.add((newAorc.wasTransferredBy, OWL.inverseOf, newAorc.transferred))
 
 
+def disjoint_classes(graph: rdflib.Graph):
+    aorc_classes = [
+        newAorc.DockerImage,
+        newAorc.MirrorDataset,
+        newAorc.MirrorDistribution,
+        newAorc.PrecipPartition,
+        newAorc.RFC,
+        newAorc.SourceDataset,
+        newAorc.SourceDistribution,
+        newAorc.TransferJob,
+        newAorc.TransferScript,
+    ]
+    list_item = BNode()
+    Collection(graph, list_item, aorc_classes)
+    disjoint_item = BNode()
+    graph.add((disjoint_item, RDF.type, OWL.AllDisjointClasses))
+    graph.add((disjoint_item, OWL.members, list_item))
+
+
 def create_graph(output_file: str, format: str = "ttl") -> None:
     # Create new graph object, bind prefixes
     g = rdflib.Graph()
@@ -211,6 +231,9 @@ def create_graph(output_file: str, format: str = "ttl") -> None:
 
     # Define AORC object properties
     define_object_properties(g)
+
+    # Define all classes as disjoint
+    disjoint_classes(g)
 
     g.serialize(output_file, format=format)
 
