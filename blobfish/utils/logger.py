@@ -2,12 +2,12 @@ import logging
 import json
 
 
-def set_up_logger(filename: str | None = None):
+def set_up_logger(filename: str | None = None, level: int = logging.DEBUG):
     logging.getLogger("boto3").setLevel(logging.WARNING)
     logging.getLogger("botocore").setLevel(logging.WARNING)
 
     logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(level)
     formatter = logging.Formatter('{"time":"%(asctime)s", "level": "%(levelname)s", "message":%(message)s}')
 
     stream_handler = logging.StreamHandler()
