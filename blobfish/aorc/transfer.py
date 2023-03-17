@@ -307,7 +307,7 @@ if __name__ == "__main__":
 
     load_dotenv()
 
-    set_up_logger("logs/test.log")
+    set_up_logger()
 
     # git_info = version()
     script_path = script(__file__, workdir="proj")
