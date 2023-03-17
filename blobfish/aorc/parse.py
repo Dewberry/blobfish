@@ -5,6 +5,7 @@ import rdflib
 import datetime
 import requests
 import logging
+import enum
 from dateutil import relativedelta
 from dataclasses import dataclass, field
 from typing import Generator, cast
@@ -15,6 +16,11 @@ from .transfer import TransferMetadata
 # from .const import SOURCE_CATALOG, MIRROR_CATALOG
 from ..pyrdf import AORC
 from ..utils.logger import set_up_logger
+
+
+class AORCFilter(enum.Enum):
+    YEAR = enum.auto()
+    RFC = enum.auto()
 
 
 @dataclass
@@ -61,7 +67,6 @@ class CompletedTransferMetadata(TransferMetadata):
 class NodeNamer:
     def __init__(self) -> None:
         self.name_set = set()
-
 
     def __verify_name(self, new_name: str) -> None:
         if new_name in self.name_set:
@@ -113,7 +118,7 @@ def complete_metadata(mirror_object: dict) -> CompletedTransferMetadata | None:
         return None
 
 
-def construct_mirror_graph(bucket: str, prefix: str, outfile: str) -> None:
+def construct_mirror_graph(bucket: str, prefix: str, outfile: str, filter: AORCFilter | None = None) -> None:
     g = rdflib.Graph()
     g.bind("dcat", DCAT)
     g.bind("prov", PROV)
@@ -126,6 +131,12 @@ def construct_mirror_graph(bucket: str, prefix: str, outfile: str) -> None:
         meta = complete_metadata(object)
         if meta:
             create_graph_triples(meta, g, namer)
+    if filter:
+        if filter.value == filter.YEAR:
+            print("year")
+        print("rfc")
+    else:
+        print("no filter")
     g.serialize(outfile, format="ttl")
 
 
@@ -217,6 +228,14 @@ def create_graph_triples(meta: CompletedTransferMetadata, g: rdflib.Graph, node_
     return g
 
 
+def filter_yearly(graph: rdflib.Graph) -> Generator[rdflib.Graph, None, None]:
+    pass
+
+
+def filter_rfc(graph: rdflib.Graph) -> Generator[rdflib.Graph, None, None]:
+    pass
+
+
 if __name__ == "__main__":
     from dotenv import load_dotenv
 
@@ -224,4 +243,4 @@ if __name__ == "__main__":
 
     set_up_logger()
 
-    construct_mirror_graph("tempest", "test/AORC", "mirrors/test.ttl")
+    construct_mirror_graph("tempest", "test/AORC", "mirrors/test{0}.ttl")
