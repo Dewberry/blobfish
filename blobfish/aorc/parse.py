@@ -23,6 +23,48 @@ class AORCFilter(enum.Enum):
     RFC = enum.auto()
 
 
+class GraphCreator:
+    def __init__(self, bindings: dict) -> None:
+        self.bindings = bindings
+        self.filter_graphs = dict()
+        self.default_graph = None
+
+    def __create_graph(self) -> rdflib.Graph:
+        logging.info("rdflib.Graph object created by graph creator")
+        g = rdflib.Graph()
+        for prefix, ns in self.bindings.items():
+            g.bind(prefix, ns)
+        return g
+
+
+    def get_graph(self, filter_key: str | None = None) -> rdflib.Graph:
+        if filter_key:
+            filter_graph = self.filter_graphs.get(filter_key)
+            if filter_graph:
+                return filter_graph
+            logging.info(f"No graph found for filter key {filter_key}")
+            filter_graph = self.__create_graph()
+            self.filter_graphs[filter_key] = filter_graph
+            return filter_graph
+        if self.default_graph:
+            return self.default_graph
+        self.default_graph = self.__create_graph()
+        return self.default_graph
+
+    def serialize_graphs(self, filepath_pattern: str) -> None:
+        if len(self.filter_graphs.items()) > 0:
+            for filter_key, filter_graph in self.filter_graphs.items():
+                fn = filepath_pattern.format(filter_key)
+                filter_graph.serialize(fn, format="ttl")
+                logging.info(f"Graph serialized to {fn}")
+        elif self.default_graph:
+            fn = filepath_pattern.format(None)
+            self.default_graph.serialize(filepath_pattern.format(""), format="ttl")
+            logging.info(f"Graph serialized to {fn}")
+        else:
+            logging.error(f"No graph object was created, serialization failed")
+            raise ValueError
+
 @dataclass
 class CompletedTransferMetadata(TransferMetadata):
     mirror_last_modified: str
@@ -53,6 +95,7 @@ class CompletedTransferMetadata(TransferMetadata):
 
         # Get validated page for RFC office
         self.rfc_office_uri = self.__validate_rfc_office_page()
+        logging.info(f"Metadata completed for {self.mirror_uri}")
 
     def __validate_rfc_office_page(self) -> str:
         url = f"https://www.weather.gov/{self.rfc_alias.lower()}rfc"
@@ -118,29 +161,32 @@ def complete_metadata(mirror_object: dict) -> CompletedTransferMetadata | None:
         return None
 
 
-def construct_mirror_graph(bucket: str, prefix: str, outfile: str, filter: AORCFilter | None = None) -> None:
-    g = rdflib.Graph()
-    g.bind("dcat", DCAT)
-    g.bind("prov", PROV)
-    g.bind("dct", DCTERMS)
-    g.bind("aorc", AORC)
-
+def construct_mirror_graph(bucket: str, prefix: str, filepath_pattern: str, filter: AORCFilter | None = None) -> None:
+    ns_prefixes = {
+        "dcat": DCAT,
+        "prov": PROV,
+        "dct": DCTERMS,
+        "aorc": AORC
+    }
+    graph_creator = GraphCreator(ns_prefixes)
     namer = NodeNamer()
-
     for object in get_mirrored_content(bucket, prefix):
         meta = complete_metadata(object)
         if meta:
-            create_graph_triples(meta, g, namer)
+            create_graph_triples(meta, graph_creator, namer, filter)
+    graph_creator.serialize_graphs(filepath_pattern)
+
+
+def create_graph_triples(meta: CompletedTransferMetadata, graph_creator: GraphCreator, node_namer: NodeNamer, filter: AORCFilter | None) -> None:
+    # Apply filter to get distinct graphs depending on metadata properties
+    filter_value = None
     if filter:
-        if filter.value == filter.YEAR:
-            print("year")
-        print("rfc")
-    else:
-        print("no filter")
-    g.serialize(outfile, format="ttl")
+        if filter.name == "YEAR":
+            filter_value = meta.ref_date[:4]
+        elif filter.name == "RFC":
+            filter_value = meta.rfc_alias
+    g = graph_creator.get_graph(filter_value)
 
-
-def create_graph_triples(meta: CompletedTransferMetadata, g: rdflib.Graph, node_namer: NodeNamer) -> rdflib.Graph:
     # Create source dataset instance, properties
     source_dataset_node = BNode(node_namer.name_source_ds(meta))
     g.add((source_dataset_node, RDF.type, AORC.SourceDataset))
@@ -193,7 +239,7 @@ def create_graph_triples(meta: CompletedTransferMetadata, g: rdflib.Graph, node_
 
     # Create transfer script instance
     script_uri = URIRef(meta.mirror_script)
-    g.add((script_uri, AORC.hasTransferScript, AORC.TransferScript))
+    g.add((script_uri, RDF.type, AORC.TransferScript))
 
     # Create docker image instance, properties
     docker_image_uri = URIRef(meta.docker_image_url)
@@ -225,22 +271,12 @@ def create_graph_triples(meta: CompletedTransferMetadata, g: rdflib.Graph, node_
     # Associate precip partition catalog with source dataset it holds
     g.add((precip_partition_uri, DCAT.dataset, source_dataset_node))
 
-    return g
 
-
-def filter_yearly(graph: rdflib.Graph) -> Generator[rdflib.Graph, None, None]:
-    pass
-
-
-def filter_rfc(graph: rdflib.Graph) -> Generator[rdflib.Graph, None, None]:
-    pass
 
 
 if __name__ == "__main__":
     from dotenv import load_dotenv
 
     load_dotenv()
-
-    set_up_logger()
-
+    set_up_logger(level=logging.INFO)
     construct_mirror_graph("tempest", "test/AORC", "mirrors/test{0}.ttl")
