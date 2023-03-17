@@ -58,8 +58,8 @@ class GraphCreator:
                 filter_graph.serialize(fn, format="ttl")
                 logging.info(f"Graph serialized to {fn}")
         elif self.default_graph:
-            fn = filepath_pattern.format(None)
-            self.default_graph.serialize(filepath_pattern.format(""), format="ttl")
+            fn = filepath_pattern.format("")
+            self.default_graph.serialize(fn, format="ttl")
             logging.info(f"Graph serialized to {fn}")
         else:
             logging.error(f"No graph object was created, serialization failed")
@@ -161,7 +161,7 @@ def complete_metadata(mirror_object: dict) -> CompletedTransferMetadata | None:
         return None
 
 
-def construct_mirror_graph(bucket: str, prefix: str, filepath_pattern: str, filter: AORCFilter | None = None) -> None:
+def construct_mirror_graph(bucket: str, prefix: str, filepath_pattern: str, filter: AORCFilter | None = AORCFilter.RFC) -> None:
     ns_prefixes = {
         "dcat": DCAT,
         "prov": PROV,
