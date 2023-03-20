@@ -32,4 +32,4 @@ class AORC(DefinedNamespace):
     isTransferScriptOf: URIRef
     wasTransferredBy: URIRef
 
-    _NS = Namespace("github.com/Dewberry/blobfish/blob/aorc/semantics/rdf/mapped_aorc.ttl#")
+    _NS = Namespace("https://github.com/Dewberry/blobfish/blob/aorc_refactor/semantics/rdf/mapped_aorc.ttl#")
