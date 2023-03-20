@@ -1,30 +1,165 @@
 """ Script to handle creation of CONUS composites from s3 mirrors of AORC precip files utilizing and adding to transfer job metadata """
 
+import boto3
 import pathlib
-from rdflib import RDF, OWL, XSD, DCAT, DCTERMS, PROV, Graph
+import os
+import pathlib
+import datetime
+import xarray as xr
+import logging
+import zarr
+import zarr.storage as storage
+from io import BytesIO
+from collections.abc import Generator
+from rdflib import XSD, DCAT, DCTERMS, PROV, Graph, Literal
 from typing import cast
+from zipfile import ZipFile
+from tempfile import TemporaryDirectory
+from dataclasses import dataclass
 
+from .const import RFC_INFO_LIST
 from ..pyrdf import AORC
+
+
+@dataclass
+class DatedPaths:
+    start_date: datetime.datetime
+    end_date: datetime.datetime
+    paths: list[str]
+
+    def __post_init__(self):
+        # Alter end date from referring to first hour of end date (00) to last hour of end date (23)
+        # in order to capture all data from covered time period for dataset
+        self.end_date = self.end_date.replace(hour=23)
+
+@dataclass
+class HourPathMatches:
+    time: datetime.datetime
+    matches: set[str]
+
+class CloudHandler:
+    def __init__(self) -> None:
+        self.client = self.__create_client()
+
+    def __create_client(self):
+        client = boto3.client(
+            service_name="s3",
+            aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+            aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+            region_name=os.environ["AWS_DEFAULT_REGION"],
+        )
+        return client
+
+    def partition_bucket_key_names(self, s3_path: str) -> tuple[str, str]:
+        if not s3_path.startswith("s3://"):
+            raise ValueError(f"s3path does not start with s3://: {s3_path}")
+        bucket, _, key = s3_path[5:].partition("/")
+        return bucket, key
+
+    def get_object(self, s3_path: str) -> bytes:
+        bucket, key = self.partition_bucket_key_names(s3_path)
+        data = self.client.get_object(Bucket=bucket, Key=key)
+        data_bytes = data["Body"].read()
+        return data_bytes
+
+    def send_composite_zarr(self, merged_hourly_data: xr.Dataset, template_s3_path: str, timestamp: datetime.datetime) -> None:
+        # Create s3 destination filepath using template s3 path bucket and assumed structure of s3://{bucket}/transforms/aorc/precipitation/{year}/{datetime_string}.zarr
+        template_bucket, _ = self.partition_bucket_key_names(template_s3_path)
+        # destination_fn = f"s3://{template_bucket}/transforms/aorc/precipitation/{timestamp.year}/{timestamp.strftime('%Y%m%d%H')}.zarr"
+        destination_fn = f"s3://{template_bucket}/test/transforms/aorc/precipitation/{timestamp.year}/{timestamp.strftime('%Y%m%d%H')}.zarr"
+        store = storage.FSStore(destination_fn)
+        merged_hourly_data.to_zarr(store, mode="w")
+
 
 def create_graph(ttl_directory: str) -> Graph:
     g = Graph()
     g.bind("dcat", DCAT)
     g.bind("dct", DCTERMS)
     g.bind("prov", PROV)
+    g.bind("aorc", AORC)
     for filepath in pathlib.Path(ttl_directory).glob("*.ttl"):
         g.parse(filepath)
     return g
 
-def query_metadata(g: Graph) -> None:
-    # TODO: implement query, maybe with subquery, which gets distinct PeriodOfTime BNodes designating temporal coverage for source dataset (with at least 2 source datasets sharing the coverage)
-    # Then loop through temporal nodes and query for associated source datasets -> mirror datasets & distributions to use in composite creation
-    pass
+def format_xsd_date(xsd_date_object: Literal) -> datetime.datetime:
+    xsd_string = str(xsd_date_object)
+    return datetime.datetime.strptime(xsd_string, "%Y-%m-%d")
+
+
+def query_metadata(g: Graph) -> Generator[DatedPaths, None, None]:
+    # Get unique start date and end date pairs which denote distinct periods of temporal coverage for datasets
+    time_coverage_query = """
+    SELECT  DISTINCT ?sd ?ed
+    WHERE   {
+        ?s dcat:startDate ?sd .
+        ?s dcat:endDate ?ed
+    }
+    """
+    time_results = g.query(time_coverage_query, initNs={"dcat": DCAT})
+    for result in time_results:
+        start_date, end_date = cast(list, result)
+        new_query = (
+            """
+        SELECT  ?mda
+        WHERE   {\n"""
+            + f"""\t\t"{start_date}"^^xsd:date ^dcat:startDate/^dct:temporal/^aorc:hasSourceDataset ?mda ."""
+            + """\n\t}"""
+        )
+        source_results = g.query(new_query, initNs={"dcat": DCAT, "xsd": XSD, "dct": DCTERMS, "aorc": AORC})
+        formatted_start_date = format_xsd_date(start_date)
+        formatted_end_date = format_xsd_date(end_date)
+        s3_paths = [str(cast(list, result)[0]) for result in source_results]
+        # # Check to make sure the length of the s3 paths is the same as the length of the list of RFC offices
+        # if len(RFC_INFO_LIST) == len(s3_paths):
+        #     logging.error(f"Expected {len(RFC_INFO_LIST)} to match RFC office number, got {len(s3_paths)}")
+        #     raise AttributeError
+        yield DatedPaths(formatted_start_date, formatted_end_date, s3_paths)
+
+
+def unzip_composite_files(dated_s3_paths: DatedPaths, directory: str, cloud_handler: CloudHandler) -> None:
+    for s3_path in dated_s3_paths.paths:
+        data_bytes = cloud_handler.get_object(s3_path)
+        with ZipFile(BytesIO(data_bytes)) as zf:
+            zf.extractall(directory)
+
+def align_hourly_data(directory: str, start_date: datetime.datetime, end_date: datetime.datetime) -> Generator[HourPathMatches, None, None]:
+    directory_path = pathlib.Path(directory)
+    current_date = start_date
+    while current_date <= end_date:
+        search_pattern = f"{current_date.strftime('*_%Y%m%d%H.nc4')}"
+        match_set = {str(match) for match in directory_path.glob(search_pattern)}
+        # if len(match_set) != len(RFC_INFO_LIST):
+        #     logging.error(f"Expected {len(RFC_INFO_LIST)} to match RFC office number, got {len(match_set)}")
+        #     raise AttributeError
+        yield HourPathMatches(current_date, match_set)
+        current_date += datetime.timedelta(hours=1)
+
+def create_composite_datset(dataset_paths: set[str]) -> xr.Dataset:
+    datasets = []
+    for dataset_path in dataset_paths:
+        ds = xr.open_dataset(dataset_path)
+        ds.rio.write_crs(4326, inplace=True)
+        datasets.append(ds)
+    merged_hourly_data = xr.merge(datasets, compat="no_conflicts", combine_attrs="drop_conflicts")
+    return merged_hourly_data
+
+
+
 
 def main(ttl_directory: str) -> None:
     g = create_graph(ttl_directory)
-    query_metadata(g)
+    cloud_handler = CloudHandler()
+    for dated_s3_paths in query_metadata(g):
+        with TemporaryDirectory() as tempdir:
+            unzip_composite_files(dated_s3_paths, tempdir, cloud_handler)
+            for dated_match_set in align_hourly_data(tempdir, dated_s3_paths.start_date, dated_s3_paths.end_date):
+                merged_data = create_composite_datset(dated_match_set.matches)
+                cloud_handler.send_composite_zarr(merged_data, dated_s3_paths.paths[0], dated_match_set.time)
+
+
 
 if __name__ == "__main__":
+    from dotenv import load_dotenv
+
+    load_dotenv()
     main("mirrors")
-
-
