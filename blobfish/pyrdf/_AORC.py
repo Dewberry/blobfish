@@ -4,6 +4,7 @@ from rdflib.namespace import DefinedNamespace, Namespace
 
 class AORC(DefinedNamespace):
     # Classes
+    CompositeDataset: URIRef
     DockerImage: URIRef
     MirrorDataset: URIRef
     MirrorDistribution: URIRef
@@ -19,17 +20,19 @@ class AORC(DefinedNamespace):
     hasRFCName: URIRef
 
     # Object Properties
+    hasCompositeDataset: URIRef
     hasDockerImage: URIRef
     hasMirrorDataset: URIRef
     hasRFC: URIRef
     hasSourceDataset: URIRef
     hasTransferScript: URIRef
-    transferred: URIRef
+    isCompositeOf: URIRef
     isDockerImageOf: URIRef
     isMirrorDatasetOf: URIRef
     isRFCOf: URIRef
     isSourceDatasetOf: URIRef
     isTransferScriptOf: URIRef
+    transferred: URIRef
     wasTransferredBy: URIRef
 
     _NS = Namespace("https://github.com/Dewberry/blobfish/blob/aorc_refactor/semantics/rdf/mapped_aorc.ttl#")
