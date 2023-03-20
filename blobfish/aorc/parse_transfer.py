@@ -36,7 +36,6 @@ class GraphCreator:
             g.bind(prefix, ns)
         return g
 
-
     def get_graph(self, filter_key: str | None = None) -> rdflib.Graph:
         if filter_key:
             filter_graph = self.filter_graphs.get(filter_key)
@@ -64,6 +63,7 @@ class GraphCreator:
         else:
             logging.error(f"No graph object was created, serialization failed")
             raise ValueError
+
 
 @dataclass
 class CompletedTransferMetadata(TransferMetadata):
@@ -161,13 +161,10 @@ def complete_metadata(mirror_object: dict) -> CompletedTransferMetadata | None:
         return None
 
 
-def construct_mirror_graph(bucket: str, prefix: str, filepath_pattern: str, filter: AORCFilter | None = AORCFilter.RFC) -> None:
-    ns_prefixes = {
-        "dcat": DCAT,
-        "prov": PROV,
-        "dct": DCTERMS,
-        "aorc": AORC
-    }
+def construct_mirror_graph(
+    bucket: str, prefix: str, filepath_pattern: str, filter: AORCFilter | None = AORCFilter.RFC
+) -> None:
+    ns_prefixes = {"dcat": DCAT, "prov": PROV, "dct": DCTERMS, "aorc": AORC}
     graph_creator = GraphCreator(ns_prefixes)
     namer = NodeNamer()
     for object in get_mirrored_content(bucket, prefix):
@@ -177,7 +174,9 @@ def construct_mirror_graph(bucket: str, prefix: str, filepath_pattern: str, filt
     graph_creator.serialize_graphs(filepath_pattern)
 
 
-def create_graph_triples(meta: CompletedTransferMetadata, graph_creator: GraphCreator, node_namer: NodeNamer, filter: AORCFilter | None) -> None:
+def create_graph_triples(
+    meta: CompletedTransferMetadata, graph_creator: GraphCreator, node_namer: NodeNamer, filter: AORCFilter | None
+) -> None:
     # Apply filter to get distinct graphs depending on metadata properties
     filter_value = None
     if filter:
@@ -270,8 +269,6 @@ def create_graph_triples(meta: CompletedTransferMetadata, graph_creator: GraphCr
 
     # Associate precip partition catalog with source dataset it holds
     g.add((precip_partition_uri, DCAT.dataset, source_dataset_node))
-
-
 
 
 if __name__ == "__main__":
