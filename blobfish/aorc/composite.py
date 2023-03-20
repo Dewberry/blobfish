@@ -19,6 +19,8 @@ from dataclasses import dataclass
 from .const import RFC_INFO_LIST
 from ..pyrdf import AORC
 
+# TODO - add metadata to .zarr upload for use in graph database parsing
+
 
 @dataclass
 class DatedPaths:
