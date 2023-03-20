@@ -31,10 +31,12 @@ class DatedPaths:
         # in order to capture all data from covered time period for dataset
         self.end_date = self.end_date.replace(hour=23)
 
+
 @dataclass
 class HourPathMatches:
     time: datetime.datetime
     matches: set[str]
+
 
 class CloudHandler:
     def __init__(self) -> None:
@@ -61,7 +63,9 @@ class CloudHandler:
         data_bytes = data["Body"].read()
         return data_bytes
 
-    def send_composite_zarr(self, merged_hourly_data: xr.Dataset, template_s3_path: str, timestamp: datetime.datetime) -> None:
+    def send_composite_zarr(
+        self, merged_hourly_data: xr.Dataset, template_s3_path: str, timestamp: datetime.datetime
+    ) -> None:
         # Create s3 destination filepath using template s3 path bucket and assumed structure of s3://{bucket}/transforms/aorc/precipitation/{year}/{datetime_string}.zarr
         template_bucket, _ = self.partition_bucket_key_names(template_s3_path)
         destination_fn = f"s3://{template_bucket}/transforms/aorc/precipitation/{timestamp.year}/{timestamp.strftime('%Y%m%d%H')}.zarr"
@@ -78,6 +82,7 @@ def create_graph(ttl_directory: str) -> Graph:
     for filepath in pathlib.Path(ttl_directory).glob("*.ttl"):
         g.parse(filepath)
     return g
+
 
 def format_xsd_date(xsd_date_object: Literal) -> datetime.datetime:
     xsd_string = str(xsd_date_object)
@@ -120,7 +125,10 @@ def unzip_composite_files(dated_s3_paths: DatedPaths, directory: str, cloud_hand
         with ZipFile(BytesIO(data_bytes)) as zf:
             zf.extractall(directory)
 
-def align_hourly_data(directory: str, start_date: datetime.datetime, end_date: datetime.datetime) -> Generator[HourPathMatches, None, None]:
+
+def align_hourly_data(
+    directory: str, start_date: datetime.datetime, end_date: datetime.datetime
+) -> Generator[HourPathMatches, None, None]:
     directory_path = pathlib.Path(directory)
     current_date = start_date
     while current_date <= end_date:
@@ -132,6 +140,7 @@ def align_hourly_data(directory: str, start_date: datetime.datetime, end_date: d
         yield HourPathMatches(current_date, match_set)
         current_date += datetime.timedelta(hours=1)
 
+
 def create_composite_datset(dataset_paths: set[str]) -> xr.Dataset:
     datasets = []
     for dataset_path in dataset_paths:
@@ -140,8 +149,6 @@ def create_composite_datset(dataset_paths: set[str]) -> xr.Dataset:
         datasets.append(ds)
     merged_hourly_data = xr.merge(datasets, compat="no_conflicts", combine_attrs="drop_conflicts")
     return merged_hourly_data
-
-
 
 
 def main(ttl_directory: str) -> None:
@@ -153,7 +160,6 @@ def main(ttl_directory: str) -> None:
             for dated_match_set in align_hourly_data(tempdir, dated_s3_paths.start_date, dated_s3_paths.end_date):
                 merged_data = create_composite_datset(dated_match_set.matches)
                 cloud_handler.send_composite_zarr(merged_data, dated_s3_paths.paths[0], dated_match_set.time)
-
 
 
 if __name__ == "__main__":
