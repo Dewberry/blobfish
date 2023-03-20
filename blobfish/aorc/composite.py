@@ -7,7 +7,6 @@ import pathlib
 import datetime
 import xarray as xr
 import logging
-import zarr
 import zarr.storage as storage
 from io import BytesIO
 from collections.abc import Generator
@@ -65,8 +64,7 @@ class CloudHandler:
     def send_composite_zarr(self, merged_hourly_data: xr.Dataset, template_s3_path: str, timestamp: datetime.datetime) -> None:
         # Create s3 destination filepath using template s3 path bucket and assumed structure of s3://{bucket}/transforms/aorc/precipitation/{year}/{datetime_string}.zarr
         template_bucket, _ = self.partition_bucket_key_names(template_s3_path)
-        # destination_fn = f"s3://{template_bucket}/transforms/aorc/precipitation/{timestamp.year}/{timestamp.strftime('%Y%m%d%H')}.zarr"
-        destination_fn = f"s3://{template_bucket}/test/transforms/aorc/precipitation/{timestamp.year}/{timestamp.strftime('%Y%m%d%H')}.zarr"
+        destination_fn = f"s3://{template_bucket}/transforms/aorc/precipitation/{timestamp.year}/{timestamp.strftime('%Y%m%d%H')}.zarr"
         store = storage.FSStore(destination_fn)
         merged_hourly_data.to_zarr(store, mode="w")
 
@@ -109,10 +107,10 @@ def query_metadata(g: Graph) -> Generator[DatedPaths, None, None]:
         formatted_start_date = format_xsd_date(start_date)
         formatted_end_date = format_xsd_date(end_date)
         s3_paths = [str(cast(list, result)[0]) for result in source_results]
-        # # Check to make sure the length of the s3 paths is the same as the length of the list of RFC offices
-        # if len(RFC_INFO_LIST) == len(s3_paths):
-        #     logging.error(f"Expected {len(RFC_INFO_LIST)} to match RFC office number, got {len(s3_paths)}")
-        #     raise AttributeError
+        # Check to make sure the length of the s3 paths is the same as the length of the list of RFC offices
+        if len(RFC_INFO_LIST) == len(s3_paths):
+            logging.error(f"Expected {len(RFC_INFO_LIST)} to match RFC office number, got {len(s3_paths)}")
+            raise AttributeError
         yield DatedPaths(formatted_start_date, formatted_end_date, s3_paths)
 
 
@@ -128,9 +126,9 @@ def align_hourly_data(directory: str, start_date: datetime.datetime, end_date: d
     while current_date <= end_date:
         search_pattern = f"{current_date.strftime('*_%Y%m%d%H.nc4')}"
         match_set = {str(match) for match in directory_path.glob(search_pattern)}
-        # if len(match_set) != len(RFC_INFO_LIST):
-        #     logging.error(f"Expected {len(RFC_INFO_LIST)} to match RFC office number, got {len(match_set)}")
-        #     raise AttributeError
+        if len(match_set) != len(RFC_INFO_LIST):
+            logging.error(f"Expected {len(RFC_INFO_LIST)} to match RFC office number, got {len(match_set)}")
+            raise AttributeError
         yield HourPathMatches(current_date, match_set)
         current_date += datetime.timedelta(hours=1)
 
