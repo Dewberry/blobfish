@@ -4,8 +4,9 @@ boto3==1.26.57
 aiohttp==3.8.4
 aiofile==3.8.1
 ontospy==2.1.1
-# GitPython==3.1.31
 python-dotenv==0.21.1
+xarray==2023.2.0
+rioxarray==0.14.0
 # xarray[io]==2022.12.0
 # rioxarray==0.11.1
 # geopandas==0.10.2
