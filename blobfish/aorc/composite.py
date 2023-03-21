@@ -14,7 +14,7 @@ from rdflib import XSD, DCAT, DCTERMS, PROV, Graph, Literal
 from typing import cast
 from zipfile import ZipFile
 from tempfile import TemporaryDirectory
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .const import RFC_INFO_LIST
 from ..pyrdf import AORC
@@ -35,9 +35,24 @@ class DatedPaths:
 
 
 @dataclass
-class HourPathMatches:
-    time: datetime.datetime
-    matches: set[str]
+class CompositeMembershipMetadata:
+    start_time: datetime.datetime
+    end_time: datetime.datetime = field(init=False)
+    _matches: set[str]
+    members: set[str]
+
+
+    def __post_init__(self) -> None:
+        self.end_time = self.start_time + datetime.timedelta(hours=1)
+
+    def serializable(self) -> dict:
+        serializable_dictionary = {
+            "start_time": self.start_time.strftime('%Y%m%d%H'),
+            "end_time": self.start_time.strftime('%Y%m%d%H'),
+            "members": ",".join(self.members)
+        }
+        return serializable_dictionary
+
 
 
 class CloudHandler:
@@ -53,25 +68,25 @@ class CloudHandler:
         )
         return client
 
-    def partition_bucket_key_names(self, s3_path: str) -> tuple[str, str]:
+    def __partition_bucket_key_names(self, s3_path: str) -> tuple[str, str]:
         if not s3_path.startswith("s3://"):
             raise ValueError(f"s3path does not start with s3://: {s3_path}")
         bucket, _, key = s3_path[5:].partition("/")
         return bucket, key
 
     def get_object(self, s3_path: str) -> bytes:
-        bucket, key = self.partition_bucket_key_names(s3_path)
+        bucket, key = self.__partition_bucket_key_names(s3_path)
         data = self.client.get_object(Bucket=bucket, Key=key)
         data_bytes = data["Body"].read()
         return data_bytes
 
     def send_composite_zarr(
-        self, merged_hourly_data: xr.Dataset, template_s3_path: str, timestamp: datetime.datetime
+        self, merged_hourly_data: xr.Dataset, template_s3_path: str, timestamp: datetime.datetime, metadata: dict
     ) -> None:
         # Create s3 destination filepath using template s3 path bucket and assumed structure of s3://{bucket}/transforms/aorc/precipitation/{year}/{datetime_string}.zarr
-        template_bucket, _ = self.partition_bucket_key_names(template_s3_path)
-        destination_fn = f"s3://{template_bucket}/transforms/aorc/precipitation/{timestamp.year}/{timestamp.strftime('%Y%m%d%H')}.zarr"
-        store = storage.FSStore(destination_fn)
+        template_bucket, _ = self.__partition_bucket_key_names(template_s3_path)
+        destination_fn = f"s3://{template_bucket}/test/transforms/aorc/precipitation/{timestamp.year}/{timestamp.strftime('%Y%m%d%H')}.zarr"
+        store = storage.FSStore(destination_fn, s3_additional_kwargs={"Metadata": metadata})
         merged_hourly_data.to_zarr(store, mode="w")
 
 
@@ -114,10 +129,10 @@ def query_metadata(g: Graph) -> Generator[DatedPaths, None, None]:
         formatted_start_date = format_xsd_date(start_date)
         formatted_end_date = format_xsd_date(end_date)
         s3_paths = [str(cast(list, result)[0]) for result in source_results]
-        # Check to make sure the length of the s3 paths is the same as the length of the list of RFC offices
-        if len(RFC_INFO_LIST) == len(s3_paths):
-            logging.error(f"Expected {len(RFC_INFO_LIST)} to match RFC office number, got {len(s3_paths)}")
-            raise AttributeError
+        # # Check to make sure the length of the s3 paths is the same as the length of the list of RFC offices
+        # if len(RFC_INFO_LIST) == len(s3_paths):
+        #     logging.error(f"Expected {len(RFC_INFO_LIST)} to match RFC office number, got {len(s3_paths)}")
+        #     raise AttributeError
         yield DatedPaths(formatted_start_date, formatted_end_date, s3_paths)
 
 
@@ -129,18 +144,25 @@ def unzip_composite_files(dated_s3_paths: DatedPaths, directory: str, cloud_hand
 
 
 def align_hourly_data(
-    directory: str, start_date: datetime.datetime, end_date: datetime.datetime
-) -> Generator[HourPathMatches, None, None]:
+    directory: str, start_date: datetime.datetime, end_date: datetime.datetime, source_paths: list[str], limit: int | None
+) -> Generator[CompositeMembershipMetadata, None, None]:
     directory_path = pathlib.Path(directory)
-    current_date = start_date
-    while current_date <= end_date:
-        search_pattern = f"{current_date.strftime('*_%Y%m%d%H.nc4')}"
+    current_datetime = start_date
+    i = 0
+    if limit:
+        stop_i = limit
+    else:
+        stop_i = 1
+    while current_datetime <= end_date and i < stop_i:
+        search_pattern = f"{current_datetime.strftime('*_%Y%m%d%H.nc4')}"
         match_set = {str(match) for match in directory_path.glob(search_pattern)}
-        if len(match_set) != len(RFC_INFO_LIST):
-            logging.error(f"Expected {len(RFC_INFO_LIST)} to match RFC office number, got {len(match_set)}")
-            raise AttributeError
-        yield HourPathMatches(current_date, match_set)
-        current_date += datetime.timedelta(hours=1)
+        # if len(match_set) != len(RFC_INFO_LIST):
+        #     logging.error(f"Expected {len(RFC_INFO_LIST)} to match RFC office number, got {len(match_set)}")
+        #     raise AttributeError
+        yield CompositeMembershipMetadata(current_datetime, match_set, set(source_paths))
+        current_datetime += datetime.timedelta(hours=1)
+        if limit:
+            i += 1
 
 
 def create_composite_datset(dataset_paths: set[str]) -> xr.Dataset:
@@ -153,19 +175,34 @@ def create_composite_datset(dataset_paths: set[str]) -> xr.Dataset:
     return merged_hourly_data
 
 
-def main(ttl_directory: str) -> None:
+def main(ttl_directory: str, limit: int | None = None) -> None:
     g = create_graph(ttl_directory)
     cloud_handler = CloudHandler()
     for dated_s3_paths in query_metadata(g):
         with TemporaryDirectory() as tempdir:
             unzip_composite_files(dated_s3_paths, tempdir, cloud_handler)
-            for dated_match_set in align_hourly_data(tempdir, dated_s3_paths.start_date, dated_s3_paths.end_date):
-                merged_data = create_composite_datset(dated_match_set.matches)
-                cloud_handler.send_composite_zarr(merged_data, dated_s3_paths.paths[0], dated_match_set.time)
+            for dated_match_set in align_hourly_data(
+                tempdir, dated_s3_paths.start_date, dated_s3_paths.end_date, dated_s3_paths.paths, limit
+            ):
+                logging.info(dated_match_set)
+                merged_data = create_composite_datset(dated_match_set._matches)
+                cloud_handler.send_composite_zarr(
+                    merged_data,
+                    dated_s3_paths.paths[0],
+                    dated_match_set.start_time,
+                    dated_match_set.serializable(),
+                )
 
 
 if __name__ == "__main__":
     from dotenv import load_dotenv
+    from ..utils.cloud_utils import view_downloads, clear_downloads
+    from ..utils.logger import set_up_logger
 
     load_dotenv()
-    main("mirrors")
+    set_up_logger(level=logging.INFO)
+
+    # main("mirrors", 10)
+
+    view_downloads("tempest", "test/transforms")
+    # clear_downloads("tempest", "test/transforms")
