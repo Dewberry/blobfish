@@ -90,7 +90,6 @@ def get_sessioned_s3_resource() -> ServiceResource:
 class TransferHandler:
     def __init__(
         self,
-        # gitinfo: GitInfo,
         script_path: str,
         mirror_bucket_name: str,
         mirror_file_prefix: str,
@@ -272,49 +271,21 @@ class TransferHandler:
         return download_paths
 
 
-def clear_downloads(bucket: str, prefix: str):
-    client = boto3.client(
-        service_name="s3",
-        aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-        aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-        region_name=os.environ["AWS_DEFAULT_REGION"],
-    )
-    paginator = client.get_paginator("list_objects_v2")
-    for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
-        contents = page.get("Contents", [])
-        for content in contents:
-            client.delete_object(Bucket=bucket, Key=content.get("Key"))
-
-
-def view_downloads(bucket: str, prefix: str):
-    client = boto3.client(
-        service_name="s3",
-        aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-        aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-        region_name=os.environ["AWS_DEFAULT_REGION"],
-    )
-    paginator = client.get_paginator("list_objects_v2")
-    for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
-        contents = page.get("Contents", [])
-        for content in contents:
-            print(client.get_object(Bucket=bucket, Key=content.get("Key")))
-
-
 if __name__ == "__main__":
     from dotenv import load_dotenv
     from ..utils.dockerinfo import script
     from ..utils.logger import set_up_logger
+    from ..utils.cloud_utils import view_downloads, clear_downloads
 
     load_dotenv()
 
     set_up_logger()
 
-    # git_info = version()
-    script_path = script(__file__, workdir="proj")
-    docker_url = f"https://hub.docker.com/layers/njroberts/blobfish-python/{os.environ['TAG']}/images/{os.environ['HASH']}?context=repo"
-    if script_path:
-        transfer_handler = TransferHandler(script_path, "tempest", "test", docker_url, dev=True, limit=10)
-        transfer_handler.transfer_files()
+    # script_path = script(__file__, workdir="proj")
+    # docker_url = f"https://hub.docker.com/layers/njroberts/blobfish-python/{os.environ['TAG']}/images/{os.environ['HASH']}?context=repo"
+    # if script_path:
+    #     transfer_handler = TransferHandler(script_path, "tempest", "test", docker_url, dev=True, limit=10)
+    #     transfer_handler.transfer_files()
 
-    # view_downloads("tempest", "test/AORC")
+    view_downloads("tempest", "test/AORC")
     # clear_downloads("tempest", "test/AORC")
