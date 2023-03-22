@@ -16,6 +16,7 @@ from .transfer import TransferMetadata
 # from .const import SOURCE_CATALOG, MIRROR_CATALOG
 from ..pyrdf import AORC
 from ..utils.logger import set_up_logger
+from ..utils.cloud_utils import get_mirrored_content
 
 
 class AORCFilter(enum.Enum):
@@ -132,21 +133,6 @@ class NodeNamer:
         fn = meta.source_uri[fn_index:].replace(".zip", "")
         name = f"{meta.mirror_script}_{fn}"
         return name
-
-
-def get_mirrored_content(bucket: str, prefix: str) -> Generator[dict, None, None]:
-    client = boto3.client(
-        service_name="s3",
-        aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-        aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-        region_name=os.environ["AWS_DEFAULT_REGION"],
-    )
-    paginator = client.get_paginator("list_objects_v2")
-    for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
-        contents = page.get("Contents", [])
-        for content in contents:
-            object = client.head_object(Bucket=bucket, Key=content.get("Key"))
-            yield object
 
 
 def complete_metadata(mirror_object: dict) -> CompletedTransferMetadata | None:
