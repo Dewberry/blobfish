@@ -38,21 +38,21 @@ class DatedPaths:
 class CompositeMembershipMetadata:
     start_time: datetime.datetime
     end_time: datetime.datetime = field(init=False)
+    docker_image_url: str
     _matches: set[str]
     members: set[str]
-
 
     def __post_init__(self) -> None:
         self.end_time = self.start_time + datetime.timedelta(hours=1)
 
     def serializable(self) -> dict:
         serializable_dictionary = {
-            "start_time": self.start_time.strftime('%Y%m%d%H'),
-            "end_time": self.start_time.strftime('%Y%m%d%H'),
-            "members": ",".join(self.members)
+            "start_time": self.start_time.strftime("%Y%m%d%H"),
+            "end_time": self.start_time.strftime("%Y%m%d%H"),
+            "members": ",".join(self.members),
+            "docker_image_url": self.docker_image_url
         }
         return serializable_dictionary
-
 
 
 class CloudHandler:
@@ -144,25 +144,25 @@ def unzip_composite_files(dated_s3_paths: DatedPaths, directory: str, cloud_hand
 
 
 def align_hourly_data(
-    directory: str, start_date: datetime.datetime, end_date: datetime.datetime, source_paths: list[str], limit: int | None
-) -> Generator[CompositeMembershipMetadata, None, None]:
+    directory: str,
+    start_date: datetime.datetime,
+    end_date: datetime.datetime,
+    source_paths: list[str],
+    docker_image_url: str,
+) -> Generator[tuple[CompositeMembershipMetadata, int], None, None]:
     directory_path = pathlib.Path(directory)
     current_datetime = start_date
     i = 0
-    if limit:
-        stop_i = limit
-    else:
-        stop_i = 1
-    while current_datetime <= end_date and i < stop_i:
+    while current_datetime <= end_date:
+        print(i)
         search_pattern = f"{current_datetime.strftime('*_%Y%m%d%H.nc4')}"
         match_set = {str(match) for match in directory_path.glob(search_pattern)}
         # if len(match_set) != len(RFC_INFO_LIST):
         #     logging.error(f"Expected {len(RFC_INFO_LIST)} to match RFC office number, got {len(match_set)}")
         #     raise AttributeError
-        yield CompositeMembershipMetadata(current_datetime, match_set, set(source_paths))
+        yield CompositeMembershipMetadata(current_datetime, docker_image_url, match_set, set(source_paths)), i
         current_datetime += datetime.timedelta(hours=1)
-        if limit:
-            i += 1
+        i += 1
 
 
 def create_composite_datset(dataset_paths: set[str]) -> xr.Dataset:
@@ -175,14 +175,17 @@ def create_composite_datset(dataset_paths: set[str]) -> xr.Dataset:
     return merged_hourly_data
 
 
-def main(ttl_directory: str, limit: int | None = None) -> None:
+def main(ttl_directory: str, docker_image_url: str, limit: int | None = None) -> None:
     g = create_graph(ttl_directory)
     cloud_handler = CloudHandler()
+    breaker = False
     for dated_s3_paths in query_metadata(g):
+        if breaker:
+            break
         with TemporaryDirectory() as tempdir:
             unzip_composite_files(dated_s3_paths, tempdir, cloud_handler)
-            for dated_match_set in align_hourly_data(
-                tempdir, dated_s3_paths.start_date, dated_s3_paths.end_date, dated_s3_paths.paths, limit
+            for dated_match_set, i in align_hourly_data(
+                tempdir, dated_s3_paths.start_date, dated_s3_paths.end_date, dated_s3_paths.paths, docker_image_url
             ):
                 logging.info(dated_match_set)
                 merged_data = create_composite_datset(dated_match_set._matches)
@@ -192,6 +195,9 @@ def main(ttl_directory: str, limit: int | None = None) -> None:
                     dated_match_set.start_time,
                     dated_match_set.serializable(),
                 )
+                if limit and i >= limit:
+                    breaker = True
+                    break
 
 
 if __name__ == "__main__":
@@ -202,7 +208,8 @@ if __name__ == "__main__":
     load_dotenv()
     set_up_logger(level=logging.INFO)
 
-    # main("mirrors", 10)
+    docker_url = f"https://hub.docker.com/layers/njroberts/blobfish-python/{os.environ['TAG']}/images/{os.environ['HASH']}?context=repo"
+    main("mirrors", docker_url, 10)
 
-    view_downloads("tempest", "test/transforms")
+    # view_downloads("tempest", "test/transforms")
     # clear_downloads("tempest", "test/transforms")
