@@ -34,6 +34,21 @@ def define_subclasses(graph: rdflib.Graph) -> None:
     # Define classes of AORC namespace as subclasses of existing ontologies which they closely resemble
     subclass_comment_list = [
         AORCParentRelation(
+            AORC.CompositeDataset,
+            DCAT.Dataset,
+            "A CONUS netCDF dataset created by stitching together AORC data from all RFC offices for a single hour",
+        ),
+        AORCParentRelation(
+            AORC.CompositeJob,
+            PROV.Activity,
+            "The execution of the composite script on the docker image instance which generated the composite dataset(s)",
+        ),
+        AORCParentRelation(
+            AORC.CompositeScript,
+            DCMITYPE.Software,
+            "A script contained within the docker image which was executed in order to composite AORC dataset(s)",
+        ),
+        AORCParentRelation(
             AORC.DockerImage,
             DCMITYPE.Software,
             "A docker image hosted on a repository that can be used to generate mirror datasets",
@@ -119,32 +134,31 @@ def define_object_properties(graph: rdflib.Graph) -> None:
     # Define the object properties
     for prop in [
         ObjectPropertyDescription(
+            AORC.createdComposite,
+            "Indicates the job that was responsible for the creation of the subject composite image",
+            AORC.CompositeJob,
+            AORC.CompositeDataset,
+        ),
+        ObjectPropertyDescription(
+            AORC.hasCompositeDataset,
+            "Indicates that the subject dataset was used in the creation of the object composite dataset",
+            AORC.MirrorDataset,
+            AORC.CompositeDataset,
+        ),
+        ObjectPropertyDescription(
             AORC.hasDockerImage,
             "Indicates what docker image to which the software belongs",
             DCMITYPE.Software,
             AORC.DockerImage,
         ),
         ObjectPropertyDescription(
-            AORC.isDockerImageOf,
-            "Indicates what software belong to the docker image",
-        ),
-        ObjectPropertyDescription(
-            AORC.hasSourceDataset,
-            "Indicates the origin of the subject mirrored dataset",
-            AORC.MirrorDataset,
-            AORC.SourceDataset,
-        ),
-        ObjectPropertyDescription(
-            AORC.isSourceDatasetOf, "Indicates what mirror dataset the subject source dataset was used to generate"
+            AORC.hasCompositeScript,
+            "Indicates what scripts belong to the software",
+            DCMITYPE.Software,
+            AORC.CompositeScript,
         ),
         ObjectPropertyDescription(
             AORC.hasMirrorDataset, "Indicates what mirror dataset the subject source dataset was used to generate"
-        ),
-        ObjectPropertyDescription(
-            AORC.isMirrorDatasetOf,
-            "Indicates the origin of the subject mirrored dataset",
-            AORC.MirrorDataset,
-            AORC.SourceDataset,
         ),
         ObjectPropertyDescription(
             AORC.hasRFC,
@@ -153,7 +167,10 @@ def define_object_properties(graph: rdflib.Graph) -> None:
             AORC.RFC,
         ),
         ObjectPropertyDescription(
-            AORC.isRFCOf, "Indicates the data resources that have been published by the subject RFC Office"
+            AORC.hasSourceDataset,
+            "Indicates the origin of the subject mirrored dataset",
+            AORC.MirrorDataset,
+            AORC.SourceDataset,
         ),
         ObjectPropertyDescription(
             AORC.hasTransferScript,
@@ -161,12 +178,32 @@ def define_object_properties(graph: rdflib.Graph) -> None:
             DCMITYPE.Software,
             AORC.TransferScript,
         ),
+        ObjectPropertyDescription(
+            AORC.isDockerImageOf,
+            "Indicates what software belong to the docker image",
+        ),
+        ObjectPropertyDescription(AORC.isCompositeScriptOf, "Indicates to what software the script belongs"),
+        ObjectPropertyDescription(
+            AORC.isMirrorDatasetOf,
+            "Indicates the origin of the subject mirrored dataset",
+            AORC.MirrorDataset,
+            AORC.SourceDataset,
+        ),
+        ObjectPropertyDescription(
+            AORC.isRFCOf, "Indicates the data resources that have been published by the subject RFC Office"
+        ),
+        ObjectPropertyDescription(
+            AORC.isSourceDatasetOf, "Indicates what mirror dataset the subject source dataset was used to generate"
+        ),
         ObjectPropertyDescription(AORC.isTransferScriptOf, "Indicates to what software the script belongs"),
         ObjectPropertyDescription(
             AORC.transferred,
             "Indicates the mirror dataset that the subject job transferred",
             AORC.TransferJob,
             AORC.MirrorDataset,
+        ),
+        ObjectPropertyDescription(
+            AORC.wasCompositedBy, "Indicates the job that was responsible for creating the subject composite dataset"
         ),
         ObjectPropertyDescription(
             AORC.wasTransferredBy,
@@ -182,6 +219,12 @@ def define_object_properties(graph: rdflib.Graph) -> None:
             graph.add((prop.aorc_object_property, RDFS.range, prop.range))
 
     # Relate object properties to existing properties
+    graph.add((AORC.createdComposite, RDFS.subPropertyOf, PROV.generated))
+    graph.add((AORC.isCompositeOf, RDFS.subPropertyOf, DCTERMS.source))
+    graph.add((AORC.hasCompositeDataset, OWL.inverseOf, AORC.isCompositeOf))
+    graph.add((AORC.hasCompositeScript, RDFS.subPropertyOf, DCTERMS.hasPart))
+    graph.add((AORC.isCompositeScriptOf, RDFS.subPropertyOf, DCTERMS.isPartOf))
+    graph.add((AORC.isCompositeScriptOf, OWL.inverseOf, AORC.hasCompositeScript))
     graph.add((AORC.hasDockerImage, RDFS.subPropertyOf, DCTERMS.isPartOf))
     graph.add((AORC.isDockerImageOf, RDFS.subPropertyOf, DCTERMS.hasPart))
     graph.add((AORC.isDockerImageOf, OWL.inverseOf, AORC.hasDockerImage))
@@ -195,6 +238,8 @@ def define_object_properties(graph: rdflib.Graph) -> None:
     graph.add((AORC.isTransferScriptOf, RDFS.subPropertyOf, DCTERMS.isPartOf))
     graph.add((AORC.isTransferScriptOf, OWL.inverseOf, AORC.hasTransferScript))
     graph.add((AORC.transferred, RDFS.subPropertyOf, PROV.generated))
+    graph.add((AORC.wasCompositedBy, RDFS.subPropertyOf, PROV.wasGeneratedBy))
+    graph.add((AORC.wasCompositedBy, OWL.inverseOf, AORC.createdComposite))
     graph.add((AORC.wasTransferredBy, RDFS.subPropertyOf, PROV.wasGeneratedBy))
     graph.add((AORC.wasTransferredBy, OWL.inverseOf, AORC.transferred))
 
