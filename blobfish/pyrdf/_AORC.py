@@ -5,6 +5,7 @@ from rdflib.namespace import DefinedNamespace, Namespace
 class AORC(DefinedNamespace):
     # Classes
     CompositeDataset: URIRef
+    CompositeDistribution: URIRef
     CompositeJob: URIRef
     CompositeScript: URIRef
     DockerImage: URIRef

@@ -39,6 +39,11 @@ def define_subclasses(graph: rdflib.Graph) -> None:
             "A CONUS netCDF dataset created by stitching together AORC data from all RFC offices for a single hour",
         ),
         AORCParentRelation(
+            AORC.CompositeDistribution,
+            DCAT.Distribution,
+            "The access point for the .zarr directory containing the composite dataset of all RFC office data for an hour",
+        ),
+        AORCParentRelation(
             AORC.CompositeJob,
             PROV.Activity,
             "The execution of the composite script on the docker image instance which generated the composite dataset(s)",
@@ -142,7 +147,7 @@ def define_object_properties(graph: rdflib.Graph) -> None:
         ObjectPropertyDescription(
             AORC.hasCompositeDataset,
             "Indicates that the subject dataset was used in the creation of the object composite dataset",
-            AORC.MirrorDataset,
+            DCAT.Dataset,
             AORC.CompositeDataset,
         ),
         ObjectPropertyDescription(
@@ -177,6 +182,12 @@ def define_object_properties(graph: rdflib.Graph) -> None:
             "Indicates what scripts belong to the software",
             DCMITYPE.Software,
             AORC.TransferScript,
+        ),
+        ObjectPropertyDescription(
+            AORC.isCompositeOf,
+            "Indicates what datasets were combined to create the subject composite dataset",
+            AORC.CompositeDataset,
+            DCAT.Dataset,
         ),
         ObjectPropertyDescription(
             AORC.isDockerImageOf,
