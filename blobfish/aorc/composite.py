@@ -15,11 +15,10 @@ from typing import cast
 from zipfile import ZipFile
 from tempfile import TemporaryDirectory
 from dataclasses import dataclass, field
+from contextlib import closing
 
 from .const import RFC_INFO_LIST
 from ..pyrdf import AORC
-
-# TODO - add metadata to .zarr upload for use in graph database parsing
 
 
 @dataclass
@@ -34,23 +33,23 @@ class DatedPaths:
         self.end_date = self.end_date.replace(hour=23)
 
 
-@dataclass
 class CompositeMembershipMetadata:
-    start_time: datetime.datetime
-    end_time: datetime.datetime = field(init=False)
-    docker_image_url: str
-    _matches: set[str]
-    members: set[str]
+    def __init__(
+        self, start_time: datetime.datetime, docker_image_url: str, script_name: str, members: set[str]
+    ) -> None:
+        self.start_time = start_time
+        self.end_time = start_time + datetime.timedelta(hours=1)
+        self.docker_image_url = docker_image_url
+        self.script_name = script_name
+        self.members = ",".join(members)
 
-    def __post_init__(self) -> None:
-        self.end_time = self.start_time + datetime.timedelta(hours=1)
-
-    def serializable(self) -> dict:
+    def serialize(self) -> dict:
         serializable_dictionary = {
-            "start_time": self.start_time.strftime("%Y%m%d%H"),
-            "end_time": self.start_time.strftime("%Y%m%d%H"),
-            "members": ",".join(self.members),
-            "docker_image_url": self.docker_image_url
+            "start_time": self.start_time.isoformat(),
+            "end_time": self.end_time.isoformat(),
+            "members": self.members,
+            "docker_image_url": self.docker_image_url,
+            "composite_script": self.script_name,
         }
         return serializable_dictionary
 
@@ -129,10 +128,10 @@ def query_metadata(g: Graph) -> Generator[DatedPaths, None, None]:
         formatted_start_date = format_xsd_date(start_date)
         formatted_end_date = format_xsd_date(end_date)
         s3_paths = [str(cast(list, result)[0]) for result in source_results]
-        # # Check to make sure the length of the s3 paths is the same as the length of the list of RFC offices
-        # if len(RFC_INFO_LIST) == len(s3_paths):
-        #     logging.error(f"Expected {len(RFC_INFO_LIST)} to match RFC office number, got {len(s3_paths)}")
-        #     raise AttributeError
+        # Check to make sure the length of the s3 paths is the same as the length of the list of RFC offices
+        if len(RFC_INFO_LIST) == len(s3_paths):
+            logging.error(f"Expected {len(RFC_INFO_LIST)} to match RFC office number, got {len(s3_paths)}")
+            # raise AttributeError
         yield DatedPaths(formatted_start_date, formatted_end_date, s3_paths)
 
 
@@ -149,7 +148,8 @@ def align_hourly_data(
     end_date: datetime.datetime,
     source_paths: list[str],
     docker_image_url: str,
-) -> Generator[tuple[CompositeMembershipMetadata, int], None, None]:
+    script_name: str,
+) -> Generator[tuple[CompositeMembershipMetadata, set[str], int], None, None]:
     directory_path = pathlib.Path(directory)
     current_datetime = start_date
     i = 0
@@ -157,10 +157,12 @@ def align_hourly_data(
         print(i)
         search_pattern = f"{current_datetime.strftime('*_%Y%m%d%H.nc4')}"
         match_set = {str(match) for match in directory_path.glob(search_pattern)}
-        # if len(match_set) != len(RFC_INFO_LIST):
-        #     logging.error(f"Expected {len(RFC_INFO_LIST)} to match RFC office number, got {len(match_set)}")
-        #     raise AttributeError
-        yield CompositeMembershipMetadata(current_datetime, docker_image_url, match_set, set(source_paths)), i
+        if len(match_set) != len(RFC_INFO_LIST):
+            logging.error(f"Expected {len(RFC_INFO_LIST)} to match RFC office number, got {len(match_set)}")
+            # raise AttributeError
+        yield CompositeMembershipMetadata(
+            current_datetime, docker_image_url, script_name, set(source_paths)
+        ), match_set, i
         current_datetime += datetime.timedelta(hours=1)
         i += 1
 
@@ -175,7 +177,7 @@ def create_composite_datset(dataset_paths: set[str]) -> xr.Dataset:
     return merged_hourly_data
 
 
-def main(ttl_directory: str, docker_image_url: str, limit: int | None = None) -> None:
+def main(ttl_directory: str, docker_image_url: str, script_name: str, limit: int | None = None) -> None:
     g = create_graph(ttl_directory)
     cloud_handler = CloudHandler()
     breaker = False
@@ -184,32 +186,41 @@ def main(ttl_directory: str, docker_image_url: str, limit: int | None = None) ->
             break
         with TemporaryDirectory() as tempdir:
             unzip_composite_files(dated_s3_paths, tempdir, cloud_handler)
-            for dated_match_set, i in align_hourly_data(
-                tempdir, dated_s3_paths.start_date, dated_s3_paths.end_date, dated_s3_paths.paths, docker_image_url
+            for dated_match_set, matches, i in align_hourly_data(
+                tempdir,
+                dated_s3_paths.start_date,
+                dated_s3_paths.end_date,
+                dated_s3_paths.paths,
+                docker_image_url,
+                script_name,
             ):
-                logging.info(dated_match_set)
-                merged_data = create_composite_datset(dated_match_set._matches)
-                cloud_handler.send_composite_zarr(
-                    merged_data,
-                    dated_s3_paths.paths[0],
-                    dated_match_set.start_time,
-                    dated_match_set.serializable(),
-                )
-                if limit and i >= limit:
-                    breaker = True
-                    break
+                with closing(create_composite_datset(matches)) as merged_data:
+                    cloud_handler.send_composite_zarr(
+                        merged_data,
+                        dated_s3_paths.paths[0],
+                        dated_match_set.start_time,
+                        dated_match_set.serialize(),
+                    )
+                    if limit and i >= limit:
+                        breaker = True
+                        break
 
 
 if __name__ == "__main__":
     from dotenv import load_dotenv
+    from ..utils.dockerinfo import script
     from ..utils.cloud_utils import view_downloads, clear_downloads
     from ..utils.logger import set_up_logger
 
     load_dotenv()
     set_up_logger(level=logging.INFO)
 
-    docker_url = f"https://hub.docker.com/layers/njroberts/blobfish-python/{os.environ['TAG']}/images/{os.environ['HASH']}?context=repo"
-    main("mirrors", docker_url, 10)
+    script_path = script(__file__, workdir="proj")
+    if script_path:
+        docker_url = f"https://hub.docker.com/layers/njroberts/blobfish-python/{os.environ['TAG']}/images/{os.environ['HASH']}?context=repo"
+        main("mirrors", docker_url, script_path, 10)
+    else:
+        logging.error("Script name was not found")
 
     # view_downloads("tempest", "test/transforms")
     # clear_downloads("tempest", "test/transforms")
