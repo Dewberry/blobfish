@@ -1,6 +1,4 @@
 """ Script to parse metadata from uploaded mirror files and create a rdf graph network using the ontology defined in ./pyrdf/_AORC.py """
-import os
-import boto3
 import rdflib
 import datetime
 import requests
@@ -8,7 +6,7 @@ import logging
 import enum
 from dateutil import relativedelta
 from dataclasses import dataclass, field
-from typing import Generator, cast
+from typing import cast
 from rdflib import RDF, OWL, XSD, DCAT, DCTERMS, PROV, Literal, URIRef, BNode
 
 from .transfer import TransferMetadata
@@ -94,6 +92,9 @@ class CompletedTransferMetadata(TransferMetadata):
                 self.source_last_modified, "%a, %d %b %Y %H:%M:%S %Z"
             ).isoformat()
 
+        # Format transfer script to make it parseable
+        self.mirror_script = self.mirror_script.replace("/", "_")
+
         # Get validated page for RFC office
         self.rfc_office_uri = self.__validate_rfc_office_page()
         logging.info(f"Metadata completed for {self.mirror_uri}")
@@ -153,7 +154,7 @@ def construct_mirror_graph(
     ns_prefixes = {"dcat": DCAT, "prov": PROV, "dct": DCTERMS, "aorc": AORC}
     graph_creator = GraphCreator(ns_prefixes)
     namer = NodeNamer()
-    for object in get_mirrored_content(bucket, prefix):
+    for object in get_mirrored_content(bucket, prefix, True):
         meta = complete_metadata(object)
         if meta:
             create_graph_triples(meta, graph_creator, namer, filter)
@@ -176,6 +177,7 @@ def create_graph_triples(
     source_dataset_node = BNode(node_namer.name_source_ds(meta))
     g.add((source_dataset_node, RDF.type, AORC.SourceDataset))
     source_dataset_period_of_time_node = BNode(node_namer.name_ds_period(meta))
+    g.add((source_dataset_period_of_time_node, RDF.type, DCTERMS.PeriodOfTime))
     g.add((source_dataset_node, DCTERMS.temporal, source_dataset_period_of_time_node))
     source_dataset_period_start = Literal(meta.ref_date, datatype=XSD.date)
     g.add((source_dataset_period_of_time_node, DCAT.startDate, source_dataset_period_start))
@@ -216,27 +218,26 @@ def create_graph_triples(
 
     # Create mirror distribution instance, properties
     mirror_distribution_uri = URIRef(meta.mirror_public_uri)
-    # g.add((mirror_distribution_uri, RDF.type, OWL.NamedIndividual))
     g.add((mirror_distribution_uri, RDF.type, AORC.MirrorDistribution))
 
     # Associate mirror distribution with mirror dataset
     g.add((mirror_dataset_uri, DCAT.distribution, mirror_distribution_uri))
 
     # Create transfer script instance
-    script_uri = URIRef(meta.mirror_script)
-    g.add((script_uri, RDF.type, AORC.TransferScript))
+    script_node = BNode(meta.mirror_script)
+    g.add((script_node, RDF.type, AORC.TransferScript))
 
     # Create docker image instance, properties
     docker_image_uri = URIRef(meta.docker_image_url)
     g.add((docker_image_uri, RDF.type, AORC.DockerImage))
-    g.add((docker_image_uri, AORC.hasTransferScript, script_uri))
+    g.add((docker_image_uri, AORC.hasTransferScript, script_node))
 
     # Create transfer job activity instance, properties
     transfer_job_node = BNode(node_namer.name_transfer(meta))
     g.add((transfer_job_node, RDF.type, AORC.TransferJob))
     g.add((transfer_job_node, AORC.transferred, mirror_dataset_uri))
     g.add((transfer_job_node, PROV.used, source_dataset_node))
-    g.add((transfer_job_node, PROV.wasStartedBy, script_uri))
+    g.add((transfer_job_node, PROV.wasStartedBy, script_node))
 
     # Create RFC office instance
     rfc_office_uri = URIRef(meta.rfc_office_uri)
