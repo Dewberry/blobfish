@@ -31,7 +31,7 @@ def view_downloads(bucket: str, prefix: str):
             print(client.get_object(Bucket=bucket, Key=content.get("Key")))
 
 
-def get_mirrored_content(bucket: str, prefix: str) -> Generator[dict, None, None]:
+def get_mirrored_content(bucket: str, prefix: str, with_key: bool = False) -> Generator[dict, None, None]:
     client = boto3.client(
         service_name="s3",
         aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
@@ -42,5 +42,9 @@ def get_mirrored_content(bucket: str, prefix: str) -> Generator[dict, None, None
     for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
         contents = page.get("Contents", [])
         for content in contents:
-            object = client.head_object(Bucket=bucket, Key=content.get("Key"))
+            key = content.get("Key")
+            object = client.head_object(Bucket=bucket, Key=key)
+            object["Bucket"] = bucket
+            if with_key:
+                object["Key"] = key
             yield object
