@@ -40,12 +40,6 @@ class NodeNamer:
     def __init__(self):
         self.name_set = set()
 
-    def __verify_name(self, new_name: str) -> None:
-        if new_name in self.name_set:
-            logging.error("Duplicate name already exists: {0}".format(new_name))
-            raise ValueError
-        self.name_set.add(new_name)
-
     def name_ds_period(self, meta: CompletedCompositeMetadata) -> str:
         name = f"{meta.start_time}_{meta.end_time}"
         return name
@@ -75,6 +69,28 @@ def complete_metadata(composite_object: dict, bucket: str) -> CompletedComposite
             f"Incomplete composite metadata received from s3 object {composite_object.get('Key')}, could not complete object"
         )
         return None
+
+
+def group_meta(bucket: str, prefix: str, with_key: bool = True) -> Generator[CompletedCompositeMetadata, None, None]:
+    content_generator = get_mirrored_content(bucket, prefix, with_key)
+    prev = None
+    current = complete_metadata(next(content_generator), bucket)
+    if current:
+        current.composite_s3_directory
+        datetime_set = set()
+        for next_item in content_generator:
+            next_item = complete_metadata(next_item, bucket)
+            if next_item:
+                if prev:
+                    if prev.composite_s3_directory != current.composite_s3_directory:
+                        prev.composite_last_modified = max(datetime_set)
+                        yield prev
+                        datetime_set.clear()
+                    else:
+                        datetime_set.add(datetime.datetime.fromisoformat(current.composite_last_modified))
+                prev, current = current, next_item
+        current.composite_last_modified = max(datetime_set)
+        yield current
 
 
 def format_zarr_s3_path(bucket: str, key: str) -> str:
@@ -149,20 +165,18 @@ def create_graph_triples(meta: CompletedCompositeMetadata, merged_graph: Graph, 
 
 
 def main(ttl_directory: str, bucket: str, prefix: str) -> None:
-    # TODO: Make it so stuff in same .zarr directory doesn't have individual DCTERMS.created properties
     node_namer = NodeNamer()
-    data_name = None
-    datetimes = list()
     g = create_graph(ttl_directory)
-    for obj in get_mirrored_content(bucket, prefix, True):
-        meta = complete_metadata(obj, bucket)
-        if meta:
-            create_graph_triples(meta, g, node_namer)
+    for grouped_metadata in group_meta(bucket, prefix):
+        create_graph_triples(grouped_metadata, g, node_namer)
     g.serialize("logs/composite.ttl", format="ttl")
 
 
 if __name__ == "__main__":
     from ..utils.cloud_utils import view_downloads, clear_downloads
+    from dotenv import load_dotenv
+
+    load_dotenv()
 
     main("mirrors", "tempest", "test/transforms")
 
