@@ -257,6 +257,10 @@ def define_object_properties(graph: rdflib.Graph) -> None:
 
 def disjoint_classes(graph: rdflib.Graph):
     aorc_classes = [
+        AORC.CompositeDataset,
+        AORC.CompositeDistribution,
+        AORC.CompositeScript,
+        AORC.CompositeJob,
         AORC.DockerImage,
         AORC.MirrorDataset,
         AORC.MirrorDistribution,
