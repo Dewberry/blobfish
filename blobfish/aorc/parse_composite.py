@@ -7,7 +7,7 @@ from rdflib import DCAT, DCTERMS, OWL, PROV, RDF, XSD, Graph, URIRef, BNode, Lit
 from typing import cast, Generator
 
 from ..pyrdf import AORC
-from ..utils.cloud_utils import get_mirrored_content
+from ..utils.cloud_utils import get_s3_content
 
 
 class AORCFilter(enum.Enum):
@@ -72,7 +72,7 @@ def complete_metadata(composite_object: dict, bucket: str) -> CompletedComposite
 
 
 def group_meta(bucket: str, prefix: str, with_key: bool = True) -> Generator[CompletedCompositeMetadata, None, None]:
-    content_generator = get_mirrored_content(bucket, prefix, with_key)
+    content_generator = get_s3_content(bucket, prefix, with_key)
     prev = None
     current = complete_metadata(next(content_generator), bucket)
     if current:

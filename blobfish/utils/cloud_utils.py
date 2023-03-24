@@ -31,7 +31,7 @@ def view_downloads(bucket: str, prefix: str):
             print(client.get_object(Bucket=bucket, Key=content.get("Key")))
 
 
-def get_mirrored_content(bucket: str, prefix: str, with_key: bool = False) -> Generator[dict, None, None]:
+def get_s3_content(bucket: str, prefix: str, with_key: bool = False) -> Generator[dict, None, None]:
     client = boto3.client(
         service_name="s3",
         aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
@@ -48,3 +48,23 @@ def get_mirrored_content(bucket: str, prefix: str, with_key: bool = False) -> Ge
             if with_key:
                 object["Key"] = key
             yield object
+
+
+def update_metadata(
+    bucket: str,
+    key: str,
+    new_meta: dict,
+):
+    client = boto3.client(
+        service_name="s3",
+        aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+        aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+        region_name=os.environ["AWS_DEFAULT_REGION"],
+    )
+    client.copy_object(
+        Bucket=bucket,
+        Key=key,
+        CopySource={"Bucket": bucket, "Key": key},
+        Metadata=new_meta,
+        MetadataDirective="REPLACE",
+    )
