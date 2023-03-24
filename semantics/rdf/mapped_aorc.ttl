@@ -1,8 +1,28 @@
-@prefix aorc: <https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#> .
+@prefix aorc: <https://github.com/Dewberry/blobfish/blob/aorc_refactor/semantics/rdf/mapped_aorc.ttl#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+aorc:CompositeDataset a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "A CONUS netCDF dataset created by stitching together AORC data from all RFC offices for a single hour"^^xsd:string ;
+    rdfs:subClassOf <http://www.w3.org/ns/dcat#Dataset> .
+
+aorc:CompositeDistribution a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The access point for the .zarr directory containing the composite dataset of all RFC office data for an hour"^^xsd:string ;
+    rdfs:subClassOf <http://www.w3.org/ns/dcat#Distribution> .
+
+aorc:CompositeJob a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The execution of the composite script on the docker image instance which generated the composite dataset(s)"^^xsd:string ;
+    rdfs:subClassOf <http://www.w3.org/ns/prov#Activity> .
+
+aorc:CompositeScript a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "A script contained within the docker image which was executed in order to composite AORC dataset(s)"^^xsd:string ;
+    rdfs:subClassOf <http://purl.org/dc/dcmitype/Software> .
 
 aorc:DockerImage a rdfs:Class,
         owl:Class ;
@@ -51,6 +71,13 @@ aorc:TransferScript a rdfs:Class,
 
 aorc: a owl:Ontology .
 
+aorc:hasCompositeDataset a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates that the subject dataset was used in the creation of the object composite dataset"^^xsd:string ;
+    rdfs:domain <http://www.w3.org/ns/dcat#Dataset> ;
+    rdfs:range aorc:CompositeDataset ;
+    owl:inverseOf aorc:isCompositeOf .
+
 aorc:hasMirrorDataset a rdf:Property,
         owl:ObjectProperty ;
     rdfs:comment "Indicates what mirror dataset the subject source dataset was used to generate"^^xsd:string ;
@@ -63,6 +90,12 @@ aorc:hasRFCAlias a owl:DatatypeProperty ;
 aorc:hasRFCName a owl:DatatypeProperty ;
     rdfs:comment "The full region name for the RFC office (ex: 'LOWER MISSISSIPPI for Lower Mississippi River Forecast Center)"^^xsd:string ;
     owl:equivalentProperty <http://purl.org/dc/terms/title> .
+
+aorc:isCompositeScriptOf a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates to what software the script belongs"^^xsd:string ;
+    rdfs:subPropertyOf <http://purl.org/dc/terms/isPartOf> ;
+    owl:inverseOf aorc:hasCompositeScript .
 
 aorc:isDockerImageOf a rdf:Property,
         owl:ObjectProperty ;
@@ -93,11 +126,31 @@ aorc:isTransferScriptOf a rdf:Property,
     rdfs:subPropertyOf <http://purl.org/dc/terms/isPartOf> ;
     owl:inverseOf aorc:hasTransferScript .
 
+aorc:wasCompositedBy a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the job that was responsible for creating the subject composite dataset"^^xsd:string ;
+    rdfs:subPropertyOf <http://www.w3.org/ns/prov#wasGeneratedBy> ;
+    owl:inverseOf aorc:createdComposite .
+
 aorc:wasTransferredBy a rdf:Property,
         owl:ObjectProperty ;
     rdfs:comment "Indicates the job that was responsible for transferring the subject mirror dataset"^^xsd:string ;
     rdfs:subPropertyOf <http://www.w3.org/ns/prov#wasGeneratedBy> ;
     owl:inverseOf aorc:transferred .
+
+aorc:createdComposite a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the job that was responsible for the creation of the subject composite image"^^xsd:string ;
+    rdfs:domain aorc:CompositeJob ;
+    rdfs:range aorc:CompositeDataset ;
+    rdfs:subPropertyOf <http://www.w3.org/ns/prov#generated> .
+
+aorc:hasCompositeScript a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what scripts belong to the software"^^xsd:string ;
+    rdfs:domain <http://purl.org/dc/dcmitype/Software> ;
+    rdfs:range aorc:CompositeScript ;
+    rdfs:subPropertyOf <http://purl.org/dc/terms/hasPart> .
 
 aorc:hasDockerImage a rdf:Property,
         owl:ObjectProperty ;
@@ -120,6 +173,13 @@ aorc:hasTransferScript a rdf:Property,
     rdfs:range aorc:TransferScript ;
     rdfs:subPropertyOf <http://purl.org/dc/terms/hasPart> .
 
+aorc:isCompositeOf a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what datasets were combined to create the subject composite dataset"^^xsd:string ;
+    rdfs:domain aorc:CompositeDataset ;
+    rdfs:range <http://www.w3.org/ns/dcat#Dataset> ;
+    rdfs:subPropertyOf <http://purl.org/dc/terms/source> .
+
 aorc:transferred a rdf:Property,
         owl:ObjectProperty ;
     rdfs:comment "Indicates the mirror dataset that the subject job transferred"^^xsd:string ;
@@ -135,5 +195,5 @@ aorc:hasSourceDataset a rdf:Property,
     rdfs:subPropertyOf <http://purl.org/dc/terms/source> .
 
 [] a owl:AllDisjointClasses ;
-    owl:members ( aorc:DockerImage aorc:MirrorDataset aorc:MirrorDistribution aorc:PrecipPartition aorc:RFC aorc:SourceDataset aorc:SourceDistribution aorc:TransferJob aorc:TransferScript ) .
+    owl:members ( aorc:CompositeDataset aorc:CompositeDistribution aorc:CompositeScript aorc:CompositeJob aorc:DockerImage aorc:MirrorDataset aorc:MirrorDistribution aorc:PrecipPartition aorc:RFC aorc:SourceDataset aorc:SourceDistribution aorc:TransferJob aorc:TransferScript ) .
 
