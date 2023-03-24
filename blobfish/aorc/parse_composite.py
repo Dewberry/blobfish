@@ -101,15 +101,13 @@ def format_zarr_s3_path(bucket: str, key: str) -> str:
     return f"s3://{bucket}/{zarr_path}"
 
 
-def create_graph(
-    ttl_directory: str,
-) -> Graph:
+def create_graph(ttl_directory: str, pattern: str) -> Graph:
     g = Graph()
     g.bind("dcat", DCAT)
     g.bind("dct", DCTERMS)
     g.bind("prov", PROV)
     g.bind("aorc", AORC)
-    for filepath in pathlib.Path(ttl_directory).glob("*.ttl"):
+    for filepath in pathlib.Path(ttl_directory).glob(pattern):
         g.parse(filepath)
     return g
 
@@ -151,6 +149,7 @@ def create_graph_triples(meta: CompletedCompositeMetadata, merged_graph: Graph, 
     # Create script
     composite_script_node = BNode(meta.composite_script)
     merged_graph.add((composite_script_node, RDF.type, AORC.CompositeScript))
+    merged_graph.add((composite_script_node, DCTERMS.identifier, Literal(meta.composite_script)))
 
     # Associate docker image, script, job, and dataset generated
     merged_graph.add((composite_dataset_uri, AORC.wasCompositedBy, composite_job_node))
@@ -164,9 +163,9 @@ def create_graph_triples(meta: CompletedCompositeMetadata, merged_graph: Graph, 
         merged_graph.add((composite_job_node, PROV.used, member_dataset_uri))
 
 
-def main(ttl_directory: str, bucket: str, prefix: str) -> None:
+def main(ttl_directory: str, bucket: str, prefix: str, ttl_pattern: str) -> None:
     node_namer = NodeNamer()
-    g = create_graph(ttl_directory)
+    g = create_graph(ttl_directory, ttl_pattern)
     for grouped_metadata in group_meta(bucket, prefix):
         create_graph_triples(grouped_metadata, g, node_namer)
     g.serialize("logs/composite.ttl", format="ttl")
@@ -178,7 +177,7 @@ if __name__ == "__main__":
 
     load_dotenv()
 
-    main("mirrors", "tempest", "test/transforms")
+    main("mirrors", "tempest", "test/transforms", "*test*.ttl")
 
     # view_downloads("tempest", "test/transforms")
     # clear_downloads("tempest", "test/transforms")

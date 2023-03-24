@@ -226,6 +226,7 @@ def create_graph_triples(
     # Create transfer script instance
     script_node = BNode(meta.mirror_script)
     g.add((script_node, RDF.type, AORC.TransferScript))
+    g.add((script_node, DCTERMS.identifier, Literal(meta.mirror_script)))
 
     # Create docker image instance, properties
     docker_image_uri = URIRef(meta.docker_image_url)
