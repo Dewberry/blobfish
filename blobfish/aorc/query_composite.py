@@ -32,22 +32,17 @@ def get_composites_time_range(
         ?t dcat:endDate ?edate .
         FILTER ("isostart"^^xsd:dateTime <= ?stdate && "isoend"^^xsd:dateTime >= ?edate)
     }
-    """.replace(
-        "isostart", start_time.isoformat()
-    ).replace(
-        "isoend", end_time.isoformat()
+    """
+    formatted_query = query.replace("isostart", start_time.isoformat()).replace("isoend", end_time.isoformat())
+    result = graph.query(
+        formatted_query,
+        initNs={"rdf": rdflib.RDF, "aorc": AORC, "dcat": rdflib.DCAT, "dct": rdflib.DCTERMS, "xsd": rdflib.XSD},
     )
-    result = graph.query(query, initNs={"rdf": rdflib.RDF, "aorc": AORC, "dcat": rdflib.DCAT, "dct": rdflib.DCTERMS})
+    print(formatted_query)
     return result
 
 
-def filter_on_year(ttl: str, year: int):
-    graph = create_graph(ttl)
-    query = """
-    SELECT ?s ?p ?o
-    FILTER ()
-    """
-
-
 if __name__ == "__main__":
-    get_composites_time_range("mirrors/composite.ttl", datetime.datetime(1979, 2, 1), datetime.datetime(1979, 2, 1, 5))
+    ttl_file = "mirrors/composite.ttl"
+    for row in get_composites_time_range(ttl_file, datetime.datetime(1979, 2, 1), datetime.datetime(1979, 2, 1, 5)):
+        print(row)
