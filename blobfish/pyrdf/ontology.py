@@ -5,7 +5,7 @@ from typing import List
 from rdflib import RDFS, RDF, OWL, DCAT, DCTERMS, DCMITYPE, PROV, FOAF, XSD, URIRef, Literal, BNode
 from rdflib.collection import Collection
 
-from ..pyrdf._AORC import AORC
+from ._AORC import AORC
 
 
 @dataclass
