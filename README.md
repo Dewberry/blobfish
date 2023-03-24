@@ -20,6 +20,10 @@ A collection of ontologies and scripts for generating mirrors for use in data pi
  * [parse_transfer](./blobfish/aorc/parse_transfer.py) - Script for parsing metadata from s3 objects of mirrored datasets to create RDF metadata documenting the relationship between the mirror, the source, and the mirroring process
  * [transfer](./blobfish/aorc/transfer.py) - Script for transferring data from AORC http server to s3 bucket
 
+ [PyRDF](./blobfish/pyrdf/):
+ * [AORC](./blobfish/pyrdf/_AORC.py) - Defines classes, data properties, and object properties associated with created in AORC ontology which is used in RDF metadata creation
+ * [ontology](./blobfish/pyrdf/ontology.py) - Creates mapped_aorc.ttl file
+
  ##### Setup
 
  To run the scripts in this repo, you should have a .env file in the same directory as this repo which has the following keys:
