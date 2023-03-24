@@ -3,6 +3,7 @@ import datetime
 import rdflib
 from ..pyrdf import AORC
 
+
 def create_graph(ttl: str) -> rdflib.Graph:
     g = rdflib.Graph()
     g.parse(ttl)
@@ -29,7 +30,7 @@ def get_composites_time_range(
         ?cdata dct:temporal ?t .
         ?t dcat:startDate ?stdate .
         ?t dcat:endDate ?edate .
-        FILTER("isostart"^^xsd:dateTime <= ?stdate && "isoend"^^xsd:dateTime >= ?edate)
+        FILTER ("isostart"^^xsd:dateTime <= ?stdate && "isoend"^^xsd:dateTime >= ?edate)
     }
     """.replace(
         "isostart", start_time.isoformat()
@@ -39,7 +40,13 @@ def get_composites_time_range(
     result = graph.query(query, initNs={"rdf": rdflib.RDF, "aorc": AORC, "dcat": rdflib.DCAT, "dct": rdflib.DCTERMS})
     return result
 
-def filter_on_year(year: int)
+
+def filter_on_year(ttl: str, year: int):
+    graph = create_graph(ttl)
+    query = """
+    SELECT ?s ?p ?o
+    FILTER ()
+    """
 
 
 if __name__ == "__main__":
