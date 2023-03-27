@@ -14,7 +14,7 @@ from rdflib import XSD, DCAT, DCTERMS, PROV, Graph, Literal
 from typing import cast
 from zipfile import ZipFile
 from tempfile import TemporaryDirectory
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from contextlib import closing
 
 from .const import RFC_INFO_LIST
@@ -154,7 +154,6 @@ def align_hourly_data(
     current_datetime = start_date
     i = 0
     while current_datetime <= end_date:
-        print(i)
         search_pattern = f"{current_datetime.strftime('*_%Y%m%d%H.nc4')}"
         match_set = {str(match) for match in directory_path.glob(search_pattern)}
         if len(match_set) != len(RFC_INFO_LIST):
