@@ -2,6 +2,7 @@ import pathlib
 import datetime
 import logging
 import enum
+import re
 from dataclasses import dataclass, field
 from rdflib import DCAT, DCTERMS, OWL, PROV, RDF, XSD, Graph, URIRef, BNode, Literal
 from typing import cast, Generator, Any
@@ -71,28 +72,17 @@ def complete_metadata(composite_object: dict, bucket: str) -> CompletedComposite
         return None
 
 
-def group_meta(
-    bucket: str, prefix: str, with_key: bool = True, client: Any | None = None
+def get_meta(
+    bucket: str, prefix: str, metadata_pattern: re.Pattern, with_key: bool = True, client: Any | None = None
 ) -> Generator[CompletedCompositeMetadata, None, None]:
-    content_generator = get_s3_content(bucket, prefix, with_key, client)
-    prev = None
-    current = complete_metadata(next(content_generator), bucket)
-    if current:
-        current.composite_s3_directory
-        datetime_set = set()
-        for next_item in content_generator:
-            next_item = complete_metadata(next_item, bucket)
-            if next_item:
-                if prev:
-                    if prev.composite_s3_directory != current.composite_s3_directory:
-                        prev.composite_last_modified = max(datetime_set)
-                        yield prev
-                        datetime_set.clear()
-                    else:
-                        datetime_set.add(datetime.datetime.fromisoformat(current.composite_last_modified))
-                prev, current = current, next_item
-        current.composite_last_modified = max(datetime_set)
-        yield current
+    for obj in get_s3_content(bucket, prefix, with_key, client):
+        key = cast(str, obj.get("Key"))
+        if re.match(metadata_pattern, key):
+            meta = complete_metadata(obj, bucket)
+            if meta:
+                yield meta
+            else:
+                logging.info(f"Skipping {key} due to returning None from complete_metadata()")
 
 
 def format_zarr_s3_path(bucket: str, key: str) -> str:
@@ -182,6 +172,7 @@ def main(
     ttl_pattern: str,
     composites_bucket: str,
     composites_prefix: str,
+    composites_metadata_pattern: re.Pattern,
     from_s3: bool = False,
     to_s3: bool = False,
     target_bucket: str | None = None,
@@ -193,8 +184,8 @@ def main(
         g = create_graph_s3(ttl_directory, ttl_pattern, client)
     else:
         g = create_graph_local(ttl_directory, ttl_pattern)
-    for grouped_metadata in group_meta(composites_bucket, composites_prefix):
-        create_graph_triples(grouped_metadata, g, node_namer)
+    for meta in get_meta(composites_bucket, composites_prefix, composites_metadata_pattern):
+        create_graph_triples(meta, g, node_namer)
     if to_s3 and target_bucket and target_key:
         ttl_body = g.serialize(format="ttl")
         upload_graph_ttl(target_bucket, target_key, ttl_body, client)
@@ -209,6 +200,18 @@ if __name__ == "__main__":
     load_dotenv()
     client = get_client()
     bucket = "tempest"
-    main(bucket, "graphs/aorc/precip/1979", bucket, "transforms", True, True, bucket, "graphs/transforms.ttl", client)
+    metadata_pattern = re.compile(r".*\.zmetadata$")
+    main(
+        bucket,
+        "graphs/aorc/precip/1979",
+        bucket,
+        "transforms",
+        metadata_pattern,
+        True,
+        True,
+        bucket,
+        "graphs/transforms.ttl",
+        client,
+    )
     # view_downloads("tempest", "test/transforms")
     # clear_downloads("tempest", "test/transforms")

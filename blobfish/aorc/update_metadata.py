@@ -7,6 +7,7 @@ from typing import cast, Any
 import datetime
 import os
 import logging
+import re
 
 
 class TransferMetaBuilder:
@@ -106,7 +107,7 @@ class CompositeMetaBuilder:
         metadata = cast(dict, self.base.get("Metadata"))
         if len(metadata) > 0:
             try:
-                self.from_dict(metadata)
+                self.check_keys(metadata)
             except KeyError:
                 logging.info(f"Metadata for {self.base.get('Key')} is incomplete, continuing to creation")
             else:
@@ -144,15 +145,14 @@ class CompositeMetaBuilder:
         return serialized
 
     @staticmethod
-    def from_dict(metadata_dictionary: dict) -> CompositeMembershipMetadata:
-        start_time = datetime.datetime.fromisoformat(cast(str, metadata_dictionary.get("start_time")))
-        docker_image = cast(str, metadata_dictionary.get("docker_image"))
-        script_name = cast(str, metadata_dictionary.get("composite_script"))
-        members = set(cast(str, metadata_dictionary.get("members")).split(","))
-        return CompositeMembershipMetadata(start_time, docker_image, script_name, members)
+    def check_keys(metadata_dictionary: dict) -> None:
+        if {"start_time", "end_time", "docker_image_url", "composite_script", "members"} != {
+            key for key in metadata_dictionary.keys()
+        }:
+            raise KeyError
 
 
-def retrieve_mirrors(bucket: str, prefix: str, client):
+def update_mirrors(bucket: str, prefix: str, client: Any | None = None):
     for obj in get_s3_content(bucket, prefix, True, client):
         try:
             update_mirror(obj, bucket)
@@ -166,12 +166,14 @@ def update_mirror(mirror_object: dict, bucket: str, client: Any | None = None) -
     update_metadata(bucket, new_meta_obj.mirror_uri, transfer_metadata, client)
 
 
-def retrieve_composites(bucket: str, prefix: str, client):
+def update_composites(bucket: str, prefix: str, pattern: re.Pattern, client: Any | None = None) -> None:
     for obj in get_s3_content(bucket, prefix, True, client):
-        try:
-            update_composite(obj, bucket)
-        except ValueError:
-            logging.info(f"Object {obj.get('Key')} metadata has already been updated, skipping")
+        key = cast(str, obj.get("Key"))
+        if re.match(pattern, key):
+            try:
+                update_composite(obj, bucket)
+            except ValueError:
+                logging.info(f"Object {key} metadata has already been updated, skipping")
 
 
 def update_composite(mirror_object: dict, bucket: str, client: Any | None = None):
@@ -182,13 +184,23 @@ def update_composite(mirror_object: dict, bucket: str, client: Any | None = None
 
 if __name__ == "__main__":
     from dotenv import load_dotenv
+    from multiprocessing import Pool
+    from functools import partial
     from ..utils.logger import set_up_logger
 
     set_up_logger(level=logging.INFO)
     load_dotenv()
 
     bucket = "tempest"
+    metadata_pattern = re.compile(r".*\.zmetadata$")
+
     client = get_client()
 
-    # retrieve_mirrors(bucket, "mirrors/aorc/precip", client)
-    retrieve_composites(bucket, "transforms/aorc/precipitation", client)
+    update_mirrors(bucket, "mirrors/aorc/precip", client)
+
+    def mappable_update(year: int):
+        return update_composites(bucket, f"transforms/aorc/precipitation/{year}", metadata_pattern)
+
+    with Pool(processes=44) as pool:
+        for i in pool.imap_unordered(mappable_update, range(1979, 2023)):
+            print(i)
