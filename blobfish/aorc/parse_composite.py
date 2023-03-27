@@ -4,10 +4,10 @@ import logging
 import enum
 from dataclasses import dataclass, field
 from rdflib import DCAT, DCTERMS, OWL, PROV, RDF, XSD, Graph, URIRef, BNode, Literal
-from typing import cast, Generator
+from typing import cast, Generator, Any
 
 from ..pyrdf import AORC
-from ..utils.cloud_utils import get_s3_content
+from ..utils.cloud_utils import get_s3_content, upload_graph_ttl, get_object_body_string
 
 
 class AORCFilter(enum.Enum):
@@ -71,8 +71,10 @@ def complete_metadata(composite_object: dict, bucket: str) -> CompletedComposite
         return None
 
 
-def group_meta(bucket: str, prefix: str, with_key: bool = True) -> Generator[CompletedCompositeMetadata, None, None]:
-    content_generator = get_s3_content(bucket, prefix, with_key)
+def group_meta(
+    bucket: str, prefix: str, with_key: bool = True, client: Any | None = None
+) -> Generator[CompletedCompositeMetadata, None, None]:
+    content_generator = get_s3_content(bucket, prefix, with_key, client)
     prev = None
     current = complete_metadata(next(content_generator), bucket)
     if current:
@@ -101,7 +103,7 @@ def format_zarr_s3_path(bucket: str, key: str) -> str:
     return f"s3://{bucket}/{zarr_path}"
 
 
-def create_graph(ttl_directory: str, pattern: str) -> Graph:
+def create_graph_local(ttl_directory: str, pattern: str) -> Graph:
     g = Graph()
     g.bind("dcat", DCAT)
     g.bind("dct", DCTERMS)
@@ -109,6 +111,18 @@ def create_graph(ttl_directory: str, pattern: str) -> Graph:
     g.bind("aorc", AORC)
     for filepath in pathlib.Path(ttl_directory).glob(pattern):
         g.parse(filepath)
+    return g
+
+
+def create_graph_s3(bucket: str, prefix: str, client: Any | None = None):
+    g = Graph()
+    g.bind("dcat", DCAT)
+    g.bind("dct", DCTERMS)
+    g.bind("prov", PROV)
+    g.bind("aorc", AORC)
+    for obj in get_s3_content(bucket, prefix, True, client):
+        obj = get_object_body_string(bucket, cast(str, obj.get("Key")), client)
+        g.parse(data=obj.read())
     return g
 
 
@@ -163,21 +177,38 @@ def create_graph_triples(meta: CompletedCompositeMetadata, merged_graph: Graph, 
         merged_graph.add((composite_job_node, PROV.used, member_dataset_uri))
 
 
-def main(ttl_directory: str, bucket: str, prefix: str, ttl_pattern: str) -> None:
+def main(
+    ttl_directory: str,
+    ttl_pattern: str,
+    composites_bucket: str,
+    composites_prefix: str,
+    from_s3: bool = False,
+    to_s3: bool = False,
+    target_bucket: str | None = None,
+    target_key: str | None = None,
+    client: Any | None = None,
+) -> None:
     node_namer = NodeNamer()
-    g = create_graph(ttl_directory, ttl_pattern)
-    for grouped_metadata in group_meta(bucket, prefix):
+    if from_s3:
+        g = create_graph_s3(ttl_directory, ttl_pattern, client)
+    else:
+        g = create_graph_local(ttl_directory, ttl_pattern)
+    for grouped_metadata in group_meta(composites_bucket, composites_prefix):
         create_graph_triples(grouped_metadata, g, node_namer)
-    g.serialize("logs/composite.ttl", format="ttl")
+    if to_s3 and target_bucket and target_key:
+        ttl_body = g.serialize(format="ttl")
+        upload_graph_ttl(target_bucket, target_key, ttl_body, client)
+    else:
+        g.serialize("logs/composite.ttl", format="ttl")
 
 
 if __name__ == "__main__":
-    from ..utils.cloud_utils import view_downloads, clear_downloads
+    from ..utils.cloud_utils import view_downloads, clear_downloads, get_client
     from dotenv import load_dotenv
 
     load_dotenv()
-
-    main("mirrors", "tempest", "test/transforms", "*test*.ttl")
-
+    client = get_client()
+    bucket = "tempest"
+    main(bucket, "graphs/aorc/precip/1979", bucket, "transforms", True, True, bucket, "graphs/transforms.ttl", client)
     # view_downloads("tempest", "test/transforms")
     # clear_downloads("tempest", "test/transforms")

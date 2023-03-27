@@ -6,15 +6,14 @@ import logging
 import enum
 from dateutil import relativedelta
 from dataclasses import dataclass, field
-from typing import cast
+from typing import cast, Any
 from rdflib import RDF, OWL, XSD, DCAT, DCTERMS, PROV, Literal, URIRef, BNode
 
 from .transfer import TransferMetadata
 
-# from .const import SOURCE_CATALOG, MIRROR_CATALOG
 from ..pyrdf import AORC
 from ..utils.logger import set_up_logger
-from ..utils.cloud_utils import get_mirrored_content
+from ..utils.cloud_utils import get_s3_content, get_client, upload_graph_ttl
 
 
 class AORCFilter(enum.Enum):
@@ -49,12 +48,18 @@ class GraphCreator:
         self.default_graph = self.__create_graph()
         return self.default_graph
 
-    def serialize_graphs(self, filepath_pattern: str) -> None:
+    def serialize_graphs(
+        self, filepath_pattern: str, to_s3: bool = False, client: Any | None = None, bucket: str | None = None
+    ) -> None:
         if len(self.filter_graphs.items()) > 0:
             for filter_key, filter_graph in self.filter_graphs.items():
                 fn = filepath_pattern.format(filter_key)
-                filter_graph.serialize(fn, format="ttl")
-                logging.info(f"Graph serialized to {fn}")
+                if to_s3 and bucket:
+                    ttl_body = filter_graph.serialize(format="ttl")
+                    upload_graph_ttl(bucket, fn, ttl_body, client)
+                else:
+                    filter_graph.serialize(fn, format="ttl")
+                    logging.info(f"Graph serialized to {fn}")
         elif self.default_graph:
             fn = filepath_pattern.format("")
             self.default_graph.serialize(fn, format="ttl")
@@ -149,16 +154,21 @@ def complete_metadata(mirror_object: dict) -> CompletedTransferMetadata | None:
 
 
 def construct_mirror_graph(
-    bucket: str, prefix: str, filepath_pattern: str, filter: AORCFilter | None = AORCFilter.RFC
+    mirror_bucket: str,
+    mirror_prefix: str,
+    filepath_pattern: str,
+    filter: AORCFilter | None = AORCFilter.RFC,
+    client: Any | None = None,
+    target_bucket: str | None = None,
 ) -> None:
     ns_prefixes = {"dcat": DCAT, "prov": PROV, "dct": DCTERMS, "aorc": AORC}
     graph_creator = GraphCreator(ns_prefixes)
     namer = NodeNamer()
-    for object in get_mirrored_content(bucket, prefix, True):
+    for object in get_s3_content(mirror_bucket, mirror_prefix, True, client):
         meta = complete_metadata(object)
         if meta:
             create_graph_triples(meta, graph_creator, namer, filter)
-    graph_creator.serialize_graphs(filepath_pattern)
+    graph_creator.serialize_graphs(filepath_pattern, True, client, target_bucket)
 
 
 def create_graph_triples(
@@ -263,5 +273,8 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
 
     load_dotenv()
+    client = get_client()
     set_up_logger(level=logging.INFO)
-    construct_mirror_graph("tempest", "test/AORC", "mirrors/test{0}.ttl")
+    construct_mirror_graph(
+        "tempest", "mirrors/aorc/precip", "graphs/aorc/test/{0}.ttl", AORCFilter.RFC, client, "tempest"
+    )
