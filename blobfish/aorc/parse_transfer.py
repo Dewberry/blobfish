@@ -72,15 +72,15 @@ class GraphCreator:
 @dataclass
 class CompletedTransferMetadata(TransferMetadata):
     mirror_last_modified: str
+    bucket: str
     mirror_public_uri: str = field(init=False)
     ref_end_date: str = field(init=False)
     rfc_office_uri: str = field(init=False)
 
     def __post_init__(self):
         # Create public s3 address
-        bucket, *filename_parts = self.mirror_uri.replace("s3://", "").split("/")
-        filename = "/".join(filename_parts)
-        public_uri = f"https://{bucket}.s3.amazonaws.com/{filename}"
+        public_uri = f"https://{self.bucket}.s3.amazonaws.com/{self.mirror_uri}"
+        self.mirror_uri = f"s3://{self.bucket}/{self.mirror_uri}"
         self.mirror_public_uri = public_uri
 
         # Calculate and format end duration for dataset
@@ -144,6 +144,7 @@ class NodeNamer:
 def complete_metadata(mirror_object: dict) -> CompletedTransferMetadata | None:
     partial_metadata = cast(dict, mirror_object.get("Metadata"))
     partial_metadata["mirror_last_modified"] = cast(datetime.datetime, mirror_object.get("LastModified")).isoformat()
+    partial_metadata["bucket"] = cast(str, mirror_object.get("Bucket"))
     try:
         return CompletedTransferMetadata(**partial_metadata)
     except TypeError:
