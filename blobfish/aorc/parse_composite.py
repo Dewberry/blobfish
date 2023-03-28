@@ -173,12 +173,13 @@ def main(
     composites_bucket: str,
     composites_prefix: str,
     composites_metadata_pattern: re.Pattern,
+    output_path: str,
     from_s3: bool = False,
     to_s3: bool = False,
     target_bucket: str | None = None,
-    target_key: str | None = None,
     client: Any | None = None,
 ) -> None:
+    # TODO: Add size limiter which serializes after ttl string goes over set limit
     node_namer = NodeNamer()
     if from_s3:
         g = create_graph_s3(ttl_directory, ttl_pattern, client)
@@ -186,9 +187,9 @@ def main(
         g = create_graph_local(ttl_directory, ttl_pattern)
     for meta in get_meta(composites_bucket, composites_prefix, composites_metadata_pattern):
         create_graph_triples(meta, g, node_namer)
-    if to_s3 and target_bucket and target_key:
+    if to_s3 and target_bucket:
         ttl_body = g.serialize(format="ttl")
-        upload_graph_ttl(target_bucket, target_key, ttl_body, client)
+        upload_graph_ttl(target_bucket, output_path, ttl_body, client)
     else:
         g.serialize("logs/composite.ttl", format="ttl")
 
@@ -207,10 +208,10 @@ if __name__ == "__main__":
         bucket,
         "transforms",
         metadata_pattern,
+        "graphs/transforms.ttl",
         True,
         True,
         bucket,
-        "graphs/transforms.ttl",
         client,
     )
     # view_downloads("tempest", "test/transforms")
