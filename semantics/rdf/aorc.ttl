@@ -1,271 +1,199 @@
-@prefix : <http://github.com/Dewberry/blobfish/semantics/rdf/aorc#> .
+@prefix aorc: <https://github.com/Dewberry/blobfish/blob/aorc_refactor/semantics/rdf/aorc.ttl#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix xml: <http://www.w3.org/XML/1998/namespace> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix aorc: <http://github.com/Dewberry/blobfish/semantics/rdf/aorc#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@base <http://github.com/Dewberry/blobfish/semantics/rdf/aorc#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+aorc:CompositeDataset a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "A CONUS netCDF dataset created by stitching together AORC data from all RFC offices for a single hour"^^xsd:string ;
+    rdfs:subClassOf <http://www.w3.org/ns/dcat#Dataset> .
+
+aorc:CompositeDistribution a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The access point for the .zarr directory containing the composite dataset of all RFC office data for an hour"^^xsd:string ;
+    rdfs:subClassOf <http://www.w3.org/ns/dcat#Distribution> .
+
+aorc:CompositeJob a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The execution of the composite script on the docker image instance which generated the composite dataset(s)"^^xsd:string ;
+    rdfs:subClassOf <http://www.w3.org/ns/prov#Activity> .
+
+aorc:CompositeScript a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "A script contained within the docker image which was executed in order to composite AORC dataset(s)"^^xsd:string ;
+    rdfs:subClassOf <http://purl.org/dc/dcmitype/Software> .
+
+aorc:DockerImage a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "A docker image hosted on a repository that can be used to generate mirror datasets"^^xsd:string ;
+    rdfs:subClassOf <http://purl.org/dc/dcmitype/Software> .
+
+aorc:MirrorDataset a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "An AORC dataset that has been copied from its original location on NOAA servers to s3"^^xsd:string ;
+    rdfs:subClassOf <http://www.w3.org/ns/dcat#Dataset> .
+
+aorc:MirrorDistribution a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The access point for the mirrored dataset on s3"^^xsd:string ;
+    rdfs:subClassOf <http://www.w3.org/ns/dcat#Distribution> .
+
+aorc:PrecipPartition a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The directory which directly holds all source datasets which are published by the creator RFC office associated with the PrecipPartition"^^xsd:string ;
+    rdfs:subClassOf <http://www.w3.org/ns/dcat#Catalog> .
+
+aorc:RFC a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The River Forecast Center which is associated with the coverage area for a catalog of precipitation data"^^xsd:string ;
+    rdfs:subClassOf <http://xmlns.com/foaf/0.1/Organization> .
+
+aorc:SourceDataset a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The AORC dataset in its original location on the NOAA servers"^^xsd:string ;
+    rdfs:subClassOf <http://www.w3.org/ns/dcat#Dataset> .
+
+aorc:SourceDistribution a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The access point for the mirrored dataset on s3"^^xsd:string ;
+    rdfs:subClassOf <http://www.w3.org/ns/dcat#Distribution> .
+
+aorc:TransferJob a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The execution of the transfer script on the docker image instance which generated the mirror dataset(s)"^^xsd:string ;
+    rdfs:subClassOf <http://www.w3.org/ns/prov#Activity> .
+
+aorc:TransferScript a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "A script contained within the docker image which was executed in order to mirror the dataset(s)"^^xsd:string ;
+    rdfs:subClassOf <http://purl.org/dc/dcmitype/Software> .
+
+aorc: a owl:Ontology .
+
+aorc:hasCompositeDataset a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates that the subject dataset was used in the creation of the object composite dataset"^^xsd:string ;
+    rdfs:domain <http://www.w3.org/ns/dcat#Dataset> ;
+    rdfs:range aorc:CompositeDataset ;
+    owl:inverseOf aorc:isCompositeOf .
+
+aorc:hasMirrorDataset a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what mirror dataset the subject source dataset was used to generate"^^xsd:string ;
+    owl:inverseOf aorc:hasSourceDataset .
+
+aorc:hasRFCAlias a owl:DatatypeProperty ;
+    rdfs:comment "The 2 character alias assigned to an RFC office (ex: 'LM' for Lower Mississippi River Forecast Office)"^^xsd:string ;
+    owl:equivalentProperty <http://purl.org/dc/terms/alternative> .
+
+aorc:hasRFCName a owl:DatatypeProperty ;
+    rdfs:comment "The full region name for the RFC office (ex: 'LOWER MISSISSIPPI for Lower Mississippi River Forecast Center)"^^xsd:string ;
+    owl:equivalentProperty <http://purl.org/dc/terms/title> .
+
+aorc:isCompositeScriptOf a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates to what software the script belongs"^^xsd:string ;
+    rdfs:subPropertyOf <http://purl.org/dc/terms/isPartOf> ;
+    owl:inverseOf aorc:hasCompositeScript .
+
+aorc:isDockerImageOf a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what software belong to the docker image"^^xsd:string ;
+    rdfs:subPropertyOf <http://purl.org/dc/terms/hasPart> ;
+    owl:inverseOf aorc:hasDockerImage .
+
+aorc:isMirrorDatasetOf a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the origin of the subject mirrored dataset"^^xsd:string ;
+    rdfs:domain aorc:MirrorDataset ;
+    rdfs:range aorc:SourceDataset ;
+    rdfs:subPropertyOf <http://purl.org/dc/terms/source> .
+
+aorc:isRFCOf a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the data resources that have been published by the subject RFC Office"^^xsd:string ;
+    owl:inverseOf aorc:hasRFC .
+
+aorc:isSourceDatasetOf a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what mirror dataset the subject source dataset was used to generate"^^xsd:string ;
+    owl:inverseOf aorc:hasSourceDataset .
+
+aorc:isTransferScriptOf a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates to what software the script belongs"^^xsd:string ;
+    rdfs:subPropertyOf <http://purl.org/dc/terms/isPartOf> ;
+    owl:inverseOf aorc:hasTransferScript .
+
+aorc:wasCompositedBy a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the job that was responsible for creating the subject composite dataset"^^xsd:string ;
+    rdfs:subPropertyOf <http://www.w3.org/ns/prov#wasGeneratedBy> ;
+    owl:inverseOf aorc:createdComposite .
+
+aorc:wasTransferredBy a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the job that was responsible for transferring the subject mirror dataset"^^xsd:string ;
+    rdfs:subPropertyOf <http://www.w3.org/ns/prov#wasGeneratedBy> ;
+    owl:inverseOf aorc:transferred .
+
+aorc:createdComposite a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the job that was responsible for the creation of the subject composite image"^^xsd:string ;
+    rdfs:domain aorc:CompositeJob ;
+    rdfs:range aorc:CompositeDataset ;
+    rdfs:subPropertyOf <http://www.w3.org/ns/prov#generated> .
+
+aorc:hasCompositeScript a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what scripts belong to the software"^^xsd:string ;
+    rdfs:domain <http://purl.org/dc/dcmitype/Software> ;
+    rdfs:range aorc:CompositeScript ;
+    rdfs:subPropertyOf <http://purl.org/dc/terms/hasPart> .
+
+aorc:hasDockerImage a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what docker image to which the software belongs"^^xsd:string ;
+    rdfs:domain <http://purl.org/dc/dcmitype/Software> ;
+    rdfs:range aorc:DockerImage ;
+    rdfs:subPropertyOf <http://purl.org/dc/terms/isPartOf> .
+
+aorc:hasRFC a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the RFC Office responsible for the publication of the subject data resource"^^xsd:string ;
+    rdfs:domain <http://www.w3.org/ns/dcat#Resource> ;
+    rdfs:range aorc:RFC ;
+    rdfs:subPropertyOf <http://purl.org/dc/terms/creator> .
+
+aorc:hasTransferScript a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what scripts belong to the software"^^xsd:string ;
+    rdfs:domain <http://purl.org/dc/dcmitype/Software> ;
+    rdfs:range aorc:TransferScript ;
+    rdfs:subPropertyOf <http://purl.org/dc/terms/hasPart> .
+
+aorc:isCompositeOf a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what datasets were combined to create the subject composite dataset"^^xsd:string ;
+    rdfs:domain aorc:CompositeDataset ;
+    rdfs:range <http://www.w3.org/ns/dcat#Dataset> ;
+    rdfs:subPropertyOf <http://purl.org/dc/terms/source> .
+
+aorc:transferred a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the mirror dataset that the subject job transferred"^^xsd:string ;
+    rdfs:domain aorc:TransferJob ;
+    rdfs:range aorc:MirrorDataset ;
+    rdfs:subPropertyOf <http://www.w3.org/ns/prov#generated> .
+
+aorc:hasSourceDataset a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the origin of the subject mirrored dataset"^^xsd:string ;
+    rdfs:domain aorc:MirrorDataset ;
+    rdfs:range aorc:SourceDataset ;
+    rdfs:subPropertyOf <http://purl.org/dc/terms/source> .
+
+[] a owl:AllDisjointClasses ;
+    owl:members ( aorc:CompositeDataset aorc:CompositeDistribution aorc:CompositeScript aorc:CompositeJob aorc:DockerImage aorc:MirrorDataset aorc:MirrorDistribution aorc:PrecipPartition aorc:RFC aorc:SourceDataset aorc:SourceDistribution aorc:TransferJob aorc:TransferScript ) .
 
-<http://github.com/Dewberry/blobfish/semantics/rdf/aorc#> rdf:type owl:Ontology .
-
-#################################################################
-#    Datatypes
-#################################################################
-
-###  http://www.w3.org/2001/XMLSchema#date
-xsd:date rdf:type rdfs:Datatype .
-
-
-#################################################################
-#    Object Properties
-#################################################################
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#IsMirrorURIOf
-aorc:IsMirrorURIOf rdf:type owl:ObjectProperty ;
-                   owl:inverseOf aorc:hasMirrorURI .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasCodeRepositroy
-aorc:hasCodeRepositroy rdf:type owl:ObjectProperty ;
-                       owl:inverseOf aorc:isCodeRepositoryOf ;
-                       rdfs:domain aorc:Script ;
-                       rdfs:range aorc:CodeRepository .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasCommitHash
-aorc:hasCommitHash rdf:type owl:ObjectProperty ;
-                   owl:inverseOf aorc:isCommitHashOf ;
-                   rdfs:domain aorc:Script ;
-                   rdfs:range aorc:CommitHash .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasCompositeGridURI
-aorc:hasCompositeGridURI rdf:type owl:ObjectProperty ;
-                         owl:inverseOf aorc:isCompositeGridURIOf ;
-                         rdfs:domain aorc:CompositeGrid ;
-                         rdfs:range aorc:CompositeGridURI .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasCreationScript
-aorc:hasCreationScript rdf:type owl:ObjectProperty ;
-                       rdfs:domain aorc:CompositeGrid ;
-                       rdfs:range aorc:Script .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasMirrorURI
-aorc:hasMirrorURI rdf:type owl:ObjectProperty ;
-                  rdfs:domain aorc:SourceDataset ;
-                  rdfs:range aorc:MirrorURI .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasRFC
-aorc:hasRFC rdf:type owl:ObjectProperty ;
-            owl:inverseOf aorc:isRFCOf ;
-            rdfs:domain aorc:SourceDataset ;
-            rdfs:range aorc:RFC .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasSourceGrid
-aorc:hasSourceGrid rdf:type owl:ObjectProperty ;
-                   owl:inverseOf aorc:isSourceGridOf ;
-                   rdfs:domain aorc:SourceDataset ;
-                   rdfs:range aorc:SourceGrid .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasSourceURI
-aorc:hasSourceURI rdf:type owl:ObjectProperty ;
-                  owl:inverseOf aorc:isSourceURIOf ;
-                  rdfs:domain aorc:SourceDataset ;
-                  rdfs:range aorc:SourceURI .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#isCodeRepositoryOf
-aorc:isCodeRepositoryOf rdf:type owl:ObjectProperty .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#isCommitHashOf
-aorc:isCommitHashOf rdf:type owl:ObjectProperty .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#isCompositeGridURIOf
-aorc:isCompositeGridURIOf rdf:type owl:ObjectProperty .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#isRFCOf
-aorc:isRFCOf rdf:type owl:ObjectProperty .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#isSourceGridOf
-aorc:isSourceGridOf rdf:type owl:ObjectProperty .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#isSourceURIOf
-aorc:isSourceURIOf rdf:type owl:ObjectProperty .
-
-
-#################################################################
-#    Data properties
-#################################################################
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasDateCreated
-aorc:hasDateCreated rdf:type owl:DatatypeProperty ;
-                    rdfs:domain aorc:CompositeGrid ;
-                    rdfs:range xsd:date .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasRFCAlias
-aorc:hasRFCAlias rdf:type owl:DatatypeProperty ;
-                 rdfs:domain aorc:RFC ;
-                 rdfs:range xsd:string .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasRFCName
-aorc:hasRFCName rdf:type owl:DatatypeProperty ;
-                rdfs:domain aorc:RFC ;
-                rdfs:range xsd:string .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#hasRefDate
-aorc:hasRefDate rdf:type owl:DatatypeProperty ;
-                rdfs:domain aorc:SourceDataset .
-
-
-#################################################################
-#    Classes
-#################################################################
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#CodeRepository
-aorc:CodeRepository rdf:type owl:Class ;
-                    rdfs:subClassOf aorc:Script ,
-                                    [ rdf:type owl:Restriction ;
-                                      owl:onProperty aorc:hasCommitHash ;
-                                      owl:someValuesFrom aorc:CommitHash
-                                    ] ;
-                    rdfs:comment "Code repository identifies the location of the Script file used to create the CompositeGrid." .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#CommitHash
-aorc:CommitHash rdf:type owl:Class ;
-                rdfs:subClassOf aorc:Script ;
-                rdfs:comment "The CommitHash is provided for a code repository at the time the script was executed to ensure provenance and reproducibility are effectuated." .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#CompositeGrid
-aorc:CompositeGrid rdf:type owl:Class ;
-                   rdfs:subClassOf [ rdf:type owl:Restriction ;
-                                     owl:onProperty aorc:hasCreationScript ;
-                                     owl:someValuesFrom aorc:Script
-                                   ] ,
-                                   [ rdf:type owl:Restriction ;
-                                     owl:onProperty aorc:hasSourceGrid ;
-                                     owl:someValuesFrom aorc:SourceGrid
-                                   ] ;
-                   rdfs:comment "CompositeGrid is the transformed dataset stored in the cloud mirror containing all of the RFC datasets (conus) merged into a continuous grid and converted to zarr format." ;
-                   owl:versionInfo "2023.01.17" .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#CompositeGridURI
-aorc:CompositeGridURI rdf:type owl:Class ;
-                      rdfs:subClassOf aorc:CompositeGrid ;
-                      rdfs:comment "Dircect link to the CompositeGrid stored in the S3 mirror." .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#MirrorURI
-aorc:MirrorURI rdf:type owl:Class ;
-               rdfs:subClassOf aorc:SourceDataset ;
-               rdfs:comment "MirrorURI provides an access link to a copy of the SourceDataset which has been copied to the S3 mirror." .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#RFC
-aorc:RFC rdf:type owl:Class ;
-         rdfs:subClassOf [ rdf:type owl:Restriction ;
-                           owl:onProperty aorc:hasRFCAlias ;
-                           owl:someValuesFrom xsd:string
-                         ] ,
-                         [ rdf:type owl:Restriction ;
-                           owl:onProperty aorc:hasRFCName ;
-                           owl:someValuesFrom xsd:string
-                         ] ;
-         rdfs:comment "Datasets stored on the NOAA ftp server (http://hydrology.nws.noaa.gov/pub/aorc-historic) are stored hierarchicaly by Regional Forecast Center (RFC). THE RFC class is useful for scanning the ftp for identification and download of datasets." .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#Script
-aorc:Script rdf:type owl:Class ;
-            rdfs:subClassOf [ rdf:type owl:Restriction ;
-                              owl:onProperty aorc:hasCodeRepositroy ;
-                              owl:someValuesFrom aorc:CodeRepository
-                            ] ,
-                            [ rdf:type owl:Restriction ;
-                              owl:onProperty aorc:hasCommitHash ;
-                              owl:someValuesFrom aorc:CommitHash
-                            ] ;
-            rdfs:comment "Script used to create a composite grid." .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#SourceDataset
-aorc:SourceDataset rdf:type owl:Class ;
-                   rdfs:subClassOf [ rdf:type owl:Restriction ;
-                                     owl:onProperty aorc:hasRFC ;
-                                     owl:someValuesFrom aorc:RFC
-                                   ] ,
-                                   [ rdf:type owl:Restriction ;
-                                     owl:onProperty aorc:hasSourceGrid ;
-                                     owl:someValuesFrom aorc:SourceGrid
-                                   ] ,
-                                   [ rdf:type owl:Restriction ;
-                                     owl:onProperty aorc:hasRefDate ;
-                                     owl:someValuesFrom xsd:date
-                                   ] ;
-                   rdfs:comment """SourceDataset is the fundamental source file for all SourceGrid's used to develop the CompositeGrid. 
-
-Alll SourceDatasets are zipfiles (available  at http://hydrology.nws.noaa.gov/pub/aorc-historic/) which contain hourly netcdf files (.nc4).
-
-SourceDatasets are named using the convention \"[RFCAlias]RFC_YYYYMM.zip\" beginning on 1979-02.""" .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#SourceGrid
-aorc:SourceGrid rdf:type owl:Class ;
-                rdfs:subClassOf aorc:SourceDataset ;
-                rdfs:comment "The source data provided on the NOAA AORC server is comprised of hourly records in netcdf format with extension .nc4 using the the following naming convention: AORC_APCP_[RFCAlias]RFC_1979022823.nc4" .
-
-
-###  http://github.com/Dewberry/blobfish/semantics/rdf/aorc#SourceURI
-aorc:SourceURI rdf:type owl:Class ;
-               rdfs:subClassOf aorc:SourceDataset ;
-               rdfs:comment "SourceURI provides an access link to the original SourceDataset object." .
-
-
-#################################################################
-#    General axioms
-#################################################################
-
-[ rdf:type owl:AllDisjointClasses ;
-  owl:members ( aorc:MirrorURI
-                aorc:SourceGrid
-                aorc:SourceURI
-              )
-] .
-
-
-[ rdf:type owl:AllDisjointProperties ;
-  owl:members ( aorc:hasCompositeGridURI
-                aorc:hasCreationScript
-                aorc:hasMirrorURI
-                aorc:hasRFC
-                aorc:hasSourceGrid
-                aorc:hasSourceURI
-              )
-] .
-
-
-[ rdf:type owl:AllDisjointProperties ;
-  owl:members ( aorc:hasDateCreated
-                aorc:hasRFCAlias
-                aorc:hasRFCName
-                aorc:hasRefDate
-              )
-] .
-
-
-###  Generated by the OWL API (version 4.5.9.2019-02-01T07:24:44Z) https://github.com/owlcs/owlapi

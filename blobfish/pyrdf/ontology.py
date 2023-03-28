@@ -306,4 +306,4 @@ def create_graph(output_file: str, format: str = "ttl") -> None:
 
 
 if __name__ == "__main__":
-    create_graph("semantics/rdf/mapped_aorc.ttl")
+    create_graph("semantics/rdf/aorc.ttl")

@@ -22,7 +22,7 @@ A collection of ontologies and scripts for generating mirrors for use in data pi
 
  [PyRDF](./blobfish/pyrdf/):
  * [AORC](./blobfish/pyrdf/_AORC.py) - Defines classes, data properties, and object properties associated with created in AORC ontology which is used in RDF metadata creation
- * [ontology](./blobfish/pyrdf/ontology.py) - Creates mapped_aorc.ttl file
+ * [ontology](./blobfish/pyrdf/ontology.py) - Creates aorc.ttl file
 
  ##### Setup
 
