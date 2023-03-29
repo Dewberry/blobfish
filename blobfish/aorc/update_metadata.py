@@ -185,7 +185,6 @@ def update_composite(mirror_object: dict, bucket: str, client: Any | None = None
 if __name__ == "__main__":
     from dotenv import load_dotenv
     from multiprocessing import Pool
-    from functools import partial
     from ..utils.logger import set_up_logger
 
     set_up_logger(level=logging.INFO)
