@@ -30,15 +30,14 @@ def get_composites_time_range(
         ?cdata dct:temporal ?t .
         ?t dcat:startDate ?stdate .
         ?t dcat:endDate ?edate .
-        FILTER ("isostart"^^xsd:dateTime <= ?stdate && "isoend"^^xsd:dateTime >= ?edate)
+        FILTER (?st <= ?stdate && ?et >= ?edate)
     }
     """
-    formatted_query = query.replace("isostart", start_time.isoformat()).replace("isoend", end_time.isoformat())
     result = graph.query(
-        formatted_query,
+        query,
         initNs={"rdf": rdflib.RDF, "aorc": AORC, "dcat": rdflib.DCAT, "dct": rdflib.DCTERMS, "xsd": rdflib.XSD},
+        initBindings={"st": rdflib.Literal(start_time.isoformat(), datatype=rdflib.XSD.dateTime), "et": rdflib.Literal(end_time.isoformat(), datatype=rdflib.XSD.dateTime)}
     )
-    print(formatted_query)
     return result
 
 

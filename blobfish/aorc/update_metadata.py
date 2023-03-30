@@ -195,11 +195,11 @@ if __name__ == "__main__":
 
     client = get_client()
 
-    update_mirrors(bucket, "mirrors/aorc/precip", client)
+    # update_mirrors(bucket, "mirrors/aorc/precip", client)
 
     def mappable_update(year: int):
         return update_composites(bucket, f"transforms/aorc/precipitation/{year}", metadata_pattern)
 
     with Pool(processes=44) as pool:
         for i in pool.imap_unordered(mappable_update, range(1979, 2023)):
-            print(i)
+            continue
