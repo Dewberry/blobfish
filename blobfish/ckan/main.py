@@ -33,7 +33,7 @@ if __name__ == "__main__":
     parser.add_argument('-x', '--longitude', help="x coordinate for point of interest", required=True, type=float)
     parser.add_argument('-y', '--latitude', help="y coordinate for point of interest", required=True, type=float)
     parser.add_argument('-f', '--file', help="Path to ttl file to load as rdflib graph in place of CKAN rdf data", required=False, type=str)
-    parser.add_argument('-m', '--method', help="If plain, use method of retrieving RFC offices which does not invoke GeoSPARQL functions. If geo, use method which invokes GeoSPARQL functions", choices=["plain", "geo"], default="plain", required=False)
+    parser.add_argument('-m', '--method', help="If plain, use method of retrieving RFC offices which does not invoke GeoSPARQL functions. If geo, use method which invokes GeoSPARQL functions", choices=["plain", "geo"], default="plain", required=False, type=str)
 
     args = parser.parse_args()
 
@@ -44,7 +44,8 @@ if __name__ == "__main__":
             handler = RDFHandler()
             handler.load_graph()
         rfc_alias = identify_rfc_alias(args.longitude, args.latitude)
-        get_mirror_uris(rfc_alias, handler)
+        for s3_uri in get_mirror_uris(rfc_alias, handler):
+            print(s3_uri)
     else:
         if args.file:
             handler = SpatialRDFHandler(init_ttl=args.file)
@@ -52,4 +53,5 @@ if __name__ == "__main__":
             handler = SpatialRDFHandler()
             handler.load_graph()
         handler.add_spatial_coverages()
-        handler.identify_rfc_datasets(args.longitude, args.latitude)
+        for s3_uri in handler.identify_rfc_datasets(args.longitude, args.latitude):
+            print(s3_uri)
