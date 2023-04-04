@@ -285,6 +285,11 @@ def create_graph(output_file: str, format: str = "ttl") -> None:
     g.bind("rdf", RDF)
     g.bind("rdfs", RDFS)
     g.bind("owl", OWL)
+    g.bind("dc", DCTERMS)
+    g.bind("dcmi", DCMITYPE)
+    g.bind("dcat", DCAT)
+    g.bind("foaf", FOAF)
+    g.bind("prov", PROV)
 
     # Define namespace as new ontology
     namespace_uri = URIRef(AORC._NS)
