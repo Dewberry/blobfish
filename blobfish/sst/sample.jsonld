@@ -1,0 +1,66 @@
+{
+    "@context": "https://project-open-data.cio.gov/v1.1/schema/catalog.jsonld",
+    "@type": "dcat:Catalog",
+    "conformsTo": "https://project-open-data.cio.gov/v1.1/schema",
+    "describedBy": "https://project-open-data.cio.gov/v1.1/schema/catalog.json",
+    "dataset": [
+        {
+            "title": "Storm Transposition Model, Indian Creek 1979-02-01",
+            "description": "Data documenting modeling of transposition region for Indian Creek, 1979-02-01",
+            "keyword": [
+                "aorc",
+                "transposition",
+                "Indian Creek",
+                "storm",
+                "hydrological",
+                "modeling",
+                "hydrology",
+                "precipitation"
+            ],
+            "modified": "2023-02-23T17:56:39",
+            "publisher": {
+                "@type": "org:Organization",
+                "name": "Federal Emergency Management Agency",
+                "suborganizationOf": {
+                    "@type": "org:Organization",
+                    "name": "Department of Homeland Security",
+                    "suborganizationOf": {
+                        "@type": "org:Organization",
+                        "name": "United States Government"
+                    }
+                }
+            },
+            "contactPoint": {
+                "@type": "vcard:Contact",
+                "fn": "Nicholas Roberts",
+                "hasEmail": "nrjoberts@dewberry.com"
+            },
+            "identifier": "http://dx.doi.org/nonfunctioning/doi/example",
+            "accessLevel": "public",
+            "bureauCode": "024:070",
+            "programCode": "024:006",
+            "rights": "This dataset is located on an s3 bucket which requires an AWS account which has been granted access to said bucket",
+            "spatial": "42.69909199999999, -92.06818400003067",
+            "temporal": "1979-02-01T00:00:00/P72H",
+            "describedBy": "https://project-open-data.cio.gov/v1.1/schema/dataset.json",
+            "describedByType": "application/json",
+            "distribution": [
+                {
+                    "@type": "dcat:Distribution",
+                    "description": "DSS file created by storm transposition model for Indian Creek, 1979-02-01",
+                    "downloadURL": "s3://tempest/watersheds/indian-creek/indian-creek-transpo-area-v01/72h/docs/19790201.json",
+                    "format": "Data Storage System",
+                    "mediaType": "application/octet"
+                }
+            ],
+            "language": [
+                "en"
+            ],
+            "references": [
+                "s3://tempest/watersheds/indian-creek/indian-creek-transpo-area-v01/72h/docs/19790201.json",
+                "s3://tempest/watersheds/indian-creek/indian-creek-transpo-area-v01/72h/pngs/19790201.png",
+                "s3://tempest/watersheds/indian-creek/indian-creek-transpo-area-v01.geojson"
+            ]
+        }
+    ]
+}
