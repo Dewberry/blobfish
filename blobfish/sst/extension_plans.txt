@@ -1,0 +1,86 @@
+AORC ontology changes necessary:
+	- add class TranspositionStatistics
+	- add properties:
+		cellCount
+		meanPrecipitation
+		maximumPrecipitation
+		minimumPrecipitation
+		sumPrecipitation
+		normalizedMeanPrecipitation
+Desired changes:
+in sample:
+	in catalog:
+		- change @context to sstCatalog.jsonld
+		- change describedBy property to sstCatalog.json
+	change spatial to bounding box of 
+---
+sstCatalog.jsonld:
+	- @context
+		- add geo: http://www.opengis.net/ont/geosparql
+		- add sio: http://semanticscience.org/resource/
+		- add region: geo:wktLiteral
+		- add count: aorc:cellCount
+		- add mean: aorc:meanPrecipitation
+		- add max: aorc:maximumPrecipitation
+		- add min: aorc:minimumPrecipitation
+		- add sum: aorc:sumPrecipitation
+		- add normMean: aorc:normalizedMeanPrecipitation
+---
+sstCatalog.json:
+	- change dataset.items.$ref to sstDataset.json link
+---
+sstDataset.json:
+	- add season:
+		enum: ["winter", "spring", "summer", "autumn"]
+	- add waterYear
+		type: "integer"
+	- add watershed:
+		$ref: watershed.json
+	- add transposition:
+		$ref: transposition.json
+	- add image:
+		$ref: image.json
+	- add stats:
+		$ref: stats.json
+	- add source:
+		type: array
+		items: {
+			$ref: source.json
+			minItems: 1
+			uniqueItems: true
+		}
+---
+watershed.json:
+	- @type: region
+	- name
+---
+transposition.json:
+	- @type: region
+	- name
+---
+image.json:
+	- @type: {
+	enum: ["dcat:Dataset"]
+	}
+	- title
+	- modified
+	- description
+	- distribution:
+		-$ref: distribution.json (not private, the same as is referenced by DCAT-US)
+---
+stats.json
+	- @type: {
+	enum: ["aorc:TranspositionStatistics"]
+	}
+	- count
+	- mean
+	- max
+	- min
+	- sum
+	- normMean
+---
+source.json
+	- @type: {
+	enum: ["aorc:CompositeDataset"]
+	}
+
