@@ -7,17 +7,21 @@ AORC ontology changes necessary:
 		minimumPrecipitation
 		sumPrecipitation
 		normalizedMeanPrecipitation
+	- add class TranspositionScript
+	- add property hasTranspositionScript
+	- add class TranspositionJob
 Desired changes:
 in sample:
 	in catalog:
 		- change @context to sstCatalog.jsonld
 		- change describedBy property to sstCatalog.json
-	change spatial to bounding box of 
+	change spatial to bounding box of
 ---
 sstCatalog.jsonld:
 	- @context
 		- add geo: http://www.opengis.net/ont/geosparql
 		- add sio: http://semanticscience.org/resource/
+		- add prov: http://www.w3.org/ns/prov
 		- add region: geo:wktLiteral
 		- add count: aorc:cellCount
 		- add mean: aorc:meanPrecipitation
@@ -25,6 +29,10 @@ sstCatalog.jsonld:
 		- add min: aorc:minimumPrecipitation
 		- add sum: aorc:sumPrecipitation
 		- add normMean: aorc:normalizedMeanPrecipitation
+		- add dockerImage: aorc:hasDockerImage
+		- add used: prov:used
+		- add wasGeneratedBy: prov:wasGeneratedBy
+		- add wasStartedBy: prov:wasStartedBy
 ---
 sstCatalog.json:
 	- change dataset.items.$ref to sstDataset.json link
@@ -32,7 +40,7 @@ sstCatalog.json:
 sstDataset.json:
 	- add season:
 		enum: ["winter", "spring", "summer", "autumn"]
-	- add waterYear
+	- add waterYear:
 		type: "integer"
 	- add watershed:
 		$ref: watershed.json
@@ -49,6 +57,10 @@ sstDataset.json:
 			minItems: 1
 			uniqueItems: true
 		}
+	- add transpositionJob:
+		$ref: transpositionJob.json
+	- add wasGeneratedBy:
+		$ref: transpositionJob.json
 ---
 watershed.json:
 	- @type: region
@@ -83,4 +95,23 @@ source.json
 	- @type: {
 	enum: ["aorc:CompositeDataset"]
 	}
-
+---
+transpositionJob.json
+	- @type: {
+	enum: ["aorc:TranspositionJob"]
+	}
+	- wasStartedBy
+		$ref: script.json
+	- used:
+		type: array
+		items: {
+			$ref compositeDataset.json
+			minItems: 1
+			uniqueItems: true
+		}
+---
+script.json
+	- @type: {
+		enum: "aorc:TranspositionScript"
+	}
+	- hasDockerImage
