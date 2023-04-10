@@ -31,7 +31,7 @@ aorc:CompositeScript a rdfs:Class,
 
 aorc:DockerImage a rdfs:Class,
         owl:Class ;
-    rdfs:comment "A docker image hosted on a repository that can be used to generate mirror datasets"^^xsd:string ;
+    rdfs:comment "A versioned docker image which holds scripts on a remote repository"^^xsd:string ;
     rdfs:subClassOf dcmi:Software .
 
 aorc:MirrorDataset a rdfs:Class,
@@ -74,7 +74,24 @@ aorc:TransferScript a rdfs:Class,
     rdfs:comment "A script contained within the docker image which was executed in order to mirror the dataset(s)"^^xsd:string ;
     rdfs:subClassOf dcmi:Software .
 
+aorc:TranspositionJob a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The execution of the transposition script on the docker image instance which generated the storm model dataset(s)"^^xsd:string ;
+    rdfs:subClassOf prov:Activity .
+
+aorc:TranspositionScript a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "A script contained within the docker image which was executed in order to generate the storm model dataset(s)"^^xsd:string ;
+    rdfs:subClassOf dcmi:Software .
+
+aorc:TranspositionStatistics a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "Statistics to summarize relevant information about the precipitation observed in the transposition model generated"^^xsd:string .
+
 aorc: a owl:Ontology .
+
+aorc:cellCount a owl:DatatypeProperty ;
+    rdfs:comment "The count of gridded precipitation data cells contained in the watershed region"^^xsd:string .
 
 aorc:hasCompositeDataset a rdf:Property,
         owl:ObjectProperty ;
@@ -95,6 +112,12 @@ aorc:hasRFCAlias a owl:DatatypeProperty ;
 aorc:hasRFCName a owl:DatatypeProperty ;
     rdfs:comment "The full region name for the RFC office (ex: 'LOWER MISSISSIPPI for Lower Mississippi River Forecast Center)"^^xsd:string ;
     owl:equivalentProperty dc:title .
+
+aorc:hasTranspositionScript a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what transposition scripts belong to the software"^^xsd:string ;
+    rdfs:domain dcmi:Software ;
+    rdfs:range aorc:TranspositionScript .
 
 aorc:isCompositeScriptOf a rdf:Property,
         owl:ObjectProperty ;
@@ -131,6 +154,21 @@ aorc:isTransferScriptOf a rdf:Property,
     rdfs:subPropertyOf dc:isPartOf ;
     owl:inverseOf aorc:hasTransferScript .
 
+aorc:maximumPrecipitation a owl:DatatypeProperty ;
+    rdfs:comment "The maximum precipitation amount in inches over the transposed watershed"^^xsd:string .
+
+aorc:meanPrecipitation a owl:DatatypeProperty ;
+    rdfs:comment "The average, or mean, precipitation amount in inches over the transposed watershed"^^xsd:string .
+
+aorc:minimumPrecipitation a owl:DatatypeProperty ;
+    rdfs:comment "The minimum precipitation amount in inches over the transposed watershed"^^xsd:string .
+
+aorc:normalizedMeanPrecipitation a owl:DatatypeProperty ;
+    rdfs:comment "The average precipitation value after being normalized using ATLAS14 precipitation data"^^xsd:string .
+
+aorc:sumPrecipitation a owl:DatatypeProperty ;
+    rdfs:comment "The summed precipitation amount in inches over the transposed watershed"^^xsd:string .
+
 aorc:wasCompositedBy a rdf:Property,
         owl:ObjectProperty ;
     rdfs:comment "Indicates the job that was responsible for creating the subject composite dataset"^^xsd:string ;
@@ -152,7 +190,7 @@ aorc:createdComposite a rdf:Property,
 
 aorc:hasCompositeScript a rdf:Property,
         owl:ObjectProperty ;
-    rdfs:comment "Indicates what scripts belong to the software"^^xsd:string ;
+    rdfs:comment "Indicates what composite scripts belong to the software"^^xsd:string ;
     rdfs:domain dcmi:Software ;
     rdfs:range aorc:CompositeScript ;
     rdfs:subPropertyOf dc:hasPart .
@@ -173,7 +211,7 @@ aorc:hasRFC a rdf:Property,
 
 aorc:hasTransferScript a rdf:Property,
         owl:ObjectProperty ;
-    rdfs:comment "Indicates what scripts belong to the software"^^xsd:string ;
+    rdfs:comment "Indicates what transfer scripts belong to the software"^^xsd:string ;
     rdfs:domain dcmi:Software ;
     rdfs:range aorc:TransferScript ;
     rdfs:subPropertyOf dc:hasPart .
