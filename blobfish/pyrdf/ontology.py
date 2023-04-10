@@ -11,14 +11,14 @@ from ._AORC import AORC
 @dataclass
 class AORCParentRelation:
     aorc_class: URIRef
-    parent_class: URIRef
+    parent_class: URIRef | None
     comment: str
 
 
 @dataclass
 class AORCDatatypePropertyRelation:
     aorc_datatype_property: URIRef
-    equivalent_property: URIRef
+    equivalent_property: URIRef | None
     comment: str
 
 
@@ -56,7 +56,7 @@ def define_subclasses(graph: rdflib.Graph) -> None:
         AORCParentRelation(
             AORC.DockerImage,
             DCMITYPE.Software,
-            "A docker image hosted on a repository that can be used to generate mirror datasets",
+            "A versioned docker image which holds scripts on a remote repository",
         ),
         AORCParentRelation(
             AORC.MirrorDataset,
@@ -92,11 +92,27 @@ def define_subclasses(graph: rdflib.Graph) -> None:
             DCMITYPE.Software,
             "A script contained within the docker image which was executed in order to mirror the dataset(s)",
         ),
+        AORCParentRelation(
+            AORC.TranspositionJob,
+            PROV.Activity,
+            "The execution of the transposition script on the docker image instance which generated the storm model dataset(s)",
+        ),
+        AORCParentRelation(
+            AORC.TranspositionScript,
+            DCMITYPE.Software,
+            "A script contained within the docker image which was executed in order to generate the storm model dataset(s)",
+        ),
+        AORCParentRelation(
+            AORC.TranspositionStatistics,
+            None,
+            "Statistics to summarize relevant information about the precipitation observed in the transposition model generated",
+        ),
     ]
     for relation_object in subclass_comment_list:
         graph.add((relation_object.aorc_class, RDF.type, OWL.Class))
         graph.add((relation_object.aorc_class, RDF.type, RDFS.Class))
-        graph.add((relation_object.aorc_class, RDFS.subClassOf, relation_object.parent_class))
+        if relation_object.parent_class:
+            graph.add((relation_object.aorc_class, RDFS.subClassOf, relation_object.parent_class))
         graph.add(
             (
                 relation_object.aorc_class,
@@ -122,10 +138,37 @@ def define_datatype_properties(graph: rdflib.Graph) -> None:
             DCTERMS.title,
             "The full region name for the RFC office (ex: 'LOWER MISSISSIPPI for Lower Mississippi River Forecast Center)",
         ),
+        AORCDatatypePropertyRelation(
+            AORC.cellCount,
+            None,
+            "The size of the watershed region created in the transposition model, in number of cells",
+        ),
+        AORCDatatypePropertyRelation(
+            AORC.maximumPrecipitation, None, "The maximum precipitation amount in inches over the transposed watershed"
+        ),
+        AORCDatatypePropertyRelation(
+            AORC.meanPrecipitation,
+            None,
+            "The average, or mean, precipitation amount in inches over the transposed watershed",
+        ),
+        AORCDatatypePropertyRelation(
+            AORC.minimumPrecipitation, None, "The minimum precipitation amount in inches over the transposed watershed"
+        ),
+        AORCDatatypePropertyRelation(
+            AORC.normalizedMeanPrecipitation,
+            None,
+            "The average precipitation value after being normalized using ATLAS14 precipitation data",
+        ),
+        AORCDatatypePropertyRelation(
+            AORC.sumPrecipitation, None, "The summed precipitation amount in inches over the transposed watershed"
+        ),
     ]
     for relation_object in data_properties_to_assign:
         graph.add((relation_object.aorc_datatype_property, RDF.type, OWL.DatatypeProperty))
-        graph.add((relation_object.aorc_datatype_property, OWL.equivalentProperty, relation_object.equivalent_property))
+        if relation_object.equivalent_property:
+            graph.add(
+                (relation_object.aorc_datatype_property, OWL.equivalentProperty, relation_object.equivalent_property)
+            )
         graph.add(
             (
                 relation_object.aorc_datatype_property,
