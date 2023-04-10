@@ -1,0 +1,24 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "https://ckan-url/compositeDataset.json#",
+    "title": "AORC Composite Dataset",
+    "description": "Composite AORC precipitation dataset for the contiguous United States.",
+    "type": "object",
+    "required": [
+        "@id"
+    ],
+    "properties": {
+        "@type": {
+            "title": "Metadata Context",
+            "description": "IRI for the JSON-LD data type. This should be aorc:compositeDataset.",
+            "enum": [
+                "aorc:CompositeDataset"
+            ]
+        },
+        "@id": {
+            "title": "CompositeDataset IRI",
+            "description": "IRI for the CompositeDataset in reference.",
+            "type": "string"
+        }
+    }
+}

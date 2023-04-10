@@ -1,0 +1,35 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "https://ckan-url/transpositionJob.json#",
+    "title": "Transposition Job",
+    "description": "Activity in which a composite dataset was used by a script to run the storm transposition model and create model output data.",
+    "type": "object",
+    "required": [
+        "wasStartedBy",
+        "used"
+    ],
+    "properties": {
+        "@type": {
+            "title": "Metadata Context",
+            "description": "IRI for the JSON-LD data type. This should be aorc:TranspositionJob.",
+            "enum": [
+                "aorc:TranspositionJob"
+            ]
+        },
+        "wasStartedBy": {
+            "title": "Started By",
+            "description": "The script responsible for starting the model.",
+            "$ref": "https://ckan-url/script.json#"
+        },
+        "used": {
+            "title": "Composite Used",
+            "description": "Composite dataset used during the run of the model",
+            "type": "array",
+            "items": {
+                "$ref": "https://ckan-url/compositeDataset.json#",
+                "minItems": 1,
+                "uniqueItems": true
+            }
+        }
+    }
+}

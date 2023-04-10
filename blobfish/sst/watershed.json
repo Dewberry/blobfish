@@ -1,0 +1,32 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "https://ckan-url/watershed.json#",
+    "title": "Storm Transposition Watershed",
+    "description": "A watershed as a geo:wktLiteral object with a label",
+    "type": "object",
+    "required": [
+        "region",
+        "name"
+    ],
+    "properties": {
+        "@type": {
+            "title": "Metadata Context",
+            "description": "IRI for the JSON-LD data type. This should be geo:Geometry.",
+            "enum": [
+                "geo:Geometry"
+            ]
+        },
+        "region": {
+            "title": "Watershed",
+            "description": "Watershed region geometry as a well-known text string (WKT)",
+            "type": "string",
+            "minLength": 1
+        },
+        "name": {
+            "title": "Watershed Name",
+            "description": "Full name of watershed",
+            "type": "string",
+            "minLength": 1
+        }
+    }
+}
