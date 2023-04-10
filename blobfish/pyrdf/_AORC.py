@@ -17,10 +17,19 @@ class AORC(DefinedNamespace):
     SourceDistribution: URIRef
     TransferJob: URIRef
     TransferScript: URIRef
+    TranspositionJob: URIRef
+    TranspositionScript: URIRef
+    TranspositionStatistics: URIRef
 
     # Data Properties
+    cellCount: URIRef
     hasRFCAlias: URIRef
     hasRFCName: URIRef
+    maximumPrecipitation: URIRef
+    meanPrecipitation: URIRef
+    minimumPrecipitation: URIRef
+    normalizedMeanPrecipitation: URIRef
+    sumPrecipitation: URIRef
 
     # Object Properties
     createdComposite: URIRef
@@ -31,6 +40,7 @@ class AORC(DefinedNamespace):
     hasRFC: URIRef
     hasSourceDataset: URIRef
     hasTransferScript: URIRef
+    hasTranspositionScript: URIRef
     isCompositeOf: URIRef
     isCompositeScriptOf: URIRef
     isDockerImageOf: URIRef
