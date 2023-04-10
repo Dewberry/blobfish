@@ -129,14 +129,12 @@ def define_datatype_properties(graph: rdflib.Graph) -> None:
     # Define the data properties using equivalent properties
     data_properties_to_assign = [
         AORCDatatypePropertyRelation(
-            AORC.cellCount,
-            None,
-            "The size of the watershed region created in the transposition model, in number of cells",
-        ),
-        AORCDatatypePropertyRelation(
             AORC.hasRFCAlias,
             DCTERMS.alternative,
             "The 2 character alias assigned to an RFC office (ex: 'LM' for Lower Mississippi River Forecast Office)",
+        ),
+        AORCDatatypePropertyRelation(
+            AORC.cellCount, None, "The count of gridded precipitation data cells contained in the watershed region"
         ),
         AORCDatatypePropertyRelation(
             AORC.hasRFCName,
