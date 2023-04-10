@@ -129,6 +129,11 @@ def define_datatype_properties(graph: rdflib.Graph) -> None:
     # Define the data properties using equivalent properties
     data_properties_to_assign = [
         AORCDatatypePropertyRelation(
+            AORC.cellCount,
+            None,
+            "The size of the watershed region created in the transposition model, in number of cells",
+        ),
+        AORCDatatypePropertyRelation(
             AORC.hasRFCAlias,
             DCTERMS.alternative,
             "The 2 character alias assigned to an RFC office (ex: 'LM' for Lower Mississippi River Forecast Office)",
@@ -137,11 +142,6 @@ def define_datatype_properties(graph: rdflib.Graph) -> None:
             AORC.hasRFCName,
             DCTERMS.title,
             "The full region name for the RFC office (ex: 'LOWER MISSISSIPPI for Lower Mississippi River Forecast Center)",
-        ),
-        AORCDatatypePropertyRelation(
-            AORC.cellCount,
-            None,
-            "The size of the watershed region created in the transposition model, in number of cells",
         ),
         AORCDatatypePropertyRelation(
             AORC.maximumPrecipitation, None, "The maximum precipitation amount in inches over the transposed watershed"
@@ -201,7 +201,7 @@ def define_object_properties(graph: rdflib.Graph) -> None:
         ),
         ObjectPropertyDescription(
             AORC.hasCompositeScript,
-            "Indicates what scripts belong to the software",
+            "Indicates what composite scripts belong to the software",
             DCMITYPE.Software,
             AORC.CompositeScript,
         ),
@@ -222,9 +222,15 @@ def define_object_properties(graph: rdflib.Graph) -> None:
         ),
         ObjectPropertyDescription(
             AORC.hasTransferScript,
-            "Indicates what scripts belong to the software",
+            "Indicates what transfer scripts belong to the software",
             DCMITYPE.Software,
             AORC.TransferScript,
+        ),
+        ObjectPropertyDescription(
+            AORC.hasTranspositionScript,
+            "Indicates what transposition scripts belong to the software",
+            DCMITYPE.Software,
+            AORC.TranspositionScript,
         ),
         ObjectPropertyDescription(
             AORC.isCompositeOf,
