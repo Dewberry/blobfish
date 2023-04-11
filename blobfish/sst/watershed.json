@@ -1,6 +1,6 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "id": "https://ckan-url/watershed.json#",
+    "id": "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/431bedea-dafd-4591-afbc-68d522600bec/download/watershed.json",
     "title": "Storm Transposition Watershed",
     "description": "A watershed as a geo:wktLiteral object with a label",
     "type": "object",

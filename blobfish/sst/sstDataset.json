@@ -1,6 +1,6 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "id": "https://ckan-url/sstDataset.json#",
+    "id": "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/c1a20c69-f77f-40f7-afbb-84054265e5cd/download/sstdataset.json",
     "title": "Project Open Data Dataset",
     "description": "The metadata format for storm transposition models. Validates a single JSON object.",
     "type": "object",
@@ -77,7 +77,7 @@
             "uniqueItems": true
         },
         "contactPoint": {
-            "$ref": "vcard.json"
+            "$ref": "https://project-open-data.cio.gov/v1.1/schema/vcard.json"
         },
         "describedBy": {
             "title": "Data Dictionary",
@@ -267,7 +267,7 @@
             "uniqueItems": true
         },
         "publisher": {
-            "$ref": "organization.json"
+            "$ref": "https://project-open-data.cio.gov/v1.1/schema/organization.json"
         },
         "references": {
             "title": "Related Documents",
@@ -384,27 +384,27 @@
             "type": "integer"
         },
         "watershed": {
-            "$ref": "https://ckan-url/watershed.json"
+            "$ref": "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/431bedea-dafd-4591-afbc-68d522600bec/download/watershed.json"
         },
         "transposition": {
-            "$ref": "https://ckan-url/transposition.json"
+            "$ref": "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/e18dfcb3-971f-4a3e-b05b-dc728d75f944/download/transposition.json"
         },
         "image": {
-            "$ref": "https://ckan-url/image.json"
+            "$ref": "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/8f93acf9-bff6-4154-9ce6-f12849a94ffc/download/image.json"
         },
         "stats": {
-            "$ref": "https://ckan-url/stats.json"
+            "$ref": "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/1f66cd16-ddd5-4809-9bc7-65234530509f/download/stats.json"
         },
         "source": {
             "type": "array",
             "items": {
-                "$ref": "https://ckan-url/compositeDataset.json",
+                "$ref": "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/906173e4-b0f6-4d98-8f0b-d7fcd7499d43/download/compositedataset.json",
                 "minItems": 1,
                 "uniqueItems": true
             }
         },
         "wasGeneratedBy": {
-            "$ref": "https://ckan-url/transpositionJob.json"
+            "$ref": "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/93949f62-c5e6-4be2-93c5-73f12d65c242/download/transpositionjob.json"
         }
     }
 }

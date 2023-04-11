@@ -1,6 +1,6 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "id": "https://ckan-url/catalog.json#",
+    "id": "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/0b6b1035-cede-49a9-9dc3-36dcbcb50cbc/download/sstcatalog.json",
     "title": "Project Open Data Catalog - modified for storm modeling",
     "description": "Validates an entire collection of storm transposition metadata JSON objects.",
     "type": "object",
@@ -49,7 +49,7 @@
         "dataset": {
             "type": "array",
             "items": {
-                "$ref": "https://ckan-url/sstDataset.json",
+                "$ref": "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/c1a20c69-f77f-40f7-afbb-84054265e5cd/download/sstdataset.json",
                 "minItems": 1,
                 "uniqueItems": true
             }

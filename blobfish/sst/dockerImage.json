@@ -1,6 +1,6 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "id": "https://ckan-url/dockerImage.json#",
+    "id": "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/e3a77354-04e1-4a24-abff-5874f68674d9/download/dockerimage.json",
     "title": "Docker Image",
     "description": "Docker image containg software used to launch the transposition model.",
     "type": "object",

@@ -1,6 +1,6 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "id": "https://ckan-url/compositeDataset.json#",
+    "id": "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/906173e4-b0f6-4d98-8f0b-d7fcd7499d43/download/compositedataset.json",
     "title": "AORC Composite Dataset",
     "description": "Composite AORC precipitation dataset for the contiguous United States.",
     "type": "object",

@@ -1,6 +1,6 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "id": "https://ckan-url/stats.json#",
+    "id": "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/1f66cd16-ddd5-4809-9bc7-65234530509f/download/stats.json",
     "title": "Transposition Model Statistics",
     "description": "Statistics summarizing information yielded by the transposition model",
     "type": "object",

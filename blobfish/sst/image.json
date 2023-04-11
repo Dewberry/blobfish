@@ -1,6 +1,6 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "id": "https://ckan-url/image.json#",
+    "id": "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/8f93acf9-bff6-4154-9ce6-f12849a94ffc/download/image.json",
     "title": "Transposition Model Image",
     "description": "Image associated with transposition model output",
     "type": "object",

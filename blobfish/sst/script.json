@@ -1,6 +1,6 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "id": "https://ckan-url/script.json#",
+    "id": "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/56681c25-1a2e-49a7-80de-680edfdc1c7e/download/script.json",
     "title": "Transposition Script",
     "description": "Script used to start the model which generated modeled data output.",
     "type": "object",
@@ -18,7 +18,7 @@
         "dockerImage": {
             "title": "Docker Image",
             "description": "Docker image which was used to launch the transposition script",
-            "$ref": "https://ckan-url/dockerImage.json"
+            "$ref": "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/e3a77354-04e1-4a24-abff-5874f68674d9/download/dockerimage.json"
         }
     }
 }

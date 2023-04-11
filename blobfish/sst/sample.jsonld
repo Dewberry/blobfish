@@ -1,8 +1,8 @@
 {
-    "@context": "https://ckan-url/sstCatalog.jsonld",
+    "@context": "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/3101b1f8-db5d-43fe-9159-1342be080480/download/sstcatalog.jsonld",
     "@type": "dcat:Catalog",
     "conformsTo": "https://project-open-data.cio.gov/v1.1/schema",
-    "describedBy": "https://ckan-url/sstCatalog.json",
+    "describedBy": "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/0b6b1035-cede-49a9-9dc3-36dcbcb50cbc/download/sstcatalog.json",
     "dataset": [
         {
             "title": "Storm Transposition Model, Indian Creek 1979-02-01",

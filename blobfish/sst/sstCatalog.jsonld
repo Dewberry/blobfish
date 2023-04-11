@@ -1,6 +1,6 @@
 {
     "@context": {
-        "aorc": "https://ckan-url/aorc.ttl",
+        "aorc": "https://ckan.dewberryanalytics.com/dataset/49c0ed12-9efa-4da2-bbb8-cc249a63a06e/resource/cb78eea5-95c7-4551-afb6-fbf824c948b8/download/aorc.ttl",
         "dcat": "http://www.w3.org/ns/dcat#",
         "org": "http://www.w3.org/ns/org#",
         "vcard": "http://www.w3.org/2006/vcard/ns#",
