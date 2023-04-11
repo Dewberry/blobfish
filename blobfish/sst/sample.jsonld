@@ -48,7 +48,7 @@
                 {
                     "@type": "dcat:Distribution",
                     "description": "DSS file created by storm transposition model for Indian Creek, 1979-02-01",
-                    "downloadURL": "s3://tempest/watersheds/indian-creek/indian-creek-transpo-area-v01/72h/docs/19790201.json",
+                    "downloadURL": "s3://tempest/watersheds/indian-creek/indian-creek-transpo-area-v01/72h/dss/19790201.dss",
                     "format": "Data Storage System",
                     "mediaType": "application/octet"
                 }
