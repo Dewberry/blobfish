@@ -1,0 +1,242 @@
+@prefix aorc: <https://github.com/Dewberry/blobfish/blob/aorc_refactor/semantics/rdf/aorc.ttl#> .
+@prefix dc: <http://purl.org/dc/terms/> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix dcmi: <http://purl.org/dc/dcmitype/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+aorc:CompositeDataset a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "A CONUS netCDF dataset created by stitching together AORC data from all RFC offices for a single hour"^^xsd:string ;
+    rdfs:subClassOf dcat:Dataset .
+
+aorc:CompositeDistribution a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The access point for the .zarr directory containing the composite dataset of all RFC office data for an hour"^^xsd:string ;
+    rdfs:subClassOf dcat:Distribution .
+
+aorc:CompositeJob a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The execution of the composite script on the docker image instance which generated the composite dataset(s)"^^xsd:string ;
+    rdfs:subClassOf prov:Activity .
+
+aorc:CompositeScript a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "A script contained within the docker image which was executed in order to composite AORC dataset(s)"^^xsd:string ;
+    rdfs:subClassOf dcmi:Software .
+
+aorc:DockerImage a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "A versioned docker image which holds scripts on a remote repository"^^xsd:string ;
+    rdfs:subClassOf dcmi:Software .
+
+aorc:MirrorDataset a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "An AORC dataset that has been copied from its original location on NOAA servers to s3"^^xsd:string ;
+    rdfs:subClassOf dcat:Dataset .
+
+aorc:MirrorDistribution a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The access point for the mirrored dataset on s3"^^xsd:string ;
+    rdfs:subClassOf dcat:Distribution .
+
+aorc:PrecipPartition a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The directory which directly holds all source datasets which are published by the creator RFC office associated with the PrecipPartition"^^xsd:string ;
+    rdfs:subClassOf dcat:Catalog .
+
+aorc:RFC a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The River Forecast Center which is associated with the coverage area for a catalog of precipitation data"^^xsd:string ;
+    rdfs:subClassOf foaf:Organization .
+
+aorc:SourceDataset a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The AORC dataset in its original location on the NOAA servers"^^xsd:string ;
+    rdfs:subClassOf dcat:Dataset .
+
+aorc:SourceDistribution a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The access point for the mirrored dataset on s3"^^xsd:string ;
+    rdfs:subClassOf dcat:Distribution .
+
+aorc:TransferJob a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The execution of the transfer script on the docker image instance which generated the mirror dataset(s)"^^xsd:string ;
+    rdfs:subClassOf prov:Activity .
+
+aorc:TransferScript a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "A script contained within the docker image which was executed in order to mirror the dataset(s)"^^xsd:string ;
+    rdfs:subClassOf dcmi:Software .
+
+aorc:TranspositionJob a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "The execution of the transposition script on the docker image instance which generated the storm model dataset(s)"^^xsd:string ;
+    rdfs:subClassOf prov:Activity .
+
+aorc:TranspositionScript a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "A script contained within the docker image which was executed in order to generate the storm model dataset(s)"^^xsd:string ;
+    rdfs:subClassOf dcmi:Software .
+
+aorc:TranspositionStatistics a rdfs:Class,
+        owl:Class ;
+    rdfs:comment "Statistics to summarize relevant information about the precipitation observed in the transposition model generated"^^xsd:string .
+
+aorc: a owl:Ontology .
+
+aorc:cellCount a owl:DatatypeProperty ;
+    rdfs:comment "The count of gridded precipitation data cells contained in the watershed region"^^xsd:string .
+
+aorc:hasCompositeDataset a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates that the subject dataset was used in the creation of the object composite dataset"^^xsd:string ;
+    rdfs:domain dcat:Dataset ;
+    rdfs:range aorc:CompositeDataset ;
+    owl:inverseOf aorc:isCompositeOf .
+
+aorc:hasMirrorDataset a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what mirror dataset the subject source dataset was used to generate"^^xsd:string ;
+    owl:inverseOf aorc:hasSourceDataset .
+
+aorc:hasRFCAlias a owl:DatatypeProperty ;
+    rdfs:comment "The 2 character alias assigned to an RFC office (ex: 'LM' for Lower Mississippi River Forecast Office)"^^xsd:string ;
+    owl:equivalentProperty dc:alternative .
+
+aorc:hasRFCName a owl:DatatypeProperty ;
+    rdfs:comment "The full region name for the RFC office (ex: 'LOWER MISSISSIPPI for Lower Mississippi River Forecast Center)"^^xsd:string ;
+    owl:equivalentProperty dc:title .
+
+aorc:hasTranspositionScript a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what transposition scripts belong to the software"^^xsd:string ;
+    rdfs:domain dcmi:Software ;
+    rdfs:range aorc:TranspositionScript .
+
+aorc:isCompositeScriptOf a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates to what software the script belongs"^^xsd:string ;
+    rdfs:subPropertyOf dc:isPartOf ;
+    owl:inverseOf aorc:hasCompositeScript .
+
+aorc:isDockerImageOf a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what software belong to the docker image"^^xsd:string ;
+    rdfs:subPropertyOf dc:hasPart ;
+    owl:inverseOf aorc:hasDockerImage .
+
+aorc:isMirrorDatasetOf a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the origin of the subject mirrored dataset"^^xsd:string ;
+    rdfs:domain aorc:MirrorDataset ;
+    rdfs:range aorc:SourceDataset ;
+    rdfs:subPropertyOf dc:source .
+
+aorc:isRFCOf a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the data resources that have been published by the subject RFC Office"^^xsd:string ;
+    owl:inverseOf aorc:hasRFC .
+
+aorc:isSourceDatasetOf a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what mirror dataset the subject source dataset was used to generate"^^xsd:string ;
+    owl:inverseOf aorc:hasSourceDataset .
+
+aorc:isTransferScriptOf a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates to what software the script belongs"^^xsd:string ;
+    rdfs:subPropertyOf dc:isPartOf ;
+    owl:inverseOf aorc:hasTransferScript .
+
+aorc:maximumPrecipitation a owl:DatatypeProperty ;
+    rdfs:comment "The maximum precipitation amount in inches over the transposed watershed"^^xsd:string .
+
+aorc:meanPrecipitation a owl:DatatypeProperty ;
+    rdfs:comment "The average, or mean, precipitation amount in inches over the transposed watershed"^^xsd:string .
+
+aorc:minimumPrecipitation a owl:DatatypeProperty ;
+    rdfs:comment "The minimum precipitation amount in inches over the transposed watershed"^^xsd:string .
+
+aorc:normalizedMeanPrecipitation a owl:DatatypeProperty ;
+    rdfs:comment "The average precipitation value after being normalized using ATLAS14 precipitation data"^^xsd:string .
+
+aorc:sumPrecipitation a owl:DatatypeProperty ;
+    rdfs:comment "The summed precipitation amount in inches over the transposed watershed"^^xsd:string .
+
+aorc:wasCompositedBy a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the job that was responsible for creating the subject composite dataset"^^xsd:string ;
+    rdfs:subPropertyOf prov:wasGeneratedBy ;
+    owl:inverseOf aorc:createdComposite .
+
+aorc:wasTransferredBy a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the job that was responsible for transferring the subject mirror dataset"^^xsd:string ;
+    rdfs:subPropertyOf prov:wasGeneratedBy ;
+    owl:inverseOf aorc:transferred .
+
+aorc:createdComposite a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the job that was responsible for the creation of the subject composite image"^^xsd:string ;
+    rdfs:domain aorc:CompositeJob ;
+    rdfs:range aorc:CompositeDataset ;
+    rdfs:subPropertyOf prov:generated .
+
+aorc:hasCompositeScript a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what composite scripts belong to the software"^^xsd:string ;
+    rdfs:domain dcmi:Software ;
+    rdfs:range aorc:CompositeScript ;
+    rdfs:subPropertyOf dc:hasPart .
+
+aorc:hasDockerImage a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what docker image to which the software belongs"^^xsd:string ;
+    rdfs:domain dcmi:Software ;
+    rdfs:range aorc:DockerImage ;
+    rdfs:subPropertyOf dc:isPartOf .
+
+aorc:hasRFC a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the RFC Office responsible for the publication of the subject data resource"^^xsd:string ;
+    rdfs:domain dcat:Resource ;
+    rdfs:range aorc:RFC ;
+    rdfs:subPropertyOf dc:creator .
+
+aorc:hasTransferScript a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what transfer scripts belong to the software"^^xsd:string ;
+    rdfs:domain dcmi:Software ;
+    rdfs:range aorc:TransferScript ;
+    rdfs:subPropertyOf dc:hasPart .
+
+aorc:isCompositeOf a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates what datasets were combined to create the subject composite dataset"^^xsd:string ;
+    rdfs:domain aorc:CompositeDataset ;
+    rdfs:range dcat:Dataset ;
+    rdfs:subPropertyOf dc:source .
+
+aorc:transferred a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the mirror dataset that the subject job transferred"^^xsd:string ;
+    rdfs:domain aorc:TransferJob ;
+    rdfs:range aorc:MirrorDataset ;
+    rdfs:subPropertyOf prov:generated .
+
+aorc:hasSourceDataset a rdf:Property,
+        owl:ObjectProperty ;
+    rdfs:comment "Indicates the origin of the subject mirrored dataset"^^xsd:string ;
+    rdfs:domain aorc:MirrorDataset ;
+    rdfs:range aorc:SourceDataset ;
+    rdfs:subPropertyOf dc:source .
+
+[] a owl:AllDisjointClasses ;
+    owl:members ( aorc:CompositeDataset aorc:CompositeDistribution aorc:CompositeScript aorc:CompositeJob aorc:DockerImage aorc:MirrorDataset aorc:MirrorDistribution aorc:PrecipPartition aorc:RFC aorc:SourceDataset aorc:SourceDistribution aorc:TransferJob aorc:TransferScript ) .
+

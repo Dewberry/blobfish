@@ -1,0 +1,2494 @@
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>Ontospy > AORC Mirror</title>
+  <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+
+
+  <style type="text/css" media="screen">
+
+
+  body {
+	  margin-left: 6em;
+	  margin-right: 12em;
+	  text-align: justify;
+    padding: 2em 1em 2em 70px;
+    margin: 0;
+    font-family: sans-serif;
+    color: black;
+    background: white;
+    background-position: top left;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
+
+  :link { color: #00C; background: transparent }
+  :visited { color: #00C; background: transparent }
+  a:active { color: #C00; background: transparent }
+
+  a:link img, a:visited img { border-style: none } /* no border on img links */
+
+  a:hover {color: white; background: #00C; }
+  a.backlink:hover {color: white; background: grey; }
+  a.greylink:hover {color: white; background: grey; }
+
+  .margintop {
+  	 margin-top: 40px;
+  }
+
+
+  dt, dd { margin-top: 10px; margin-bottom: 0 } /* opera 3.50 */
+  dt { font-weight: bold }
+
+
+  h1, h2, h3, h4, h5, h6 { text-align: left }
+  /* background should be transparent, but WebTV has a bug */
+  h1, h2, h3, h4, h5 { color: #005A9C; background: white }
+  h1.title { font: 200% sans-serif }
+  h1 { font: 170% sans-serif }
+  h2 { font: 140% sans-serif }
+  h3 { font: 120% sans-serif }
+  h4 { font: bold 100% sans-serif }
+  h5 { font: italic 100% sans-serif }
+  h6 { font: small-caps 100% sans-serif }
+
+  .hide { display: none }
+
+
+  pre { margin-left: 2em }
+
+  pre, code { font-family: monospace } /* navigator 4 requires this */
+
+
+  .implementation {
+  	background: aliceblue;
+	padding: 10px;
+	margin-top: 5px;
+  }
+
+  fieldset {
+	  margin-top: 20px;
+	  padding: 13px;
+      text-align: left;
+  }
+
+  legend {
+	  text-transform: uppercase;
+  }
+
+  .entity-div {
+	  margin: 55px 10px 30px 10px;
+  }
+
+  .entity-section {
+	  margin-bottom: 0px;
+  }
+
+
+  a.backlink {
+	  font-size: 80%;
+	  color: grey;
+  }
+
+  a.greylink {
+	  color: grey;
+  }
+
+
+   .implementation_title {
+
+       font-weight: bold;
+       font-size: 100%;
+   }
+
+.section-desc {
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+
+
+
+        .tree-container {
+            width: 3000em;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+		.tree {margin: 10px 0px 30px -20px; padding: 0; display: inline-block;}
+
+		.tree ul {
+			padding-top: 20px; position: relative;
+
+			transition: all 0.5s;
+			-webkit-transition: all 0.5s;
+			-moz-transition: all 0.5s;
+		}
+
+		.tree li {
+			float: left; text-align: center;
+			list-style-type: none;
+			position: relative;
+			padding: 20px 5px 0 5px;
+
+			transition: all 0.5s;
+			-webkit-transition: all 0.5s;
+			-moz-transition: all 0.5s;
+		}
+
+		/*We will use ::before and ::after to draw the connectors*/
+
+		.tree li::before, .tree li::after{
+			content: '';
+			position: absolute; top: 0; right: 50%;
+			border-top: 1px solid #ccc;
+			width: 50%; height: 20px;
+		}
+		.tree li::after{
+			right: auto; left: 50%;
+			border-left: 1px solid #ccc;
+		}
+
+		/*We need to remove left-right connectors from elements without
+		any siblings*/
+		.tree li:only-child::after, .tree li:only-child::before {
+			display: none;
+		}
+
+		/*Remove space from the top of single children*/
+		.tree li:only-child{ padding-top: 0;}
+
+		/*Remove left connector from first child and
+		right connector from last child*/
+		.tree li:first-child::before, .tree li:last-child::after{
+			border: 0 none;
+		}
+		/*Adding back the vertical connector to the last nodes*/
+		.tree li:last-child::before{
+			border-right: 1px solid #ccc;
+			border-radius: 0 5px 0 0;
+			-webkit-border-radius: 0 5px 0 0;
+			-moz-border-radius: 0 5px 0 0;
+		}
+		.tree li:first-child::after{
+			border-radius: 5px 0 0 0;
+			-webkit-border-radius: 5px 0 0 0;
+			-moz-border-radius: 5px 0 0 0;
+		}
+
+		/*Time to add downward connectors from parents*/
+		.tree ul ul::before{
+			content: '';
+			position: absolute; top: 0; left: 50%;
+			border-left: 1px solid #ccc;
+			width: 0; height: 20px;
+		}
+
+		.tree li a{
+			border: 1px solid #ccc;
+			padding: 5px 10px;
+			text-decoration: none;
+			color: #666;
+			font-family: arial, verdana, tahoma;
+			font-size: 11px;
+			display: inline-block;
+
+			border-radius: 5px;
+			-webkit-border-radius: 5px;
+			-moz-border-radius: 5px;
+
+			transition: all 0.5s;
+			-webkit-transition: all 0.5s;
+			-moz-transition: all 0.5s;
+		}
+
+		/*Time for some hover effects*/
+		/*We will apply the hover effect the the lineage of the element also*/
+		.tree li a:hover, .tree li a:hover+ul li a {
+			background: #c8e4f8; color: #000; border: 1px solid #94a0b4;
+		}
+		/*Connector styles on hover*/
+		.tree li a:hover+ul li::after,
+		.tree li a:hover+ul li::before,
+		.tree li a:hover+ul::before,
+		.tree li a:hover+ul ul::before{
+			border-color:  #94a0b4;
+		}
+
+		/*Thats all. I hope you enjoyed it.
+		Thanks :)*/
+
+
+  </style>
+
+
+</head>
+
+
+<body>
+
+	
+	
+		
+			<h1 class="title"><a href="" target="_blank">AORC Mirror</a></h1>
+			<h3></h3>
+		
+
+	
+		
+		
+
+
+	<p><small>Ontology documentation automatically generated by <a class="greylink" href="http://lambdamusic.github.io/Ontospy/">Ontospy</a> on Mon, 13 Mar 2023 19:29:22</small></p>
+
+
+
+	
+
+
+	<hr class="margintop">
+
+	<h1><a name="toc">&nbsp;</a>Table of Content</h1>
+
+	<ul>
+		<li><a href="#ontologies">Ontologies</a></li>
+		<li><a href="#a-z">A-Z of Terms</a></li>
+		<li><a href="#classes">Classes</a></li>
+		<li><a href="#objproperties">Object Properties</a></li>
+		<li><a href="#dataproperties">Datatype properties</a></li>
+		
+		
+		
+	</ul>
+
+
+
+	
+
+	
+
+	<hr class="margintop">
+
+	<h1><a name="ontologies"></a>Ontologies</h1>
+
+		
+
+
+			<fieldset> <legend><h3><a href="https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#" target="_blank">https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#</a></h3></legend>
+
+			<h4 style="margin-top: -20px;"></h4>
+
+			
+			
+				
+					<dt>rdf:type</dt>
+				  
+			
+			<dd><p>http://www.w3.org/2002/07/owl#Ontology</p></dd>
+			
+
+			</fieldset>
+
+		
+
+	
+
+
+
+	
+
+	<hr class="margintop">
+	<h1><a  name="a-z">&nbsp;</a>A-Z of terms</h1>
+
+	<div id="azterms">
+
+	This is a complete alphabetical A-Z index of all terms, by main logical type.
+
+	
+		<fieldset> <legend>Classes (16)</legend>
+			<span><a href="#aorc:DockerImage">aorc:DockerImage</a></span>
+			|
+			<span><a href="#aorc:MirrorDataset">aorc:MirrorDataset</a></span>
+			|
+			<span><a href="#aorc:MirrorDistribution">aorc:MirrorDistribution</a></span>
+			|
+			<span><a href="#aorc:PrecipPartition">aorc:PrecipPartition</a></span>
+			|
+			<span><a href="#aorc:RFC">aorc:RFC</a></span>
+			|
+			<span><a href="#aorc:SourceDataset">aorc:SourceDataset</a></span>
+			|
+			<span><a href="#aorc:SourceDistribution">aorc:SourceDistribution</a></span>
+			|
+			<span><a href="#aorc:TransferJob">aorc:TransferJob</a></span>
+			|
+			<span><a href="#aorc:TransferScript">aorc:TransferScript</a></span>
+			|
+			<span><a href="#http://purl.org/dc/dcmitype/Software">http://purl.org/dc/dcmitype/Software</a></span>
+			|
+			<span><a href="#http://www.w3.org/ns/dcat#Catalog">http://www.w3.org/ns/dcat#Catalog</a></span>
+			|
+			<span><a href="#http://www.w3.org/ns/dcat#Dataset">http://www.w3.org/ns/dcat#Dataset</a></span>
+			|
+			<span><a href="#http://www.w3.org/ns/dcat#Distribution">http://www.w3.org/ns/dcat#Distribution</a></span>
+			|
+			<span><a href="#http://www.w3.org/ns/dcat#Resource">http://www.w3.org/ns/dcat#Resource</a></span>
+			|
+			<span><a href="#http://www.w3.org/ns/prov#Activity">http://www.w3.org/ns/prov#Activity</a></span>
+			|
+			<span><a href="#http://xmlns.com/foaf/0.1/Organization">http://xmlns.com/foaf/0.1/Organization</a></span>
+			
+			
+		</fieldset>
+	
+
+	
+
+	<fieldset> <legend>Object Properties (12)</legend>
+		&nbsp;<a href="#aorc:hasDockerImage">aorc:hasDockerImage</a>
+		|  <a href="#aorc:hasMirrorDataset">aorc:hasMirrorDataset</a>
+		|  <a href="#aorc:hasRFC">aorc:hasRFC</a>
+		|  <a href="#aorc:hasSourceDataset">aorc:hasSourceDataset</a>
+		|  <a href="#aorc:hasTransferScript">aorc:hasTransferScript</a>
+		|  <a href="#aorc:isDockerImageOf">aorc:isDockerImageOf</a>
+		|  <a href="#aorc:isMirrorDatasetOf">aorc:isMirrorDatasetOf</a>
+		|  <a href="#aorc:isRFCOf">aorc:isRFCOf</a>
+		|  <a href="#aorc:isSourceDatasetOf">aorc:isSourceDatasetOf</a>
+		|  <a href="#aorc:isTransferScriptOf">aorc:isTransferScriptOf</a>
+		|  <a href="#aorc:transferred">aorc:transferred</a>
+		|  <a href="#aorc:wasTransferredBy">aorc:wasTransferredBy</a>
+		  
+	</fieldset>
+
+	
+
+	
+	<fieldset> <legend>Datatype Properties (2)</legend>
+		&nbsp;<a href="#aorc:hasRFCAlias">aorc:hasRFCAlias</a>
+		|  <a href="#aorc:hasRFCName">aorc:hasRFCName</a>
+		  
+	</fieldset>
+	
+
+	
+
+	
+
+	
+
+	</div>
+
+
+
+	
+
+
+	
+
+		<hr class="margintop">
+		<h1 class="margintop" ><a name="classes">&nbsp;</a>Classes</h1>
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="aorc:DockerImage" href="#aorc:DockerImage">aorc:DockerImage</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+                            <li> <a href="#http://purl.org/dc/dcmitype/Software">http://purl.org/dc/dcmitype/Software</a>
+
+                            <ul>
+
+                              <li><a style="font-weight: bold;">aorc:DockerImage</a>
+
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                            
+
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:DockerImage is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>A docker image hosted on a repository that can be used to generate mirror datasets</p>
+                </p>
+
+                
+					<p class="section-desc"><b>Inherits from <small>(1)</small>:</b>
+                        <br />
+                        <a href="#http://purl.org/dc/dcmitype/Software">http://purl.org/dc/dcmitype/Software</a>  
+                    </p>
+				
+
+
+
+				
+
+				
+					<p class="section-desc"><b>Property Range of:</b>
+                        <br>
+                        <a href="#aorc:hasDockerImage">aorc:hasDockerImage</a>  
+                    </p>
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:DockerImage a rdfs:Class,<br>
+        owl:Class ;<br>
+    rdfs:comment &#34;A docker image hosted on a repository that can be used to generate mirror datasets&#34;^^xsd:string ;<br>
+    rdfs:subClassOf &lt;http://purl.org/dc/dcmitype/Software&gt; .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="aorc:MirrorDataset" href="#aorc:MirrorDataset">aorc:MirrorDataset</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+                            <li> <a href="#http://www.w3.org/ns/dcat#Dataset">http://www.w3.org/ns/dcat#Dataset</a>
+
+                            <ul>
+
+                              <li><a style="font-weight: bold;">aorc:MirrorDataset</a>
+
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                            
+
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:MirrorDataset is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>An AORC dataset that has been copied from its original location on NOAA servers to s3</p>
+                </p>
+
+                
+					<p class="section-desc"><b>Inherits from <small>(1)</small>:</b>
+                        <br />
+                        <a href="#http://www.w3.org/ns/dcat#Dataset">http://www.w3.org/ns/dcat#Dataset</a>  
+                    </p>
+				
+
+
+
+				
+					<p class="section-desc"><b>Property Domain of:</b>
+                        <br>
+                        <a href="#aorc:hasSourceDataset">aorc:hasSourceDataset</a> | <a href="#aorc:isMirrorDatasetOf">aorc:isMirrorDatasetOf</a>  
+                    </p>
+				
+
+				
+					<p class="section-desc"><b>Property Range of:</b>
+                        <br>
+                        <a href="#aorc:transferred">aorc:transferred</a>  
+                    </p>
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:MirrorDataset a rdfs:Class,<br>
+        owl:Class ;<br>
+    rdfs:comment &#34;An AORC dataset that has been copied from its original location on NOAA servers to s3&#34;^^xsd:string ;<br>
+    rdfs:subClassOf &lt;http://www.w3.org/ns/dcat#Dataset&gt; .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="aorc:MirrorDistribution" href="#aorc:MirrorDistribution">aorc:MirrorDistribution</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+                            <li> <a href="#http://www.w3.org/ns/dcat#Distribution">http://www.w3.org/ns/dcat#Distribution</a>
+
+                            <ul>
+
+                              <li><a style="font-weight: bold;">aorc:MirrorDistribution</a>
+
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                            
+
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:MirrorDistribution is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>The access point for the mirrored dataset on s3</p>
+                </p>
+
+                
+					<p class="section-desc"><b>Inherits from <small>(1)</small>:</b>
+                        <br />
+                        <a href="#http://www.w3.org/ns/dcat#Distribution">http://www.w3.org/ns/dcat#Distribution</a>  
+                    </p>
+				
+
+
+
+				
+
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:MirrorDistribution a rdfs:Class,<br>
+        owl:Class ;<br>
+    rdfs:comment &#34;The access point for the mirrored dataset on s3&#34;^^xsd:string ;<br>
+    rdfs:subClassOf &lt;http://www.w3.org/ns/dcat#Distribution&gt; .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="aorc:PrecipPartition" href="#aorc:PrecipPartition">aorc:PrecipPartition</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+                            <li> <a href="#http://www.w3.org/ns/dcat#Catalog">http://www.w3.org/ns/dcat#Catalog</a>
+
+                            <ul>
+
+                              <li><a style="font-weight: bold;">aorc:PrecipPartition</a>
+
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                            
+
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:PrecipPartition is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>The directory which directly holds all source datasets which are published by the creator RFC office associated with the PrecipPartition</p>
+                </p>
+
+                
+					<p class="section-desc"><b>Inherits from <small>(1)</small>:</b>
+                        <br />
+                        <a href="#http://www.w3.org/ns/dcat#Catalog">http://www.w3.org/ns/dcat#Catalog</a>  
+                    </p>
+				
+
+
+
+				
+
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:PrecipPartition a rdfs:Class,<br>
+        owl:Class ;<br>
+    rdfs:comment &#34;The directory which directly holds all source datasets which are published by the creator RFC office associated with the PrecipPartition&#34;^^xsd:string ;<br>
+    rdfs:subClassOf &lt;http://www.w3.org/ns/dcat#Catalog&gt; .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="aorc:RFC" href="#aorc:RFC">aorc:RFC</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+                            <li> <a href="#http://xmlns.com/foaf/0.1/Organization">http://xmlns.com/foaf/0.1/Organization</a>
+
+                            <ul>
+
+                              <li><a style="font-weight: bold;">aorc:RFC</a>
+
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                            
+
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:RFC is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>The River Forecast Center which is associated with the coverage area for a catalog of precipitation data</p>
+                </p>
+
+                
+					<p class="section-desc"><b>Inherits from <small>(1)</small>:</b>
+                        <br />
+                        <a href="#http://xmlns.com/foaf/0.1/Organization">http://xmlns.com/foaf/0.1/Organization</a>  
+                    </p>
+				
+
+
+
+				
+
+				
+					<p class="section-desc"><b>Property Range of:</b>
+                        <br>
+                        <a href="#aorc:hasRFC">aorc:hasRFC</a>  
+                    </p>
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:RFC a rdfs:Class,<br>
+        owl:Class ;<br>
+    rdfs:comment &#34;The River Forecast Center which is associated with the coverage area for a catalog of precipitation data&#34;^^xsd:string ;<br>
+    rdfs:subClassOf &lt;http://xmlns.com/foaf/0.1/Organization&gt; .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="aorc:SourceDataset" href="#aorc:SourceDataset">aorc:SourceDataset</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+                            <li> <a href="#http://www.w3.org/ns/dcat#Dataset">http://www.w3.org/ns/dcat#Dataset</a>
+
+                            <ul>
+
+                              <li><a style="font-weight: bold;">aorc:SourceDataset</a>
+
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                            
+
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:SourceDataset is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>The AORC dataset in its original location on the NOAA servers</p>
+                </p>
+
+                
+					<p class="section-desc"><b>Inherits from <small>(1)</small>:</b>
+                        <br />
+                        <a href="#http://www.w3.org/ns/dcat#Dataset">http://www.w3.org/ns/dcat#Dataset</a>  
+                    </p>
+				
+
+
+
+				
+
+				
+					<p class="section-desc"><b>Property Range of:</b>
+                        <br>
+                        <a href="#aorc:hasSourceDataset">aorc:hasSourceDataset</a> | <a href="#aorc:isMirrorDatasetOf">aorc:isMirrorDatasetOf</a>  
+                    </p>
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:SourceDataset a rdfs:Class,<br>
+        owl:Class ;<br>
+    rdfs:comment &#34;The AORC dataset in its original location on the NOAA servers&#34;^^xsd:string ;<br>
+    rdfs:subClassOf &lt;http://www.w3.org/ns/dcat#Dataset&gt; .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="aorc:SourceDistribution" href="#aorc:SourceDistribution">aorc:SourceDistribution</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+                            <li> <a href="#http://www.w3.org/ns/dcat#Distribution">http://www.w3.org/ns/dcat#Distribution</a>
+
+                            <ul>
+
+                              <li><a style="font-weight: bold;">aorc:SourceDistribution</a>
+
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                            
+
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:SourceDistribution is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>The access point for the mirrored dataset on s3</p>
+                </p>
+
+                
+					<p class="section-desc"><b>Inherits from <small>(1)</small>:</b>
+                        <br />
+                        <a href="#http://www.w3.org/ns/dcat#Distribution">http://www.w3.org/ns/dcat#Distribution</a>  
+                    </p>
+				
+
+
+
+				
+
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:SourceDistribution a rdfs:Class,<br>
+        owl:Class ;<br>
+    rdfs:comment &#34;The access point for the mirrored dataset on s3&#34;^^xsd:string ;<br>
+    rdfs:subClassOf &lt;http://www.w3.org/ns/dcat#Distribution&gt; .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="aorc:TransferJob" href="#aorc:TransferJob">aorc:TransferJob</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+                            <li> <a href="#http://www.w3.org/ns/prov#Activity">http://www.w3.org/ns/prov#Activity</a>
+
+                            <ul>
+
+                              <li><a style="font-weight: bold;">aorc:TransferJob</a>
+
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                            
+
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:TransferJob is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>The execution of the transfer script on the docker image instance which generated the mirror dataset(s)</p>
+                </p>
+
+                
+					<p class="section-desc"><b>Inherits from <small>(1)</small>:</b>
+                        <br />
+                        <a href="#http://www.w3.org/ns/prov#Activity">http://www.w3.org/ns/prov#Activity</a>  
+                    </p>
+				
+
+
+
+				
+					<p class="section-desc"><b>Property Domain of:</b>
+                        <br>
+                        <a href="#aorc:transferred">aorc:transferred</a>  
+                    </p>
+				
+
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:TransferJob a rdfs:Class,<br>
+        owl:Class ;<br>
+    rdfs:comment &#34;The execution of the transfer script on the docker image instance which generated the mirror dataset(s)&#34;^^xsd:string ;<br>
+    rdfs:subClassOf &lt;http://www.w3.org/ns/prov#Activity&gt; .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="aorc:TransferScript" href="#aorc:TransferScript">aorc:TransferScript</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+                            <li> <a href="#http://purl.org/dc/dcmitype/Software">http://purl.org/dc/dcmitype/Software</a>
+
+                            <ul>
+
+                              <li><a style="font-weight: bold;">aorc:TransferScript</a>
+
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                            
+
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:TransferScript is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>A script contained within the docker image which was executed in order to mirror the dataset(s)</p>
+                </p>
+
+                
+					<p class="section-desc"><b>Inherits from <small>(1)</small>:</b>
+                        <br />
+                        <a href="#http://purl.org/dc/dcmitype/Software">http://purl.org/dc/dcmitype/Software</a>  
+                    </p>
+				
+
+
+
+				
+
+				
+					<p class="section-desc"><b>Property Range of:</b>
+                        <br>
+                        <a href="#aorc:hasTransferScript">aorc:hasTransferScript</a>  
+                    </p>
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:TransferScript a rdfs:Class,<br>
+        owl:Class ;<br>
+    rdfs:comment &#34;A script contained within the docker image which was executed in order to mirror the dataset(s)&#34;^^xsd:string ;<br>
+    rdfs:subClassOf &lt;http://purl.org/dc/dcmitype/Software&gt; .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="http://purl.org/dc/dcmitype/Software" href="#http://purl.org/dc/dcmitype/Software">http://purl.org/dc/dcmitype/Software</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+
+                            <li href="#"><a>owl:Thing</a>
+
+                            <ul>
+                              <li><a style="font-weight: bold;">http://purl.org/dc/dcmitype/Software</a>
+
+                              
+                                  <ul>
+                                    <li><a href="#aorc:DockerImage">aorc:DockerImage</a></li><li><a href="#aorc:TransferScript">aorc:TransferScript</a></li>
+                                  </ul>
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+                    <p class="section-desc"><b>Inherits from:</b> <br />owl:Thing</p>
+				
+
+
+
+				
+					<p class="section-desc"><b>Property Domain of:</b>
+                        <br>
+                        <a href="#aorc:hasDockerImage">aorc:hasDockerImage</a> | <a href="#aorc:hasTransferScript">aorc:hasTransferScript</a>  
+                    </p>
+				
+
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="http://www.w3.org/ns/dcat#Catalog" href="#http://www.w3.org/ns/dcat#Catalog">http://www.w3.org/ns/dcat#Catalog</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+
+                            <li href="#"><a>owl:Thing</a>
+
+                            <ul>
+                              <li><a style="font-weight: bold;">http://www.w3.org/ns/dcat#Catalog</a>
+
+                              
+                                  <ul>
+                                    <li><a href="#aorc:PrecipPartition">aorc:PrecipPartition</a></li>
+                                  </ul>
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+                    <p class="section-desc"><b>Inherits from:</b> <br />owl:Thing</p>
+				
+
+
+
+				
+
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="http://www.w3.org/ns/dcat#Dataset" href="#http://www.w3.org/ns/dcat#Dataset">http://www.w3.org/ns/dcat#Dataset</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+
+                            <li href="#"><a>owl:Thing</a>
+
+                            <ul>
+                              <li><a style="font-weight: bold;">http://www.w3.org/ns/dcat#Dataset</a>
+
+                              
+                                  <ul>
+                                    <li><a href="#aorc:MirrorDataset">aorc:MirrorDataset</a></li><li><a href="#aorc:SourceDataset">aorc:SourceDataset</a></li>
+                                  </ul>
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+                    <p class="section-desc"><b>Inherits from:</b> <br />owl:Thing</p>
+				
+
+
+
+				
+
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="http://www.w3.org/ns/dcat#Distribution" href="#http://www.w3.org/ns/dcat#Distribution">http://www.w3.org/ns/dcat#Distribution</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+
+                            <li href="#"><a>owl:Thing</a>
+
+                            <ul>
+                              <li><a style="font-weight: bold;">http://www.w3.org/ns/dcat#Distribution</a>
+
+                              
+                                  <ul>
+                                    <li><a href="#aorc:MirrorDistribution">aorc:MirrorDistribution</a></li><li><a href="#aorc:SourceDistribution">aorc:SourceDistribution</a></li>
+                                  </ul>
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+                    <p class="section-desc"><b>Inherits from:</b> <br />owl:Thing</p>
+				
+
+
+
+				
+
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="http://www.w3.org/ns/dcat#Resource" href="#http://www.w3.org/ns/dcat#Resource">http://www.w3.org/ns/dcat#Resource</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+
+                            <li href="#"><a>owl:Thing</a>
+
+                            <ul>
+                              <li><a style="font-weight: bold;">http://www.w3.org/ns/dcat#Resource</a>
+
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> http://www.w3.org/ns/dcat#Resource is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+                    <p class="section-desc"><b>Inherits from:</b> <br />owl:Thing</p>
+				
+
+
+
+				
+					<p class="section-desc"><b>Property Domain of:</b>
+                        <br>
+                        <a href="#aorc:hasRFC">aorc:hasRFC</a>  
+                    </p>
+				
+
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="http://www.w3.org/ns/prov#Activity" href="#http://www.w3.org/ns/prov#Activity">http://www.w3.org/ns/prov#Activity</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+
+                            <li href="#"><a>owl:Thing</a>
+
+                            <ul>
+                              <li><a style="font-weight: bold;">http://www.w3.org/ns/prov#Activity</a>
+
+                              
+                                  <ul>
+                                    <li><a href="#aorc:TransferJob">aorc:TransferJob</a></li>
+                                  </ul>
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+                    <p class="section-desc"><b>Inherits from:</b> <br />owl:Thing</p>
+				
+
+
+
+				
+
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code></code>
+				</div>
+
+			</div>
+
+
+			
+
+			<div class="entity-div">
+
+
+
+				<h3 class="entity-section">Class: <a name="http://xmlns.com/foaf/0.1/Organization" href="#http://xmlns.com/foaf/0.1/Organization">http://xmlns.com/foaf/0.1/Organization</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+
+                <div class="tree-container">
+                <div class="tree">
+                    <ul>
+                        
+
+                            <li href="#"><a>owl:Thing</a>
+
+                            <ul>
+                              <li><a style="font-weight: bold;">http://xmlns.com/foaf/0.1/Organization</a>
+
+                              
+                                  <ul>
+                                    <li><a href="#aorc:RFC">aorc:RFC</a></li>
+                                  </ul>
+                              
+                                </li>
+
+                            </ul>
+
+                            </li>
+                        
+
+                    </ul>
+                </div>
+                </div>
+
+
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    
+                </p>
+
+                
+                    <p class="section-desc"><b>Inherits from:</b> <br />owl:Thing</p>
+				
+
+
+
+				
+
+				
+
+
+				
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code></code>
+				</div>
+
+			</div>
+
+
+			
+
+	
+
+
+
+	
+
+	
+
+		<hr class="margintop">
+		<h1 class="margintop"><a name="objproperties">&nbsp;</a>Object Properties</h1>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:hasDockerImage" href="#aorc:hasDockerImage">aorc:hasDockerImage</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:hasDockerImage is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>Indicates what docker image to which the software belongs</p>
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+					<p class="section-desc"><b>Class Domain for:</b>
+                        <br>
+                        <a href="#http://purl.org/dc/dcmitype/Software">http://purl.org/dc/dcmitype/Software</a>  </p>
+				
+
+				
+					<p class="section-desc"><b>Class Range for:</b>
+                        <br>
+                        <a href="#aorc:DockerImage">aorc:DockerImage</a>  </p>
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:hasDockerImage a rdf:Property,<br>
+        owl:ObjectProperty ;<br>
+    rdfs:comment &#34;Indicates what docker image to which the software belongs&#34;^^xsd:string ;<br>
+    rdfs:domain &lt;http://purl.org/dc/dcmitype/Software&gt; ;<br>
+    rdfs:range aorc:DockerImage ;<br>
+    rdfs:subPropertyOf &lt;http://purl.org/dc/terms/isPartOf&gt; .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:hasMirrorDataset" href="#aorc:hasMirrorDataset">aorc:hasMirrorDataset</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:hasMirrorDataset is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>Indicates what mirror dataset the subject source dataset was used to generate</p>
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:hasMirrorDataset a rdf:Property,<br>
+        owl:ObjectProperty ;<br>
+    rdfs:comment &#34;Indicates what mirror dataset the subject source dataset was used to generate&#34;^^xsd:string ;<br>
+    owl:inverseOf aorc:hasSourceDataset .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:hasRFC" href="#aorc:hasRFC">aorc:hasRFC</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:hasRFC is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>Indicates the RFC Office responsible for the publication of the subject data resource</p>
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+					<p class="section-desc"><b>Class Domain for:</b>
+                        <br>
+                        <a href="#http://www.w3.org/ns/dcat#Resource">http://www.w3.org/ns/dcat#Resource</a>  </p>
+				
+
+				
+					<p class="section-desc"><b>Class Range for:</b>
+                        <br>
+                        <a href="#aorc:RFC">aorc:RFC</a>  </p>
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:hasRFC a rdf:Property,<br>
+        owl:ObjectProperty ;<br>
+    rdfs:comment &#34;Indicates the RFC Office responsible for the publication of the subject data resource&#34;^^xsd:string ;<br>
+    rdfs:domain &lt;http://www.w3.org/ns/dcat#Resource&gt; ;<br>
+    rdfs:range aorc:RFC ;<br>
+    rdfs:subPropertyOf &lt;http://purl.org/dc/terms/creator&gt; .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:hasSourceDataset" href="#aorc:hasSourceDataset">aorc:hasSourceDataset</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:hasSourceDataset is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>Indicates the origin of the subject mirrored dataset</p>
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+					<p class="section-desc"><b>Class Domain for:</b>
+                        <br>
+                        <a href="#aorc:MirrorDataset">aorc:MirrorDataset</a>  </p>
+				
+
+				
+					<p class="section-desc"><b>Class Range for:</b>
+                        <br>
+                        <a href="#aorc:SourceDataset">aorc:SourceDataset</a>  </p>
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:hasSourceDataset a rdf:Property,<br>
+        owl:ObjectProperty ;<br>
+    rdfs:comment &#34;Indicates the origin of the subject mirrored dataset&#34;^^xsd:string ;<br>
+    rdfs:domain aorc:MirrorDataset ;<br>
+    rdfs:range aorc:SourceDataset ;<br>
+    rdfs:subPropertyOf &lt;http://purl.org/dc/terms/source&gt; .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:hasTransferScript" href="#aorc:hasTransferScript">aorc:hasTransferScript</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:hasTransferScript is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>Indicates what scripts belong to the software</p>
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+					<p class="section-desc"><b>Class Domain for:</b>
+                        <br>
+                        <a href="#http://purl.org/dc/dcmitype/Software">http://purl.org/dc/dcmitype/Software</a>  </p>
+				
+
+				
+					<p class="section-desc"><b>Class Range for:</b>
+                        <br>
+                        <a href="#aorc:TransferScript">aorc:TransferScript</a>  </p>
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:hasTransferScript a rdf:Property,<br>
+        owl:ObjectProperty ;<br>
+    rdfs:comment &#34;Indicates what scripts belong to the software&#34;^^xsd:string ;<br>
+    rdfs:domain &lt;http://purl.org/dc/dcmitype/Software&gt; ;<br>
+    rdfs:range aorc:TransferScript ;<br>
+    rdfs:subPropertyOf &lt;http://purl.org/dc/terms/hasPart&gt; .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:isDockerImageOf" href="#aorc:isDockerImageOf">aorc:isDockerImageOf</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:isDockerImageOf is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>Indicates what software belong to the docker image</p>
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:isDockerImageOf a rdf:Property,<br>
+        owl:ObjectProperty ;<br>
+    rdfs:comment &#34;Indicates what software belong to the docker image&#34;^^xsd:string ;<br>
+    rdfs:subPropertyOf &lt;http://purl.org/dc/terms/hasPart&gt; ;<br>
+    owl:inverseOf aorc:hasDockerImage .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:isMirrorDatasetOf" href="#aorc:isMirrorDatasetOf">aorc:isMirrorDatasetOf</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:isMirrorDatasetOf is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>Indicates the origin of the subject mirrored dataset</p>
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+					<p class="section-desc"><b>Class Domain for:</b>
+                        <br>
+                        <a href="#aorc:MirrorDataset">aorc:MirrorDataset</a>  </p>
+				
+
+				
+					<p class="section-desc"><b>Class Range for:</b>
+                        <br>
+                        <a href="#aorc:SourceDataset">aorc:SourceDataset</a>  </p>
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:isMirrorDatasetOf a rdf:Property,<br>
+        owl:ObjectProperty ;<br>
+    rdfs:comment &#34;Indicates the origin of the subject mirrored dataset&#34;^^xsd:string ;<br>
+    rdfs:domain aorc:MirrorDataset ;<br>
+    rdfs:range aorc:SourceDataset ;<br>
+    rdfs:subPropertyOf &lt;http://purl.org/dc/terms/source&gt; .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:isRFCOf" href="#aorc:isRFCOf">aorc:isRFCOf</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:isRFCOf is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>Indicates the data resources that have been published by the subject RFC Office</p>
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:isRFCOf a rdf:Property,<br>
+        owl:ObjectProperty ;<br>
+    rdfs:comment &#34;Indicates the data resources that have been published by the subject RFC Office&#34;^^xsd:string ;<br>
+    owl:inverseOf aorc:hasRFC .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:isSourceDatasetOf" href="#aorc:isSourceDatasetOf">aorc:isSourceDatasetOf</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:isSourceDatasetOf is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>Indicates what mirror dataset the subject source dataset was used to generate</p>
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:isSourceDatasetOf a rdf:Property,<br>
+        owl:ObjectProperty ;<br>
+    rdfs:comment &#34;Indicates what mirror dataset the subject source dataset was used to generate&#34;^^xsd:string ;<br>
+    owl:inverseOf aorc:hasSourceDataset .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:isTransferScriptOf" href="#aorc:isTransferScriptOf">aorc:isTransferScriptOf</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:isTransferScriptOf is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>Indicates to what software the script belongs</p>
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:isTransferScriptOf a rdf:Property,<br>
+        owl:ObjectProperty ;<br>
+    rdfs:comment &#34;Indicates to what software the script belongs&#34;^^xsd:string ;<br>
+    rdfs:subPropertyOf &lt;http://purl.org/dc/terms/isPartOf&gt; ;<br>
+    owl:inverseOf aorc:hasTransferScript .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:transferred" href="#aorc:transferred">aorc:transferred</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:transferred is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>Indicates the mirror dataset that the subject job transferred</p>
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+					<p class="section-desc"><b>Class Domain for:</b>
+                        <br>
+                        <a href="#aorc:TransferJob">aorc:TransferJob</a>  </p>
+				
+
+				
+					<p class="section-desc"><b>Class Range for:</b>
+                        <br>
+                        <a href="#aorc:MirrorDataset">aorc:MirrorDataset</a>  </p>
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:transferred a rdf:Property,<br>
+        owl:ObjectProperty ;<br>
+    rdfs:comment &#34;Indicates the mirror dataset that the subject job transferred&#34;^^xsd:string ;<br>
+    rdfs:domain aorc:TransferJob ;<br>
+    rdfs:range aorc:MirrorDataset ;<br>
+    rdfs:subPropertyOf &lt;http://www.w3.org/ns/prov#generated&gt; .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Object Property: <a name="aorc:wasTransferredBy" href="#aorc:wasTransferredBy">aorc:wasTransferredBy</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:wasTransferredBy is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>Indicates the job that was responsible for transferring the subject mirror dataset</p>
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:wasTransferredBy a rdf:Property,<br>
+        owl:ObjectProperty ;<br>
+    rdfs:comment &#34;Indicates the job that was responsible for transferring the subject mirror dataset&#34;^^xsd:string ;<br>
+    rdfs:subPropertyOf &lt;http://www.w3.org/ns/prov#wasGeneratedBy&gt; ;<br>
+    owl:inverseOf aorc:transferred .</p>
+
+<p></p></code>
+				</div>
+
+			</div>
+
+			
+
+	
+
+
+
+
+
+
+
+	
+
+	
+
+		<hr class="margintop">
+		<h1 class="margintop"><a name="dataproperties">&nbsp;</a>Datatype Properties</h1>
+
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Datatype Property: <a name="aorc:hasRFCAlias" href="#aorc:hasRFCAlias">aorc:hasRFCAlias</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:hasRFCAlias is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>The 2 character alias assigned to an RFC office (ex: &#39;LM&#39; for Lower Mississippi River Forecast Office)</p>
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:hasRFCAlias a owl:DatatypeProperty ;<br>
+    rdfs:comment &#34;The 2 character alias assigned to an RFC office (ex: &#39;LM&#39; for Lower Mississippi River Forecast Office)&#34;^^xsd:string ;<br>
+    owl:equivalentProperty &lt;http://purl.org/dc/terms/alternative&gt; .</p>
+
+<p></p></code>
+				</div>
+
+
+			</div>
+			
+
+			<div class="entity-div">
+
+				<h3 class="entity-section">Datatype Property: <a name="aorc:hasRFCName" href="#aorc:hasRFCName">aorc:hasRFCName</a>
+					<small>&nbsp;&nbsp;<a href="#a-z" class="backlink">back to top</a></small>
+				</h3>
+				<hr>
+
+                
+                <p class="section-desc">
+                    <small>NOTE</small> aorc:hasRFCName is a leaf node.</p>
+                
+
+				<p class="section-desc"><b>Description</b>
+                    <br>
+                    <p>The full region name for the RFC office (ex: &#39;LOWER MISSISSIPPI for Lower Mississippi River Forecast Center)</p>
+                </p>
+
+                
+
+				
+
+
+
+				
+
+				
+
+				
+
+				
+
+
+                <small class="implementation_title">Implementation:</small>
+				<div class="implementation">
+					<code><p>@prefix aorc: &lt;https://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html#&gt; .<br>
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .<br>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .<br>
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .</p>
+
+<p>aorc:hasRFCName a owl:DatatypeProperty ;<br>
+    rdfs:comment &#34;The full region name for the RFC office (ex: &#39;LOWER MISSISSIPPI for Lower Mississippi River Forecast Center)&#34;^^xsd:string ;<br>
+    owl:equivalentProperty &lt;http://purl.org/dc/terms/title&gt; .</p>
+
+<p></p></code>
+				</div>
+
+
+			</div>
+			
+
+	
+
+
+
+
+
+
+
+	
+
+	
+
+
+
+
+	
+
+
+	
+
+
+
+
+
+
+
+
+	
+
+
+	
+
+
+
+
+
+	<hr>
+	<small>Ontology documentation automatically generated by <a class="greylink"  href="http://lambdamusic.github.io/Ontospy/">Ontospy</a> v2.1.1 on Mon, 13 Mar 2023 19:29:22</small>
+
+
+</body>
+</html>

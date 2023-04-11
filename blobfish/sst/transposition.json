@@ -1,0 +1,32 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "https://ckan-url/transposition.json#",
+    "title": "Storm Transposition Region",
+    "description": "A transposition region as a geo:wktLiteral object with a label",
+    "type": "object",
+    "required": [
+        "region",
+        "name"
+    ],
+    "properties": {
+        "@type": {
+            "title": "Metadata Context",
+            "description": "IRI for the JSON-LD data type. This should be geo:Geometry.",
+            "enum": [
+                "geo:Geometry"
+            ]
+        },
+        "region": {
+            "title": "Transposition",
+            "description": "Transposition region geometry as a well-known text string (WKT)",
+            "type": "string",
+            "minLength": 1
+        },
+        "name": {
+            "title": "Transposition Name",
+            "description": "Full name of transposition",
+            "type": "string",
+            "minLength": 1
+        }
+    }
+}

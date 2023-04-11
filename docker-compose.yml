@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  python:
+    image: "njroberts/blobfish-python@${HASH}"
+    volumes:
+      - ./:/proj
+    tty: true
+    env_file: ./.env
