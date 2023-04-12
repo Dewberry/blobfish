@@ -1,6 +1,7 @@
 import os
 import boto3
 from typing import Generator, Any
+from botocore.response import StreamingBody
 import logging
 
 
@@ -80,8 +81,9 @@ def upload_graph_ttl(bucket: str, key: str, ttl_body: str, client: None | Any = 
     client.put_object(Bucket=bucket, Key=key, Body=ttl_body)
 
 
-def get_object_body_string(bucket: str, key: str, client: None | Any = None):
+def get_object_body_string(bucket: str, key: str, client: None | Any = None) -> StreamingBody:
     if not client:
         client = get_client()
     obj = client.get_object(Bucket=bucket, Key=key)
-    return obj.get("Body")
+    body = obj.get("Body")
+    return body
