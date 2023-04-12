@@ -29,7 +29,9 @@ class AORC(DefinedNamespace):
     meanPrecipitation: URIRef
     minimumPrecipitation: URIRef
     normalizedMeanPrecipitation: URIRef
+    season: URIRef
     sumPrecipitation: URIRef
+    waterYear: URIRef
 
     # Object Properties
     createdComposite: URIRef
@@ -48,8 +50,11 @@ class AORC(DefinedNamespace):
     isRFCOf: URIRef
     isSourceDatasetOf: URIRef
     isTransferScriptOf: URIRef
+    transposition: URIRef
     transferred: URIRef
+    transpositionStatistics: URIRef
     wasCompositedBy: URIRef
     wasTransferredBy: URIRef
+    watershed: URIRef
 
     _NS = Namespace("https://github.com/Dewberry/blobfish/blob/aorc_refactor/semantics/rdf/aorc.ttl#")

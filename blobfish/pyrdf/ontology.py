@@ -3,6 +3,7 @@ import rdflib
 from dataclasses import dataclass
 from typing import List
 from rdflib import RDFS, RDF, OWL, DCAT, DCTERMS, DCMITYPE, PROV, FOAF, XSD, URIRef, Literal, BNode
+from rdflib.namespace._GEO import GEO
 from rdflib.collection import Collection
 
 from ._AORC import AORC
@@ -158,7 +159,17 @@ def define_datatype_properties(graph: rdflib.Graph) -> None:
             "The average precipitation value after being normalized using ATLAS14 precipitation data",
         ),
         AORCDatatypePropertyRelation(
+            AORC.season,
+            None,
+            "The season associated with the data. Should be one of ['spring', 'summer', 'autumn', 'winter'].",
+        ),
+        AORCDatatypePropertyRelation(
             AORC.sumPrecipitation, None, "The summed precipitation amount in inches over the transposed watershed"
+        ),
+        AORCDatatypePropertyRelation(
+            AORC.waterYear,
+            None,
+            "The water year associated with the data. Water year is a term defined by the USGS which differs from the calendar year.",
         ),
     ]
     for relation_object in data_properties_to_assign:
@@ -261,11 +272,29 @@ def define_object_properties(graph: rdflib.Graph) -> None:
             AORC.MirrorDataset,
         ),
         ObjectPropertyDescription(
+            AORC.transposition,
+            "Geographic region in which a modeled storm was transposed",
+            DCAT.Dataset,
+            GEO.Geometry,
+        ),
+        ObjectPropertyDescription(
+            AORC.transpositionStatistics,
+            "Statistics which apply to a transposed storm model",
+            DCAT.Dataset,
+            AORC.TranspositionStatistics,
+        ),
+        ObjectPropertyDescription(
             AORC.wasCompositedBy, "Indicates the job that was responsible for creating the subject composite dataset"
         ),
         ObjectPropertyDescription(
             AORC.wasTransferredBy,
             "Indicates the job that was responsible for transferring the subject mirror dataset",
+        ),
+        ObjectPropertyDescription(
+            AORC.watershed,
+            "Geographic region which defines the region contributing to one body of water",
+            DCAT.Dataset,
+            GEO.Geometry,
         ),
     ]:
         graph.add((prop.aorc_object_property, RDF.type, OWL.ObjectProperty))
