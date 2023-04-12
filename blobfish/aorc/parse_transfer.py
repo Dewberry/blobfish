@@ -13,60 +13,13 @@ from .transfer import TransferMetadata
 
 from ..pyrdf import AORC
 from ..utils.logger import set_up_logger
-from ..utils.cloud_utils import get_s3_content, get_client, upload_graph_ttl
+from ..utils.cloud_utils import get_s3_content, get_client
+from ..utils.graph_utils import GraphCreator
 
 
 class AORCFilter(enum.Enum):
     YEAR = enum.auto()
     RFC = enum.auto()
-
-
-class GraphCreator:
-    def __init__(self, bindings: dict) -> None:
-        self.bindings = bindings
-        self.filter_graphs = dict()
-        self.default_graph = None
-
-    def __create_graph(self) -> rdflib.Graph:
-        logging.info("rdflib.Graph object created by graph creator")
-        g = rdflib.Graph()
-        for prefix, ns in self.bindings.items():
-            g.bind(prefix, ns)
-        return g
-
-    def get_graph(self, filter_key: str | None = None) -> rdflib.Graph:
-        if filter_key:
-            filter_graph = self.filter_graphs.get(filter_key)
-            if filter_graph:
-                return filter_graph
-            logging.info(f"No graph found for filter key {filter_key}")
-            filter_graph = self.__create_graph()
-            self.filter_graphs[filter_key] = filter_graph
-            return filter_graph
-        if self.default_graph:
-            return self.default_graph
-        self.default_graph = self.__create_graph()
-        return self.default_graph
-
-    def serialize_graphs(
-        self, filepath_pattern: str, to_s3: bool = False, client: Any | None = None, bucket: str | None = None
-    ) -> None:
-        if len(self.filter_graphs.items()) > 0:
-            for filter_key, filter_graph in self.filter_graphs.items():
-                fn = filepath_pattern.format(filter_key)
-                if to_s3 and bucket:
-                    ttl_body = filter_graph.serialize(format="ttl")
-                    upload_graph_ttl(bucket, fn, ttl_body, client)
-                else:
-                    filter_graph.serialize(fn, format="ttl")
-                    logging.info(f"Graph serialized to {fn}")
-        elif self.default_graph:
-            fn = filepath_pattern.format("")
-            self.default_graph.serialize(fn, format="ttl")
-            logging.info(f"Graph serialized to {fn}")
-        else:
-            logging.error(f"No graph object was created, serialization failed")
-            raise ValueError
 
 
 @dataclass
@@ -196,9 +149,7 @@ def create_graph_triples(
     g.add((source_dataset_period_of_time_node, DCAT.endDate, source_dataset_period_end))
 
     # Create source dataset distribution instance, properties
-    source_distribution_uri = URIRef(
-        "".join([meta.aorc_historic_uri, meta.rfc_catalog_uri, meta.precip_partition_uri, meta.source_uri])
-    )
+    source_distribution_uri = URIRef(meta.source_uri)
     g.add((source_distribution_uri, RDF.type, AORC.SourceDistribution))
     source_distribution_byte_size = Literal(meta.source_bytes, datatype=XSD.positiveInteger)
     g.add((source_distribution_uri, DCAT.byteSize, source_distribution_byte_size))
