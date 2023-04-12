@@ -3,18 +3,29 @@ import datetime
 import logging
 import enum
 import re
+import os
 from dataclasses import dataclass, field
 from rdflib import DCAT, DCTERMS, OWL, PROV, RDF, XSD, Graph, URIRef, BNode, Literal
 from typing import cast, Generator, Any
 
 from ..pyrdf import AORC
 from ..utils.cloud_utils import get_s3_content, upload_graph_ttl, get_object_body_string
+from ..utils.graph_utils import GraphCreator
+
+class DataFormat(enum.Enum):
+    S3 = enum.auto()
+    LOCAL = enum.auto()
 
 
-class AORCFilter(enum.Enum):
-    YEAR = enum.auto()
-    RFC = enum.auto()
-
+@dataclass
+class CompositeConfig:
+    output_format: DataFormat
+    out_dir: str
+    out_path: str
+    extended: bool = False
+    input_format: DataFormat | None = None
+    in_dir: str | None = None
+    in_pattern: str | None = None
 
 @dataclass
 class CompletedCompositeMetadata:
@@ -113,106 +124,147 @@ def create_graph_s3(bucket: str, prefix: str, client: Any | None = None):
     for obj in get_s3_content(bucket, prefix, True, client):
         obj = get_object_body_string(bucket, cast(str, obj.get("Key")), client)
         g.parse(data=obj.read())
+
     return g
 
 
-def create_graph_triples(meta: CompletedCompositeMetadata, merged_graph: Graph, node_namer: NodeNamer):
+def create_graph_triples(meta: CompletedCompositeMetadata, node_namer: NodeNamer, graph: Graph | None = None, graph_creator: GraphCreator | None = None, filter_by_year: bool = True):
+    if graph:
+        pass
+    elif graph_creator:
+        # Get graph if none provided
+        filter_value = None
+        if filter_by_year:
+            filter_value = meta.start_time[:4]
+        graph = graph_creator.get_graph(filter_value)
+    else:
+        logging.error("Neither graph nor graph creator supplied, raising error")
+        raise ValueError
     # Create composite dataset
     composite_dataset_uri = URIRef(meta.composite_s3_directory)
-    merged_graph.add((composite_dataset_uri, RDF.type, AORC.CompositeDataset))
+    graph.add((composite_dataset_uri, RDF.type, AORC.CompositeDataset))
 
     # Add composite dataset properties
     composite_dataset_period_of_time_node = BNode(node_namer.name_ds_period(meta))
-    merged_graph.add((composite_dataset_period_of_time_node, RDF.type, DCTERMS.PeriodOfTime))
-    merged_graph.add((composite_dataset_uri, DCTERMS.temporal, composite_dataset_period_of_time_node))
+    graph.add((composite_dataset_period_of_time_node, RDF.type, DCTERMS.PeriodOfTime))
+    graph.add((composite_dataset_uri, DCTERMS.temporal, composite_dataset_period_of_time_node))
     start_time = Literal(meta.start_time, datatype=XSD.dateTime)
     end_time = Literal(meta.end_time, datatype=XSD.dateTime)
-    merged_graph.add((composite_dataset_period_of_time_node, DCAT.startDate, start_time))
-    merged_graph.add((composite_dataset_period_of_time_node, DCAT.endDate, end_time))
+    graph.add((composite_dataset_period_of_time_node, DCAT.startDate, start_time))
+    graph.add((composite_dataset_period_of_time_node, DCAT.endDate, end_time))
 
     # Create distribution
     composite_distribution_uri = URIRef(meta.public_uri)
-    merged_graph.add((composite_distribution_uri, RDF.type, AORC.CompositeDistribution))
+    graph.add((composite_distribution_uri, RDF.type, AORC.CompositeDistribution))
     netcdf_format = URIRef("https://publications.europa.eu/resource/authority/file-type/NETCDF")
-    merged_graph.add((composite_distribution_uri, DCAT.packageFormat, netcdf_format))
+    graph.add((composite_distribution_uri, DCAT.packageFormat, netcdf_format))
     last_modified = Literal(meta.composite_last_modified, datatype=XSD.dateTime)
-    merged_graph.add((composite_dataset_uri, DCTERMS.created, last_modified))
+    graph.add((composite_dataset_uri, DCTERMS.created, last_modified))
     access_description = Literal(
         "Access is restricted based on users credentials for AWS bucket holding data", datatype=XSD.string
     )
-    merged_graph.add((composite_distribution_uri, OWL.Annotation, access_description))
+    graph.add((composite_distribution_uri, OWL.Annotation, access_description))
 
     # Create docker image
     docker_image_uri = URIRef(meta.docker_image_url)
-    merged_graph.add((docker_image_uri, RDF.type, AORC.DockerImage))
+    graph.add((docker_image_uri, RDF.type, AORC.DockerImage))
 
     # Create composite job
     composite_job_node = BNode(node_namer.name_composite_job(meta))
-    merged_graph.add((composite_job_node, RDF.type, AORC.CompositeJob))
+    graph.add((composite_job_node, RDF.type, AORC.CompositeJob))
 
     # Create script
     composite_script_node = BNode(meta.composite_script)
-    merged_graph.add((composite_script_node, RDF.type, AORC.CompositeScript))
-    merged_graph.add((composite_script_node, DCTERMS.identifier, Literal(meta.composite_script)))
+    graph.add((composite_script_node, RDF.type, AORC.CompositeScript))
+    graph.add((composite_script_node, DCTERMS.identifier, Literal(meta.composite_script)))
 
     # Associate docker image, script, job, and dataset generated
-    merged_graph.add((composite_dataset_uri, AORC.wasCompositedBy, composite_job_node))
-    merged_graph.add((composite_job_node, PROV.wasStartedBy, composite_script_node))
-    merged_graph.add((composite_script_node, AORC.hasDockerImage, docker_image_uri))
+    graph.add((composite_dataset_uri, AORC.wasCompositedBy, composite_job_node))
+    graph.add((composite_job_node, PROV.wasStartedBy, composite_script_node))
+    graph.add((composite_script_node, AORC.hasDockerImage, docker_image_uri))
 
     # Associate members of composite with composite dataset and composite job
     for member_dataset in meta.get_member_datasets():
         member_dataset_uri = URIRef(member_dataset)
-        merged_graph.add((composite_dataset_uri, AORC.isCompositeOf, member_dataset_uri))
-        merged_graph.add((composite_job_node, PROV.used, member_dataset_uri))
+        graph.add((member_dataset_uri, RDF.type, AORC.MirrorDataset))
+        graph.add((composite_dataset_uri, AORC.isCompositeOf, member_dataset_uri))
+        graph.add((composite_job_node, PROV.used, member_dataset_uri))
+
+
 
 
 def main(
-    ttl_directory: str,
-    ttl_pattern: str,
     composites_bucket: str,
     composites_prefix: str,
     composites_metadata_pattern: re.Pattern,
-    output_path: str,
-    from_s3: bool = False,
-    to_s3: bool = False,
-    target_bucket: str | None = None,
+    config: CompositeConfig,
     client: Any | None = None,
+    limit: int | None = None,
 ) -> None:
-    # TODO: Add size limiter which serializes after ttl string goes over set limit
+    i = 0
     node_namer = NodeNamer()
-    if from_s3:
-        g = create_graph_s3(ttl_directory, ttl_pattern, client)
+    g = None
+    graph_creator = None
+    def triples_wrapper(i: int, g: Graph | None = None, graph_creator: GraphCreator | None = None):
+        for meta in get_meta(composites_bucket, composites_prefix, composites_metadata_pattern):
+            if g:
+                create_graph_triples(meta, node_namer, graph=g)
+            else:
+                create_graph_triples(meta, node_namer, graph_creator=graph_creator)
+                if limit:
+                    if i >= limit:
+                        break
+                    else:
+                        i += 1
+                        logging.info(i)
+    if config.extended and config.in_dir and config.in_pattern and config.input_format:
+        if config.input_format.name == "S3":
+            g = create_graph_s3(config.in_dir, config.in_pattern, client)
+        else:
+            g = create_graph_local(config.in_dir, config.in_pattern)
+        g.bind("dcat", DCAT)
+        g.bind("dct", DCTERMS)
+        g.bind("prov", PROV)
+        g.bind("aorc", AORC)
+        triples_wrapper(i, g)
     else:
-        g = create_graph_local(ttl_directory, ttl_pattern)
-    for meta in get_meta(composites_bucket, composites_prefix, composites_metadata_pattern):
-        create_graph_triples(meta, g, node_namer)
-    if to_s3 and target_bucket:
+        graph_creator = GraphCreator({"dcat": DCAT, "dct": DCTERMS, "prov": PROV, "aorc": AORC})
+        triples_wrapper(i, graph_creator=graph_creator)
+    if config.output_format.name == "S3" and g:
+        logging.info(1)
         ttl_body = g.serialize(format="ttl")
-        upload_graph_ttl(target_bucket, output_path, ttl_body, client)
-    else:
-        g.serialize("logs/composite.ttl", format="ttl")
+        upload_graph_ttl(config.out_dir, config.out_path, ttl_body, client)
+    elif config.output_format.name == "LOCAL" and g:
+        logging.info(2)
+        g.serialize(os.path.join(config.out_dir, config.out_path), format="ttl")
+    elif config.output_format.name == "S3" and graph_creator:
+        logging.info(3)
+        graph_creator.serialize_graphs(config.out_path, True, client, config.out_dir)
+    elif config.output_format.name == "LOCAL" and graph_creator:
+        logging.info(4)
+        graph_creator.serialize_graphs(os.path.join(config.out_dir, config.out_path))
 
 
 if __name__ == "__main__":
     from ..utils.cloud_utils import view_downloads, clear_downloads, get_client
+    from ..utils.logger import set_up_logger
     from dotenv import load_dotenv
 
     load_dotenv()
+
+    set_up_logger(level=logging.INFO)
+
     client = get_client()
     bucket = "tempest"
+    config = CompositeConfig(DataFormat.S3, bucket, "graphs/transforms/{0}.ttl", False)
     metadata_pattern = re.compile(r".*\.zmetadata$")
     main(
         bucket,
-        "graphs/aorc/precip/1979",
-        bucket,
         "transforms",
         metadata_pattern,
-        "graphs/transforms.ttl",
-        True,
-        True,
-        bucket,
+        config,
         client,
+        10
     )
     # view_downloads("tempest", "test/transforms")
     # clear_downloads("tempest", "test/transforms")
