@@ -12,6 +12,7 @@ from ..pyrdf import AORC
 from ..utils.cloud_utils import get_s3_content, upload_graph_ttl, get_object_body_string
 from ..utils.graph_utils import GraphCreator
 
+
 class DataFormat(enum.Enum):
     S3 = enum.auto()
     LOCAL = enum.auto()
@@ -26,6 +27,7 @@ class CompositeConfig:
     input_format: DataFormat | None = None
     in_dir: str | None = None
     in_pattern: str | None = None
+
 
 @dataclass
 class CompletedCompositeMetadata:
@@ -128,7 +130,13 @@ def create_graph_s3(bucket: str, prefix: str, client: Any | None = None):
     return g
 
 
-def create_graph_triples(meta: CompletedCompositeMetadata, node_namer: NodeNamer, graph: Graph | None = None, graph_creator: GraphCreator | None = None, filter_by_year: bool = True):
+def create_graph_triples(
+    meta: CompletedCompositeMetadata,
+    node_namer: NodeNamer,
+    graph: Graph | None = None,
+    graph_creator: GraphCreator | None = None,
+    filter_by_year: bool = True,
+):
     if graph:
         pass
     elif graph_creator:
@@ -191,8 +199,6 @@ def create_graph_triples(meta: CompletedCompositeMetadata, node_namer: NodeNamer
         graph.add((composite_job_node, PROV.used, member_dataset_uri))
 
 
-
-
 def main(
     composites_bucket: str,
     composites_prefix: str,
@@ -205,6 +211,7 @@ def main(
     node_namer = NodeNamer()
     g = None
     graph_creator = None
+
     def triples_wrapper(i: int, g: Graph | None = None, graph_creator: GraphCreator | None = None):
         for meta in get_meta(composites_bucket, composites_prefix, composites_metadata_pattern):
             if g:
@@ -216,7 +223,7 @@ def main(
                         break
                     else:
                         i += 1
-                        logging.info(i)
+
     if config.extended and config.in_dir and config.in_pattern and config.input_format:
         if config.input_format.name == "S3":
             g = create_graph_s3(config.in_dir, config.in_pattern, client)
@@ -258,13 +265,6 @@ if __name__ == "__main__":
     bucket = "tempest"
     config = CompositeConfig(DataFormat.S3, bucket, "graphs/transforms/{0}.ttl", False)
     metadata_pattern = re.compile(r".*\.zmetadata$")
-    main(
-        bucket,
-        "transforms",
-        metadata_pattern,
-        config,
-        client,
-        10
-    )
+    main(bucket, "transforms", metadata_pattern, config, client)
     # view_downloads("tempest", "test/transforms")
     # clear_downloads("tempest", "test/transforms")
