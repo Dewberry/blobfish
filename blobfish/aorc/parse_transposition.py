@@ -1,99 +1,18 @@
 """ Script to parse storm transposition model documentation and create JSON-LD metadata """
 
 import json
-from ..utils.cloud_utils import get_s3_content, get_object_body_string
+import re
+import datetime
 from collections.abc import Generator
 from typing import Any, cast
-from dataclasses import dataclass, field
-import re
+from shapely.geometry import shape
+from .classes import TranspositionDocumentation, TemplateInputs
+from ..utils.cloud_utils import get_s3_content, get_object_property, extract_bucketname_and_keyname, ObjectProperties
 
-@dataclass
-class TranspositionStart:
-    datetime: str
-    timestamp: int
-    calendar_year: int
-    water_year: int
-    season: str
 
-@dataclass
-class TranspositionStatistics:
-    count: int
-    mean: float
-    max: float
-    min: float
-    sum: float
-    norm_mean: float
-
-@dataclass
-class TranspositionMetadata:
-    source: str
-    watershed_name: str
-    transposition_domain_name: str
-    watershed_source: str
-    transposition_domain_source: str
-    create_time: str
-
-@dataclass
-class TranspositionGeometry:
-    x_delta: int
-    y_delta: int
-    center_x: float
-    center_y: float
-
-@dataclass
-class TranspositionDocumentation:
-    _start: dict
-    start: TranspositionStart = field(init=False)
-    duration: int
-    _stats: dict
-    stats: TranspositionStatistics = field(init=False)
-    _metadata: dict
-    metadata: TranspositionMetadata = field(init=False)
-    _geom: dict
-    geom: TranspositionGeometry = field(init=False)
-
-    def __post_init__(self):
-        self.start = TranspositionStart(**self._start)
-        self.stats = TranspositionStatistics(**self._stats)
-        self.metadata = TranspositionMetadata(**self._metadata)
-        self.geom = TranspositionGeometry(**self._geom)
-
-@dataclass
-class TemplateInputs:
-    context: str
-    describedBy: str
-    watershedName: str
-    startDate: str
-    dssModified: str
-    doiUrl: str
-    centerY: str
-    centerX: str
-    startDateIsoformat: str
-    season: str
-    waterYear: int
-    watershedWKT: str
-    dssKey: str
-    transpositionRegionWKT: str
-    imgModified: str
-    imgKey: str
-    count: int
-    mean: float
-    max: float
-    min: float
-    sum: float
-    normMean: float
-    zarrPrefix: str
-    scriptPath: str
-    dockerPath: str
-
-class JSONLDConstructor:
-    TEMPLATE = """{
-    "@context": "{context}",
-    "@type": "dcat:Catalog",
-    "conformsTo": "https://project-open-data.cio.gov/v1.1/schema",
-    "describedBy": "{describedBy}",
-    "dataset": [
-        {
+class DatasetConstructor:
+    DATASET_TEMPLATE = """
+        {{
             "title": "Storm Transposition Model, {watershedName} {startDate}",
             "description": "Data documenting modeling of transposition region for {watershedName}, {startDate}",
             "keyword": [
@@ -107,23 +26,23 @@ class JSONLDConstructor:
                 "precipitation"
             ],
             "modified": "{dssModified}",
-            "publisher": {
+            "publisher": {{
                 "@type": "org:Organization",
                 "name": "Federal Emergency Management Agency",
-                "suborganizationOf": {
+                "suborganizationOf": {{
                     "@type": "org:Organization",
                     "name": "Department of Homeland Security",
-                    "suborganizationOf": {
+                    "suborganizationOf": {{
                         "@type": "org:Organization",
                         "name": "United States Government"
-                    }
-                }
-            },
-            "contactPoint": {
+                    }}
+                }}
+            }},
+            "contactPoint": {{
                 "@type": "vcard:Contact",
                 "fn": "Nicholas Roberts",
                 "hasEmail": "nrjoberts@dewberry.com"
-            },
+            }},
             "identifier": "{doiUrl}",
             "accessLevel": "public",
             "bureauCode": "024:070",
@@ -132,46 +51,46 @@ class JSONLDConstructor:
             "spatial": "{centerY}, {centerX}",
             "temporal": "{startDateIsoformat}/P{duration}H",
             "distribution": [
-                {
+                {{
                     "@type": "dcat:Distribution",
                     "description": "DSS file created by storm transposition model for {watershedName}, {startDate}",
                     "downloadURL": "{dssKey}",
                     "format": "Data Storage System",
                     "mediaType": "application/octet"
-                }
+                }}
             ],
             "language": [
                 "en"
             ],
             "season": "{season}",
             "waterYear": {waterYear},
-            "watershed": {
+            "watershed": {{
                 "@type": "geo:Geometry",
                 "description": "Geometry of the watershed being transposed",
                 "region": "{watershedWKT}"
                 "name": "{watershedName}"
-            },
-            "transposition": {
+            }},
+            "transposition": {{
                 "@type": "geo:Geometry",
                 "description": "Geometry of the region in which the watershed is being transposed",
                 "region": "{transpositionRegionWKT}"
-            },
-            "image": {
+            }},
+            "image": {{
                 "@type": "dcat:Dataset",
                 "title": "Storm Transposition Model, {watershedName} {startDate}",
                 "modified": "{imgModified}",
                 "description": "Image of watershed transposition results for {watershedName} watershed, {startDate}",
                 "distribution": [
-                    {
+                    {{
                         "@type": "dcat:Distribution",
                         "description": "PNG file for {watershedName} {startDate} model",
                         "downloadURL": "{imgKey}",
                         "format": "PNG Image",
                         "mediaType": "image/png"
-                    }
+                    }}
                 ]
-            },
-            "stats": {
+            }},
+            "stats": {{
                 "@type": "aorc:TranspositionStatistics",
                 "count": {count},
                 "mean": {mean},
@@ -179,73 +98,195 @@ class JSONLDConstructor:
                 "min": {min},
                 "sum": {sum},
                 "normMean": {normMean}
-            },
+            }},
             "source": [
-                {
+                {{
                     "@type": "aorc:CompositeDataset",
                     "@id": "{zarrPrefix}"
-                }
+                }}
             ],
-            "wasGeneratedBy": {
+            "wasGeneratedBy": {{
                 "@type": "aorc:TranspositionJob",
-                "wasStartedBy": {
+                "wasStartedBy": {{
                     "@type": "aorc:TranspositionScript",
                     "@id": "{scriptPath}
                     "dockerImage": "{dockerPath}"
                     "description": "The script which is accessible at its IRI path once inside the docker image to which it belongs"
-                },
+                }},
                 "used": [
-                    {
+                    {{
                         "@type": "aorc:CompositeDataset",
                         "@id": "{zarrPrefix}"
-                    }
+                    }}
                 ]
-            }
-        }
-    ]
-}"""
-    def __init__(self, context: str, describedBy: str, bucket: str, documentation_prefix: str) -> None:
+            }}
+        }}
+    """
+    COMPOSITE_S3_TEMPLATE = "s3://tempest/transforms/aorc/precipitation/{y}/{ymdh}.zarr/"
+
+    def __init__(
+        self,
+        context: str,
+        describedBy: str,
+        bucket: str,
+        documentation_prefix: str,
+        script_path: str,
+        docker_path: str,
+        doi_url: str,
+        client: Any | None = None,
+    ) -> None:
         self.context = context
         self.describedBy = describedBy
         self.bucket = bucket
         self.documentation_prefix = documentation_prefix
+        self.client = client
+        self.script_path = script_path
+        self.docker_path = docker_path
+        self.doi_url = doi_url
 
-    def __create_dss(self, key: str):
+    @staticmethod
+    def __create_dss(key: str) -> str:
         # Get assumed s3 key for dss file using key of documentation file
-        pass
+        path_parts = key.split("/")
+        json_file = path_parts[-1]
+        dss_dir = "dss"
+        dss_file = json_file.replace(".json", ".dss")
+        path_parts[-2:] = [dss_dir, dss_file]
+        dss_s3_path = "/".join(path_parts)
+        return dss_s3_path
 
-    def __fetch_modification(self, key: str):
+    def __fetch_modification(self, key: str) -> str:
         # Get modification date of specified key
-        pass
+        last_modification = get_object_property(self.bucket, key, ObjectProperties.LAST_MODIFIED, self.client)
+        last_modification_dt = cast(datetime.datetime, last_modification)
+        return last_modification_dt.isoformat()
 
-    def __fetch_wkt(self, key: str):
+    def __fetch_wkt(self, geojson_s3_path: str) -> str:
         # Load geojson from s3 and convert to wkt
-        pass
+        bucket, key = extract_bucketname_and_keyname(geojson_s3_path)
+        streaming_body = get_object_property(bucket, key, ObjectProperties.BODY, self.client)
+        string_body = streaming_body.read().decode("utf-8")
+        json_body = json.loads(string_body)
+        features = json_body.get("features")
+        if len(features) > 1:
+            raise ValueError(f"Expected GeoJSON object with a single feature, got {len(features)} features")
+        geometry = features[0].get("geometry")
+        wkt = shape(geometry).wkt
+        return wkt
 
-    def __create_png(self, key: str):
+    def __create_png(self, key: str) -> str:
         # Get assumed s3 key for png file using key of documentation file
-        pass
+        path_parts = key.split("/")
+        json_file = path_parts[-1]
+        png_dir = "pngs"
+        png_file = json_file.replace(".json", ".png")
+        path_parts[-2:] = [png_dir, png_file]
+        png_s3_path = "/".join(path_parts)
+        return png_s3_path
 
-    def __identify_composite_dataset(self, date: str):
-        # Retrieve s3 path for datasets associated with date given
-        pass
+    def __format_composite(self, date: datetime.datetime):
+        # Formats provided composite s3 path template with provided date
+        y = date.year
+        ymdh = date.strftime("%Y%m%d%H")
+        return self.COMPOSITE_S3_TEMPLATE.format(y=y, ymdh=ymdh)
 
-    def __extract_metadata(self, key: str, documentation: TranspositionDocumentation) -> None:
-        pass
+    def __format_template(self, inputs: TemplateInputs):
+        return self.DATASET_TEMPLATE.format(
+            context=inputs.context,
+            describedBy=inputs.describedBy,
+            watershedName=inputs.watershedName,
+            startDate=inputs.startDate,
+            dssModified=inputs.dssModified,
+            doiUrl=inputs.doiUrl,
+            centerY=inputs.centerY,
+            centerX=inputs.centerX,
+            startDateIsoformat=inputs.startDateIsoformat,
+            duration=inputs.duration,
+            season=inputs.season,
+            waterYear=inputs.waterYear,
+            watershedWKT=inputs.watershedWKT,
+            dssKey=inputs.dssKey,
+            transpositionRegionWKT=inputs.transpositionRegionWKT,
+            imgModified=inputs.imgModified,
+            imgKey=inputs.imgKey,
+            count=inputs.count,
+            mean=inputs.mean,
+            max=inputs.max,
+            min=inputs.min,
+            sum=inputs.sum,
+            normMean=inputs.normMean,
+            zarrPrefix=inputs.zarrPrefix,
+            scriptPath=inputs.scriptPath,
+            dockerPath=inputs.dockerPath,
+        )
 
-    def __format_template(self, script_path: str, docker_path: str):
-        pass
+    def __get_key(self) -> Generator[str, None, None]:
+        docs_pattern = re.compile(r".*\.json$")
+        for resp in get_s3_content(self.bucket, self.documentation_prefix, True, self.client):
+            key = resp.get("Key")
+            if key:
+                if re.match(docs_pattern, key):
+                    yield key
 
-def get_documentation(bucket: str, documentation_prefix: str, client: Any | None = None) -> Generator[TranspositionDocumentation, None, None]:
-    docs_pattern = re.compile(r'.*\.json$')
-    for resp in get_s3_content(bucket, documentation_prefix, True, client):
-        key = cast(str, resp.get("Key"))
-        if re.match(docs_pattern, key):
-            streaming_body = get_object_body_string(bucket, key, client)
-            string_body = streaming_body.read().decode("utf-8")
-            json_body = json.loads(string_body)
-            documentation = TranspositionDocumentation(json_body.get("start"), json_body.get("duration"), json_body.get("stats"), json_body.get("metadata"), json_body.get("geom"))
-            yield documentation
+    def __get_documentation(self, key: str) -> TranspositionDocumentation:
+        streaming_body = get_object_property(self.bucket, key, ObjectProperties.BODY, client)
+        string_body = streaming_body.read().decode("utf-8")
+        json_body = json.loads(string_body)
+        documentation = TranspositionDocumentation(
+            json_body.get("start"),
+            json_body.get("duration"),
+            json_body.get("stats"),
+            json_body.get("metadata"),
+            json_body.get("geom"),
+        )
+        return documentation
+
+    def populate_datasets(self):
+        for obj_key in self.__get_key():
+            doc = self.__get_documentation(obj_key)
+            dss_key = self.__create_dss(obj_key)
+            dss_modified = self.__fetch_modification(dss_key)
+            img_key = self.__create_png(obj_key)
+            img_modified = self.__fetch_modification(img_key)
+            composite_key = self.__format_composite(doc.format_start_date())
+            watershed_wkt = self.__fetch_wkt(doc.metadata.watershed_source)
+            transposition_wkt = self.__fetch_wkt(doc.metadata.transposition_domain_source)
+            template_inputs = TemplateInputs(
+                self.context,
+                self.describedBy,
+                doc.metadata.watershed_name,
+                doc.start.datetime,
+                dss_modified,
+                self.doi_url,
+                str(doc.geom.center_y),
+                str(doc.geom.center_x),
+                doc.format_start_date().isoformat(),
+                doc.duration,
+                doc.start.season,
+                doc.start.water_year,
+                watershed_wkt,
+                create_s3_path(self.bucket, dss_key),
+                transposition_wkt,
+                img_modified,
+                create_s3_path(self.bucket, img_key),
+                doc.stats.count,
+                doc.stats.mean,
+                doc.stats.max,
+                doc.stats.min,
+                doc.stats.sum,
+                doc.stats.norm_mean,
+                composite_key,
+                self.script_path,
+                self.docker_path,
+            )
+            dataset_string = self.__format_template(template_inputs)
+            print(dataset_string)
+            exit()
+
+
+def create_s3_path(bucket: str, key: str) -> str:
+    return f"s3://{bucket}/{key}"
+
 
 if __name__ == "__main__":
     from dotenv import load_dotenv
@@ -255,5 +296,15 @@ if __name__ == "__main__":
 
     client = get_client()
 
-    for docs in get_documentation("tempest", "watersheds/indian-creek/indian-creek-transpo-area-v01/72h/docs/", client):
-        print(docs)
+    constructor = DatasetConstructor(
+        "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/3101b1f8-db5d-43fe-9159-1342be080480/download/sstcatalog.jsonld",
+        "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/0b6b1035-cede-49a9-9dc3-36dcbcb50cbc/download/sstcatalog.json",
+        "tempest",
+        "watersheds/indian-creek/indian-creek-transpo-area-v01/72h/docs/",
+        "extract_storms_v2.py",
+        "https://hub.docker.com/layers/placeholder",
+        "http://dx.doi.org/nonfunctioning/doi/example",
+        client,
+    )
+
+    constructor.populate_datasets()

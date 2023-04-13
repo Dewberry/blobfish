@@ -14,57 +14,10 @@ from aiofile import async_open
 from typing import List, Tuple, cast
 from boto3.resources.factory import ServiceResource
 from dateutil.relativedelta import relativedelta
-from dataclasses import dataclass, asdict, field
+from dataclasses import asdict
 
 from .const import RFC_INFO_LIST, RFCInfo, FIRST_RECORD, FTP_HOST
-
-
-@dataclass
-class SourceURLObject:
-    rfc_catalog_relative_url: str
-    precip_partition_relative_url: str
-    source_relative_url: str
-    date: datetime.datetime
-    rfc: RFCInfo
-
-
-@dataclass
-class BaseTransferMetadata:
-    """Class to package metadata available using presumed FTP structure and information provided to TransferHandler object"""
-
-    rfc_name: str
-    rfc_alias: str
-    rfc_catalog_uri: str
-    precip_partition_uri: str
-    source_uri: str
-    mirror_uri: str
-    ref_date: str
-    docker_image_url: str
-    mirror_script: str
-    aorc_historic_uri: str = field(init=False)
-
-    def __post_init__(self):
-        """AORC historic URI is presumed to be the same as constant variable FTP_HOST"""
-        self.aorc_historic_uri = FTP_HOST
-
-
-@dataclass
-class TransferMetadata(BaseTransferMetadata):
-    """Class to package metadata available after the source file has been queried with an HTTP request"""
-
-    aorc_historic_uri: str
-    source_last_modified: str
-    source_bytes: str
-
-
-@dataclass
-class TransferContext:
-    relative_mirror_uri: str
-    metadata: BaseTransferMetadata
-
-
-class FTPError(Exception):
-    "FTP site does not match expected structure"
+from .classes import SourceURLObject, TransferContext, BaseTransferMetadata, TransferMetadata, FTPError
 
 
 def get_sessioned_s3_resource() -> ServiceResource:

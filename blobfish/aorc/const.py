@@ -1,6 +1,15 @@
 from dataclasses import dataclass
 
-# from rdflib import Namespace
+
+@dataclass
+class RFCInfo:
+    """
+    Data Property: Regional Forecast Center (RFC) names and aliases
+    """
+
+    alias: str
+    name: str
+
 
 # First available dataset in the AORC repository
 FIRST_RECORD = "1979-02-01"
@@ -18,16 +27,6 @@ FTP_HOST = "https://hydrology.nws.noaa.gov/pub/aorc-historic"
 # FTP_ROOT = Namespace("https://hydrology.nws.noaa.gov/pub/aorc-historic/")
 # MIRROR_ROOT = Namespace("s3://tempest/mirrors/aorc/precip/")
 # COMPOSITE_ROOT = Namespace("s3://tempest/composites/aorc/precip/")
-
-
-@dataclass
-class RFCInfo:
-    """
-    Data Property: Regional Forecast Center (RFC) names and aliases
-    """
-
-    alias: str
-    name: str
 
 
 RFC_INFO_LIST = [

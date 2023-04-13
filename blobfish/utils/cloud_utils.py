@@ -1,8 +1,18 @@
 import os
 import boto3
+import logging
+import enum
+import datetime
 from typing import Generator, Any
 from botocore.response import StreamingBody
-import logging
+
+
+class ObjectProperties(enum.Enum):
+    BODY = enum.auto()
+    LAST_MODIFIED = enum.auto()
+    CONTENT_LENGTH = enum.auto()
+    ETAG = enum.auto()
+    METADATA = enum.auto()
 
 
 def get_client():
@@ -81,9 +91,27 @@ def upload_graph_ttl(bucket: str, key: str, ttl_body: str, client: None | Any = 
     client.put_object(Bucket=bucket, Key=key, Body=ttl_body)
 
 
-def get_object_body_string(bucket: str, key: str, client: None | Any = None) -> StreamingBody:
+def get_object_property(bucket: str, key: str, property_name: ObjectProperties, client: None | Any = None):
     if not client:
         client = get_client()
     obj = client.get_object(Bucket=bucket, Key=key)
-    body = obj.get("Body")
-    return body
+    if property_name.value == ObjectProperties.BODY.value:
+        name = "Body"
+    elif property_name.value == ObjectProperties.CONTENT_LENGTH.value:
+        name = "ContentLength"
+    elif property_name.value == ObjectProperties.ETAG.value:
+        name = "ETag"
+    elif property_name.value == ObjectProperties.LAST_MODIFIED.value:
+        name = "LastModified"
+    elif property_name.value == ObjectProperties.METADATA.value:
+        name = "Metadata"
+    else:
+        raise NotImplementedError(f"{property_name} missing from ObjectProperties class")
+    return obj.get(name)
+
+
+def extract_bucketname_and_keyname(s3path: str) -> tuple[str, str]:
+    if not s3path.startswith("s3://"):
+        raise ValueError(f"s3path does not start with s3://: {s3path}")
+    bucket, _, key = s3path[5:].partition("/")
+    return bucket, key

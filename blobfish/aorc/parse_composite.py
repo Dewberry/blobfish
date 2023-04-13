@@ -1,53 +1,15 @@
 import pathlib
 import datetime
 import logging
-import enum
 import re
 import os
-from dataclasses import dataclass, field
 from rdflib import DCAT, DCTERMS, OWL, PROV, RDF, XSD, Graph, URIRef, BNode, Literal
 from typing import cast, Generator, Any
 
+from .classes import CompletedCompositeMetadata, CompositeConfig, DataFormat
 from ..pyrdf import AORC
-from ..utils.cloud_utils import get_s3_content, upload_graph_ttl, get_object_body_string
+from ..utils.cloud_utils import get_s3_content, upload_graph_ttl, get_object_property, ObjectProperties
 from ..utils.graph_utils import GraphCreator
-
-
-class DataFormat(enum.Enum):
-    S3 = enum.auto()
-    LOCAL = enum.auto()
-
-
-@dataclass
-class CompositeConfig:
-    output_format: DataFormat
-    out_dir: str
-    out_path: str
-    extended: bool = False
-    input_format: DataFormat | None = None
-    in_dir: str | None = None
-    in_pattern: str | None = None
-
-
-@dataclass
-class CompletedCompositeMetadata:
-    start_time: str
-    end_time: str
-    docker_image_url: str
-    members: str
-    composite_last_modified: str
-    composite_s3_directory: str
-    composite_script: str
-    public_uri: str = field(init=False)
-
-    def __post_init__(self):
-        bucket, *filename_parts = self.composite_s3_directory.replace("s3://", "").split("/")
-        filename = "/".join(filename_parts)
-        self.public_uri = f"https://{bucket}.s3.amazonaws.com/{filename}"
-        self.composite_script = self.composite_script.replace("/", "_")
-
-    def get_member_datasets(self) -> list[str]:
-        return self.members.split(",")
 
 
 class NodeNamer:
@@ -124,7 +86,7 @@ def create_graph_s3(bucket: str, prefix: str, client: Any | None = None):
     g.bind("prov", PROV)
     g.bind("aorc", AORC)
     for obj in get_s3_content(bucket, prefix, True, client):
-        obj = get_object_body_string(bucket, cast(str, obj.get("Key")), client)
+        obj = get_object_property(bucket, cast(str, obj.get("Key")), ObjectProperties.BODY, client)
         g.parse(data=obj.read())
 
     return g
@@ -238,17 +200,13 @@ def main(
         graph_creator = GraphCreator({"dcat": DCAT, "dct": DCTERMS, "prov": PROV, "aorc": AORC})
         triples_wrapper(i, graph_creator=graph_creator)
     if config.output_format.name == "S3" and g:
-        logging.info(1)
         ttl_body = g.serialize(format="ttl")
         upload_graph_ttl(config.out_dir, config.out_path, ttl_body, client)
     elif config.output_format.name == "LOCAL" and g:
-        logging.info(2)
         g.serialize(os.path.join(config.out_dir, config.out_path), format="ttl")
     elif config.output_format.name == "S3" and graph_creator:
-        logging.info(3)
         graph_creator.serialize_graphs(config.out_path, True, client, config.out_dir)
     elif config.output_format.name == "LOCAL" and graph_creator:
-        logging.info(4)
         graph_creator.serialize_graphs(os.path.join(config.out_dir, config.out_path))
 
 
@@ -265,6 +223,6 @@ if __name__ == "__main__":
     bucket = "tempest"
     config = CompositeConfig(DataFormat.S3, bucket, "graphs/transforms/{0}.ttl", False)
     metadata_pattern = re.compile(r".*\.zmetadata$")
-    main(bucket, "transforms", metadata_pattern, config, client)
+    main(bucket, "transforms", metadata_pattern, config, client, limit=35040)
     # view_downloads("tempest", "test/transforms")
     # clear_downloads("tempest", "test/transforms")

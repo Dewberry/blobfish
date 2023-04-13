@@ -1,70 +1,20 @@
 """ Script to parse metadata from uploaded mirror files and create a rdf graph network using the ontology defined in ./pyrdf/_AORC.py """
-import rdflib
 import datetime
-import requests
 import logging
 import enum
-from dateutil import relativedelta
-from dataclasses import dataclass, field
 from typing import cast, Any
 from rdflib import RDF, OWL, XSD, DCAT, DCTERMS, PROV, Literal, URIRef, BNode
-
-from .transfer import TransferMetadata
 
 from ..pyrdf import AORC
 from ..utils.logger import set_up_logger
 from ..utils.cloud_utils import get_s3_content, get_client
 from ..utils.graph_utils import GraphCreator
+from .classes import CompletedTransferMetadata
 
 
 class AORCFilter(enum.Enum):
     YEAR = enum.auto()
     RFC = enum.auto()
-
-
-@dataclass
-class CompletedTransferMetadata(TransferMetadata):
-    mirror_last_modified: str
-    bucket: str
-    mirror_public_uri: str = field(init=False)
-    ref_end_date: str = field(init=False)
-    rfc_office_uri: str = field(init=False)
-
-    def __post_init__(self):
-        # Create public s3 address
-        public_uri = f"https://{self.bucket}.s3.amazonaws.com/{self.mirror_uri}"
-        self.mirror_uri = f"s3://{self.bucket}/{self.mirror_uri}"
-        self.mirror_public_uri = public_uri
-
-        # Calculate and format end duration for dataset
-        ref_end_datetime = (
-            datetime.datetime.strptime(self.ref_date, "%Y-%m-%d")
-            + relativedelta.relativedelta(months=1, day=1)
-            - datetime.timedelta(days=1)
-        )
-        self.ref_end_date = ref_end_datetime.strftime("%Y-%m-%d")
-
-        # Format source last modified property
-        if self.source_last_modified:
-            self.source_last_modified = datetime.datetime.strptime(
-                self.source_last_modified, "%a, %d %b %Y %H:%M:%S %Z"
-            ).isoformat()
-
-        # Format transfer script to make it parseable
-        self.mirror_script = self.mirror_script.replace("/", "_")
-
-        # Get validated page for RFC office
-        self.rfc_office_uri = self.__validate_rfc_office_page()
-        logging.info(f"Metadata completed for {self.mirror_uri}")
-
-    def __validate_rfc_office_page(self) -> str:
-        url = f"https://www.weather.gov/{self.rfc_alias.lower()}rfc"
-        resp = requests.get(url, allow_redirects=True)
-        if resp.ok:
-            return url
-        else:
-            logging.error(f"rfc homepage url {url} not valid")
-            raise requests.exceptions.RequestException
 
 
 class NodeNamer:

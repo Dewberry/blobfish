@@ -14,23 +14,11 @@ from rdflib import XSD, DCAT, DCTERMS, PROV, Graph, Literal
 from typing import cast
 from zipfile import ZipFile
 from tempfile import TemporaryDirectory
-from dataclasses import dataclass
 from contextlib import closing
 
 from .const import RFC_INFO_LIST
+from .classes import DatedPaths
 from ..pyrdf import AORC
-
-
-@dataclass
-class DatedPaths:
-    start_date: datetime.datetime
-    end_date: datetime.datetime
-    paths: list[str]
-
-    def __post_init__(self):
-        # Alter end date from referring to first hour of end date (00) to last hour of end date (23)
-        # in order to capture all data from covered time period for dataset
-        self.end_date = self.end_date.replace(hour=23)
 
 
 class CompositeMembershipMetadata:
