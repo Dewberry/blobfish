@@ -5,8 +5,7 @@
     "description": "Activity in which a composite dataset was used by a script to run the storm transposition model and create model output data.",
     "type": "object",
     "required": [
-        "wasStartedBy",
-        "used"
+        "wasStartedBy"
     ],
     "properties": {
         "@type": {
@@ -20,16 +19,6 @@
             "title": "Started By",
             "description": "The script responsible for starting the model.",
             "$ref": "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/56681c25-1a2e-49a7-80de-680edfdc1c7e/download/script.json"
-        },
-        "used": {
-            "title": "Composite Used",
-            "description": "Composite dataset used during the run of the model",
-            "type": "array",
-            "items": {
-                "$ref": "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/906173e4-b0f6-4d98-8f0b-d7fcd7499d43/download/compositedataset.json",
-                "minItems": 1,
-                "uniqueItems": true
-            }
         }
     }
 }
