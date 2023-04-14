@@ -111,8 +111,6 @@ class TemplateInputs:
     Structured class with required fields for creating a string which can be loaded as a JSON-LD metadata document
     """
 
-    context: str
-    describedBy: str
     watershedName: str
     startDate: str
     dssModified: str
@@ -134,7 +132,6 @@ class TemplateInputs:
     min: float
     sum: float
     normMean: float
-    zarrPrefix: str
     scriptPath: str
     dockerPath: str
 
