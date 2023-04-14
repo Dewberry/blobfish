@@ -85,10 +85,10 @@ def check_exists(bucket: str, key: str, client: None | Any = None) -> bool:
     return False
 
 
-def upload_graph_ttl(bucket: str, key: str, ttl_body: str, client: None | Any = None) -> None:
+def upload_body(bucket: str, key: str, body: str, client: None | Any = None) -> None:
     if not client:
         client = get_client()
-    client.put_object(Bucket=bucket, Key=key, Body=ttl_body)
+    client.put_object(Bucket=bucket, Key=key, Body=body)
 
 
 def get_object_property(bucket: str, key: str, property_name: ObjectProperties, client: None | Any = None):
