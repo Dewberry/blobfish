@@ -106,37 +106,6 @@ class TranspositionDocumentation:
 
 
 @dataclass
-class TemplateInputs:
-    """
-    Structured class with required fields for creating a string which can be loaded as a JSON-LD metadata document
-    """
-
-    watershedName: str
-    startDate: str
-    dssModified: str
-    doiUrl: str
-    centerY: str
-    centerX: str
-    startDateIsoformat: str
-    duration: int
-    season: str
-    waterYear: int
-    watershedWKT: str
-    dssKey: str
-    transpositionRegionWKT: str
-    imgModified: str
-    imgKey: str
-    count: int
-    mean: float
-    max: float
-    min: float
-    sum: float
-    normMean: float
-    scriptPath: str
-    dockerPath: str
-
-
-@dataclass
 class CompositeConfig:
     """
     Configuration setup used to control how data is loaded for composite data metadata creation and how it is output, either to local path or s3 path
