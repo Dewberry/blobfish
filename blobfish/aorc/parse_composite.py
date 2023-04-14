@@ -8,7 +8,7 @@ from typing import cast, Generator, Any
 
 from .classes import CompletedCompositeMetadata, CompositeConfig, DataFormat
 from ..pyrdf import AORC
-from ..utils.cloud_utils import get_s3_content, upload_graph_ttl, get_object_property, ObjectProperties
+from ..utils.cloud_utils import get_s3_content, upload_body, get_object_property, ObjectProperties
 from ..utils.graph_utils import GraphCreator
 
 
@@ -126,10 +126,10 @@ def create_graph_triples(
     # Create distribution
     composite_distribution_uri = URIRef(meta.public_uri)
     graph.add((composite_distribution_uri, RDF.type, AORC.CompositeDistribution))
-    netcdf_format = URIRef("https://publications.europa.eu/resource/authority/file-type/NETCDF")
-    graph.add((composite_distribution_uri, DCAT.packageFormat, netcdf_format))
     last_modified = Literal(meta.composite_last_modified, datatype=XSD.dateTime)
     graph.add((composite_dataset_uri, DCTERMS.created, last_modified))
+    octet_stream_uri = URIRef("https://www.iana.org/assignments/media-types/application/octet-stream")
+    graph.add((composite_distribution_uri, DCTERMS.format, octet_stream_uri))
     access_description = Literal(
         "Access is restricted based on users credentials for AWS bucket holding data", datatype=XSD.string
     )
@@ -153,12 +153,11 @@ def create_graph_triples(
     graph.add((composite_job_node, PROV.wasStartedBy, composite_script_node))
     graph.add((composite_script_node, AORC.hasDockerImage, docker_image_uri))
 
-    # Associate members of composite with composite dataset and composite job
+    # Associate members of composite with composite dataset
     for member_dataset in meta.get_member_datasets():
         member_dataset_uri = URIRef(member_dataset)
         graph.add((member_dataset_uri, RDF.type, AORC.MirrorDataset))
         graph.add((composite_dataset_uri, AORC.isCompositeOf, member_dataset_uri))
-        graph.add((composite_job_node, PROV.used, member_dataset_uri))
 
 
 def main(
@@ -201,7 +200,7 @@ def main(
         triples_wrapper(i, graph_creator=graph_creator)
     if config.output_format.name == "S3" and g:
         ttl_body = g.serialize(format="ttl")
-        upload_graph_ttl(config.out_dir, config.out_path, ttl_body, client)
+        upload_body(config.out_dir, config.out_path, ttl_body, client)
     elif config.output_format.name == "LOCAL" and g:
         g.serialize(os.path.join(config.out_dir, config.out_path), format="ttl")
     elif config.output_format.name == "S3" and graph_creator:
@@ -221,8 +220,8 @@ if __name__ == "__main__":
 
     client = get_client()
     bucket = "tempest"
-    config = CompositeConfig(DataFormat.S3, bucket, "graphs/transforms/{0}.ttl", False)
+    config = CompositeConfig(DataFormat.S3, bucket, "graphs/aorc/precip/transform/{0}.ttl", False)
     metadata_pattern = re.compile(r".*\.zmetadata$")
-    main(bucket, "transforms", metadata_pattern, config, client, limit=35040)
+    main(bucket, "transforms", metadata_pattern, config, client)
     # view_downloads("tempest", "test/transforms")
     # clear_downloads("tempest", "test/transforms")
