@@ -1,7 +1,7 @@
 import rdflib
 import logging
 from typing import Any
-from .cloud_utils import upload_graph_ttl
+from .cloud_utils import upload_body
 
 class GraphCreator:
     def __init__(self, bindings: dict) -> None:
@@ -38,7 +38,7 @@ class GraphCreator:
                 fn = filepath_pattern.format(filter_key)
                 if to_s3 and bucket:
                     ttl_body = filter_graph.serialize(format="ttl")
-                    upload_graph_ttl(bucket, fn, ttl_body, client)
+                    upload_body(bucket, fn, ttl_body, client)
                 else:
                     filter_graph.serialize(fn, format="ttl")
                     logging.info(f"Graph serialized to {fn}")
