@@ -178,5 +178,5 @@ if __name__ == "__main__":
     client = get_client()
     set_up_logger(level=logging.INFO)
     construct_mirror_graph(
-        "tempest", "mirrors/aorc/precip", "graphs/aorc/test/{0}.ttl", AORCFilter.RFC, client, "tempest"
+        "tempest", "mirrors/aorc/precip", "graphs/aorc/precip/mirror/{0}.ttl", AORCFilter.RFC, client, "tempest"
     )
