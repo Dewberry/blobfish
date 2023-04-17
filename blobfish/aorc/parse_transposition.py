@@ -5,7 +5,7 @@ import re
 import datetime
 from collections.abc import Generator
 from typing import Any, cast
-from shapely.geometry import shape
+from shapely.geometry import shape, box
 from .classes import TranspositionDocumentation
 from ..utils.cloud_utils import (
     get_s3_content,
@@ -74,7 +74,7 @@ class JSONLDConstructor:
             "@type": "dcat:Catalog",
             "conformsTo": "https://project-open-data.cio.gov/v1.1/schema",
             "describedBy": self.describedBy,
-            "datasets": self.datasets,
+            "dataset": self.datasets,
         }
         return catalog
 
@@ -138,7 +138,7 @@ class DatasetConstructor:
         last_modification_dt = cast(datetime.datetime, last_modification)
         return last_modification_dt.isoformat()
 
-    def __fetch_wkt(self, geojson_s3_path: str, with_name: bool = False) -> str | tuple[str, str]:
+    def __fetch_wkt(self, geojson_s3_path: str, with_name: bool = False, bbox: bool = False) -> str | tuple[str, str]:
         # Load geojson from s3 and convert to wkt
         bucket, key = extract_bucketname_and_keyname(geojson_s3_path)
         streaming_body = get_object_property(bucket, key, ObjectProperties.BODY, self.client)
@@ -148,7 +148,12 @@ class DatasetConstructor:
         if len(features) > 1:
             raise ValueError(f"Expected GeoJSON object with a single feature, got {len(features)} features")
         geometry = features[0].get("geometry")
-        wkt = shape(geometry).wkt
+        geometry_shape = shape(geometry)
+        if bbox:
+            bounds = geometry_shape.bounds
+            wkt = box(*bounds).wkt
+        else:
+            wkt = geometry_shape.wkt
         if with_name:
             name = json_body.get("name")
             return wkt, name
@@ -195,7 +200,7 @@ class DatasetConstructor:
         dataset["keyword"] = [
                 "aorc",
                 "transposition",
-                "Indian Creek",
+                self.documentation.metadata.watershed_name,
                 "storm",
                 "hydrological",
                 "modeling",
@@ -235,14 +240,14 @@ class DatasetConstructor:
         dataset["waterYear"] = self.documentation.start.water_year
         dataset["watershed"] = {
             "@type": "geo:Geometry",
-            "description": f"Geometry of {self.documentation.metadata.watershed_name}",
-            "region": self.__fetch_wkt(self.documentation.metadata.watershed_source),
+            "description": f"Geometry of the bounding box for {self.documentation.metadata.watershed_name}",
+            "region": self.__fetch_wkt(self.documentation.metadata.watershed_source, bbox=True),
             "name": self.documentation.metadata.watershed_name
         }
         dataset["transposition"] = {
             "@type": "geo:Geometry",
-            "description": f"Geometry of transposition region associated with watershed",
-            "region": self.__fetch_wkt(self.documentation.metadata.transposition_domain_source),
+            "description": f"Geometry of the bounding box which contains the transposition region associated with watershed",
+            "region": self.__fetch_wkt(self.documentation.metadata.transposition_domain_source, bbox=True),
             "name": self.documentation.metadata.transposition_domain_name
         }
         dataset["image"] = {
@@ -288,13 +293,13 @@ if __name__ == "__main__":
     set_up_logger(level=logging.INFO)
 
     client = get_client()
-    year = 2022
+    year = 2016
     logging.info(f"Creating JSON-LD catalog for {year}")
     constructor = JSONLDConstructor(
         "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/3101b1f8-db5d-43fe-9159-1342be080480/download/sstcatalog.jsonld",
         "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/0b6b1035-cede-49a9-9dc3-36dcbcb50cbc/download/sstcatalog.json",
         "tempest",
-        f"watersheds/indian-creek/indian-creek-transpo-area-v01/72h/docs/{year}",
+        f"watersheds/kanawha/kanawha-transpo-area-v01/72h/docs/{year}",
         "extract_storms_v2.py",
         "https://hub.docker.com/layers/placeholder",
         "Nicholas Roberts",
@@ -303,4 +308,4 @@ if __name__ == "__main__":
         None
     )
     constructor.populate_datasets()
-    constructor.serialize_to_s3(f"graphs/aorc/precip/transposition/{year}.jsonld")
+    constructor.serialize_to_s3(f"graphs/aorc/precip/transposition/kanawha-transpo-area-v01/{year}.jsonld")
