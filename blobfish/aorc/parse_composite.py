@@ -160,6 +160,19 @@ def create_graph_triples(
         graph.add((composite_dataset_uri, AORC.isCompositeOf, member_dataset_uri))
 
 
+def handle_serialize(config: CompositeConfig, g: Graph | None = None, graph_creator: GraphCreator | None = None):
+    logging.info("Serializing graphs")
+    if config.output_format == DataFormat.S3 and g:
+        ttl_body = g.serialize(format="ttl")
+        upload_body(config.out_dir, config.out_path, ttl_body, client)
+    elif config.output_format == DataFormat.LOCAL and g:
+        g.serialize(os.path.join(config.out_dir, config.out_path), format="ttl")
+    elif config.output_format == DataFormat.S3 and graph_creator:
+        graph_creator.serialize_graphs(config.out_path, True, client, config.out_dir)
+    elif config.output_format == DataFormat.LOCAL and graph_creator:
+        graph_creator.serialize_graphs(os.path.join(config.out_dir, config.out_path))
+
+
 def main(
     composites_bucket: str,
     composites_prefix: str,
@@ -174,16 +187,19 @@ def main(
     graph_creator = None
 
     def triples_wrapper(i: int, g: Graph | None = None, graph_creator: GraphCreator | None = None):
-        for meta in get_meta(composites_bucket, composites_prefix, composites_metadata_pattern):
-            if g:
-                create_graph_triples(meta, node_namer, graph=g)
-            else:
-                create_graph_triples(meta, node_namer, graph_creator=graph_creator)
-                if limit:
-                    if i >= limit:
-                        break
-                    else:
-                        i += 1
+        try:
+            for meta in get_meta(composites_bucket, composites_prefix, composites_metadata_pattern):
+                if g:
+                    create_graph_triples(meta, node_namer, graph=g)
+                else:
+                    create_graph_triples(meta, node_namer, graph_creator=graph_creator)
+                    if limit:
+                        if i >= limit:
+                            break
+                        else:
+                            i += 1
+        finally:
+            handle_serialize(config, g, graph_creator)
 
     if config.extended and config.in_dir and config.in_pattern and config.input_format:
         if config.input_format.name == "S3":
@@ -198,21 +214,13 @@ def main(
     else:
         graph_creator = GraphCreator({"dcat": DCAT, "dct": DCTERMS, "prov": PROV, "aorc": AORC})
         triples_wrapper(i, graph_creator=graph_creator)
-    if config.output_format.name == "S3" and g:
-        ttl_body = g.serialize(format="ttl")
-        upload_body(config.out_dir, config.out_path, ttl_body, client)
-    elif config.output_format.name == "LOCAL" and g:
-        g.serialize(os.path.join(config.out_dir, config.out_path), format="ttl")
-    elif config.output_format.name == "S3" and graph_creator:
-        graph_creator.serialize_graphs(config.out_path, True, client, config.out_dir)
-    elif config.output_format.name == "LOCAL" and graph_creator:
-        graph_creator.serialize_graphs(os.path.join(config.out_dir, config.out_path))
 
 
 if __name__ == "__main__":
+    from dotenv import load_dotenv
+    from multiprocessing import Pool
     from ..utils.cloud_utils import view_downloads, clear_downloads, get_client
     from ..utils.logger import set_up_logger
-    from dotenv import load_dotenv
 
     load_dotenv()
 
@@ -222,6 +230,12 @@ if __name__ == "__main__":
     bucket = "tempest"
     config = CompositeConfig(DataFormat.S3, bucket, "graphs/aorc/precip/transform/{0}.ttl", False)
     metadata_pattern = re.compile(r".*\.zmetadata$")
-    main(bucket, "transforms", metadata_pattern, config, client)
+
+    def mappable_update(year: int):
+        main(bucket, f"transforms/aorc/precipitation/{year}", metadata_pattern, config, client)
+
+    with Pool(processes=44) as pool:
+        for i in pool.imap_unordered(mappable_update, range(1979, 2023)):
+            continue
     # view_downloads("tempest", "test/transforms")
     # clear_downloads("tempest", "test/transforms")
