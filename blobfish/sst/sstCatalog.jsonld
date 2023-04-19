@@ -1,6 +1,6 @@
 {
     "@context": {
-        "aorc": "https://github.com/Dewberry/blobfish/blob/aorc_refactor/semantics/rdf/aorc.ttl#",
+        "aorc": "https://raw.githubusercontent.com/Dewberry/blobfish/main/semantics/rdf/aorc.ttl#",
         "dcat": "http://www.w3.org/ns/dcat#",
         "org": "http://www.w3.org/ns/org#",
         "vcard": "http://www.w3.org/2006/vcard/ns#",
