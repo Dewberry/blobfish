@@ -293,6 +293,10 @@ class DatasetConstructor:
         return dataset
 
 
+def validate(json_data: dict) -> bool:
+    pass
+
+
 def create_s3_path(bucket: str, key: str) -> str:
     return f"s3://{bucket}/{key}"
 
@@ -308,7 +312,6 @@ if __name__ == "__main__":
     set_up_logger(level=logging.INFO)
 
     for year in range(1979, 2023):
-
         client = get_client()
         # year = 2016
         logging.info(f"Creating JSON-LD catalog for {year}")
