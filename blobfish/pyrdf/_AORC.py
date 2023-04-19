@@ -57,4 +57,4 @@ class AORC(DefinedNamespace):
     wasTransferredBy: URIRef
     watershed: URIRef
 
-    _NS = Namespace("https://github.com/Dewberry/blobfish/blob/aorc_refactor/semantics/rdf/aorc.ttl#")
+    _NS = Namespace("https://raw.githubusercontent.com/Dewberry/blobfish/main/semantics/rdf/aorc.ttl#")
