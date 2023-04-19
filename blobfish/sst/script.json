@@ -12,7 +12,7 @@
             "title": "Metadata Context",
             "description": "IRI for the JSON-LD data type. This should be aorc:TranspositionScript",
             "enum": [
-                "aorcTranspositionScript"
+                "aorc:TranspositionScript"
             ]
         },
         "dockerImage": {
