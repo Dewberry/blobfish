@@ -9,8 +9,8 @@
         "dc": "http://purl.org/dc/terms/",
         "pod": "https://project-open-data.cio.gov/v1.1/schema#",
         "skos": "http://www.w3.org/2004/02/skos/core#",
-        "geo": "http://www.opengis.net/ont/geosparql",
-        "prov": "http://www.w3.org/ns/prov",
+        "geo": "http://www.opengis.net/ont/geosparql#",
+        "prov": "http://www.w3.org/ns/prov#",
         "region": {
             "@id": "geo:asWKT",
             "@type": "geo:wktLiteral"
