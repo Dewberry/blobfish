@@ -3,6 +3,8 @@
 import json
 import re
 import datetime
+import requests
+from jsonschema import validate, Draft4Validator
 from collections.abc import Generator
 from typing import Any, cast
 from shapely.geometry import shape, box
@@ -42,6 +44,7 @@ class JSONLDConstructor:
         self.contact_email = contact_email
         self.datasets = []
         self.limit = limit
+        self.constructed = None
 
     def __get_key(self) -> Generator[str, None, None]:
         i = 0
@@ -61,7 +64,7 @@ class JSONLDConstructor:
                         yield key
 
     def populate_datasets(self) -> None:
-        logging.info(f"Retrieving keys for {self.bucket}")
+        logging.info(f"Populating datasets from s3://{self.bucket} with prefix {self.documentation_prefix}")
         for obj_key in self.__get_key():
             dataset = DatasetConstructor(
                 self.bucket,
@@ -75,7 +78,8 @@ class JSONLDConstructor:
             ds_json = dataset.create()
             self.datasets.append(ds_json)
 
-    def as_catalog(self) -> dict:
+    def construct(self) -> None:
+        logging.info("Constructing catalog")
         catalog = {
             "@context": self.context,
             "@type": "dcat:Catalog",
@@ -83,16 +87,31 @@ class JSONLDConstructor:
             "describedBy": self.describedBy,
             "dataset": self.datasets,
         }
-        return catalog
+        self.constructed = catalog
 
-    def serialize_to_file(self, file_path: str) -> None:
-        dictionary = json.dumps(self.as_catalog(), indent=4)
-        with open(file_path, "w") as outfile:
-            outfile.write(dictionary)
+    def validate(self) -> bool:
+        if self.constructed:
+            schema_url = str(self.constructed.get("describedBy"))
+            catalog_schema_json = requests.get(schema_url).json()
+            logging.info("Validating created catalog")
+            return False
+        else:
+            raise TypeError("Can't validate, catalog missing. Try constructing first.")
 
     def serialize_to_s3(self, key: str) -> None:
-        dictionary = json.dumps(self.as_catalog(), indent=4)
-        upload_body(self.bucket, key, dictionary, self.client)
+        if self.constructed:
+            dictionary = json.dumps(self.constructed, indent=4)
+            upload_body(self.bucket, key, dictionary, self.client)
+        else:
+            raise TypeError("Can't serialize, catalog missing. Try constructing first.")
+
+    def serialize_to_file(self, file_path: str) -> None:
+        if self.constructed:
+            dictionary = json.dumps(self.constructed, indent=4)
+            with open(file_path, "w") as outfile:
+                outfile.write(dictionary)
+        else:
+            raise TypeError("Can't serialize, catalog missing. Try constructing first.")
 
 
 class DatasetConstructor:
@@ -116,10 +135,14 @@ class DatasetConstructor:
             "wasStartedBy": {
                 "@type": "aorc:TranspositionScript",
                 "@id": script_path,
-                "dockerImage": docker_path,
+                "dockerImage": {"@type": "aorc:DockerImage", "@id": docker_path},
                 "description": "The script which is accessible at its IRI path once inside the docker image to which it belongs",
             },
         }
+
+    @staticmethod
+    def __create_s3_path(bucket: str, key: str) -> str:
+        return f"s3://{bucket}/{key}"
 
     def __get_documentation(self) -> TranspositionDocumentation:
         logging.info(f"Getting documentation for {self.key}")
@@ -227,24 +250,28 @@ class DatasetConstructor:
             "suborganizationOf": {
                 "@type": "org:Organization",
                 "name": "FEMA",
-                "suborganizationOf": {"@type": "org:Organization", "name": "United States Government"},
+                "suborganizationOf": {
+                    "@type": "org:Organization",
+                    "name": "Department of Homeland Security",
+                    "suborganizationOf": {"@type": "org:Organization", "name": "United States Government"},
+                },
             },
         }
         dataset["contactPoint"] = self.contact_point
         dataset["identifier"] = "http://dx.doi.org/nonfunctioning/doi/example"
         dataset["accessLevel"] = "public"
-        dataset["bureauCode"] = ("024:070",)
-        dataset["programCode"] = "024:006"
+        dataset["bureauCode"] = ["024:70"]
+        dataset["programCode"] = ["024:006"]
         dataset[
             "rights"
         ] = "This dataset is located on an s3 bucket which requires an AWS account which has been granted access to said bucket"
         dataset["spatial"] = f"{self.documentation.geom.center_y}, {self.documentation.geom.center_x}"
-        dataset["temporal"] = f"{self.documentation.format_start_date().isoformat()}/P{self.documentation.duration}"
+        dataset["temporal"] = f"{self.documentation.format_start_date().isoformat()}Z/PT{self.documentation.duration}H"
         dataset["distribution"] = [
             {
                 "@type": "dcat:Distribution",
                 "description": f"DSS file created by storm transposition model for {self.documentation.metadata.watershed_name}, {self.documentation.format_start_date().strftime('%Y-%m-%d')}",
-                "downloadURL": f"{create_s3_path(self.bucket, self.__create_dss())}",
+                "downloadURL": f"{self.__create_s3_path(self.bucket, self.__create_dss())}",
                 "format": "Data Storage System",
                 "mediaType": "application/octet",
             }
@@ -273,7 +300,7 @@ class DatasetConstructor:
                 {
                     "@type": "dcat:Distribution",
                     "description": f"PNG file for {self.documentation.metadata.watershed_name} {self.documentation.format_start_date().strftime('%Y-%m-%d')} dataset",
-                    "downloadURL": f"{create_s3_path(self.bucket, self.__create_png())}",
+                    "downloadURL": f"{self.__create_s3_path(self.bucket, self.__create_png())}",
                     "format": "PNG Image",
                     "mediaType": "image/png",
                 }
@@ -293,14 +320,6 @@ class DatasetConstructor:
         return dataset
 
 
-def validate(json_data: dict) -> bool:
-    pass
-
-
-def create_s3_path(bucket: str, key: str) -> str:
-    return f"s3://{bucket}/{key}"
-
-
 if __name__ == "__main__":
     from dotenv import load_dotenv
     import logging
@@ -313,19 +332,20 @@ if __name__ == "__main__":
 
     for year in range(1979, 2023):
         client = get_client()
-        # year = 2016
         logging.info(f"Creating JSON-LD catalog for {year}")
         constructor = JSONLDConstructor(
             "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/3101b1f8-db5d-43fe-9159-1342be080480/download/sstcatalog.jsonld",
             "https://ckan.dewberryanalytics.com/dataset/56bb8b57-e9e7-41bf-a347-c8a467ba1c68/resource/0b6b1035-cede-49a9-9dc3-36dcbcb50cbc/download/sstcatalog.json",
             "tempest",
-            f"watersheds/kanawha/kanawha-transpo-area-v01/72h/docs/{year}",
+            f"watersheds/kanawha/kanawha-transpo-area-v01/72h/docs/{year}0201",
             "extract_storms_v2.py",
             "172866912423.dkr.ecr.us-east-1.amazonaws.com/stormcloud",
             "Seth Lawler",
-            "slawler@dewberry.com",
+            "mailto:slawler@dewberry.com",
             client,
             None,
         )
         constructor.populate_datasets()
-        constructor.serialize_to_s3(f"graphs/aorc/precip/transposition/kanawha-transpo-area-v01/{year}.jsonld")
+        constructor.construct()
+        if constructor.validate():
+            constructor.serialize_to_s3(f"graphs/aorc/precip/transposition/kanawha-transpo-area-v01/{year}.jsonld")
