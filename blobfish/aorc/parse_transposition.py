@@ -94,7 +94,8 @@ class JSONLDConstructor:
             schema_url = str(self.constructed.get("describedBy"))
             catalog_schema_json = requests.get(schema_url).json()
             logging.info("Validating created catalog")
-            return False
+            validate(self.constructed, catalog_schema_json, Draft4Validator)
+            return True
         else:
             raise TypeError("Can't validate, catalog missing. Try constructing first.")
 
