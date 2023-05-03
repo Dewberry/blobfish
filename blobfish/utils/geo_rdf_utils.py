@@ -1,27 +1,34 @@
 """ Script to create geospatial properties """
 
 from shapely.geometry import shape, box, Polygon, MultiPolygon, Point
-from rdflib import Graph, Namespace, URIRef, BNode, Literal, RDF, XSD
+from rdflib import Graph, Namespace, URIRef, BNode, IdentifiedNode, Literal, RDF, XSD, DCTERMS, DCAT
 from rdflib.namespace._GEO import GEO
 import json
 import logging
 
+
 def validate_geom_type(geom) -> None:
     expected_geometry_types = [
-    "Point",
-    "Polygon",
-    "MultiPolygon",
+        "Point",
+        "Polygon",
+        "MultiPolygon",
     ]
     if geom.geom_type not in expected_geometry_types:
         raise ValueError(f"Expected on of {', '.join(expected_geometry_types)}, got {geom.geom_type}")
 
-def format_wkt(geom: Polygon | MultiPolygon | Point, bbox: bool, crs_uri: str = "http://www.opengis.net/def/crs/OGC/1.3/CRS84") -> str:
+
+def format_wkt(
+    geom: Polygon | MultiPolygon | Point, bbox: bool, crs_uri: str = "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
+) -> str:
     if bbox:
         if geom.geom_type == "Point":
-            logging.warning("Point provided with bbox parameter set to true. Ignoring and proceeding with wkt formatting using point geometry")
+            logging.warning(
+                "Point provided with bbox parameter set to true. Ignoring and proceeding with wkt formatting using point geometry"
+            )
         else:
             geom = box(*geom.bounds)
     return f"<{crs_uri}> {geom.wkt}"
+
 
 def load_feature(features: list[dict], index: int | None) -> dict:
     n = len(features)
@@ -59,17 +66,38 @@ def parse_geojson_file(fn: str, index: int | None = None) -> tuple[Polygon | Mul
     validate_geom_type(geom)
     return geom, name
 
-def create_rdf_location(graph: Graph, geom: Polygon | MultiPolygon | Point, name: str | None = None, bbox: bool = False) -> Graph:
+
+def create_rdf_location(
+    graph: Graph,
+    geom: Polygon | MultiPolygon | Point,
+    name: str | None = None,
+    bbox: bool = False,
+) -> IdentifiedNode:
+    """Adds valid dct:Location for use as spatial attribute within range of dct:spatial property to graph
+
+    Args:
+        graph (Graph): Graph in which to add location
+        geom (Polygon | MultiPolygon | Point): Geometry to convert to Location instance
+        name (str | None, optional): Name to provide location using property locn:geographicName. Defaults to None.
+        bbox (bool, optional): If true, simplify geometry to bounding box. Defaults to False.
+
+    Returns:
+        Graph: _description_
+    """
     template = """
 @prefix locn: <http://w3.org/ns/locn#> .
 @prefix geo: <http://www.opengis.net/ont/geosparql#> .
 @prefix sf: <http://www.opengis.net/ont/sf#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
 
-<ex:a> a locn:Location ;
+[
+  a dct:Location ;
   locn:geometry [ a sf:Point ;
-                    geo:asWKT "<http://www.opengis.net/def/crs/OGC/1.3/CRS84> Point(-0.001475 51.477811)"^^geosparql:wktLiteral ] ;
+    geo:asWKT "<http://www.opengis.net/def/crs/OGC/1.3/CRS84> Point(-0.001475 51.477811)"^^geosparql:wktLiteral ] ;
+  ] ;
   locn:geographicName "My House"^^xsd:string
+]
 """
     locn_uri = "http://w3.org/ns/locn#"
     sf_uri = "http://www.opengis.net/ont/sf#"
@@ -78,6 +106,7 @@ def create_rdf_location(graph: Graph, geom: Polygon | MultiPolygon | Point, name
     graph.bind("locn", locn_ns, override=False)
     graph.bind("geo", GEO, override=False)
     graph.bind("sf", sf_ns, override=False)
+    graph.bind("dct", DCTERMS, override=False)
     if name:
         location_bnode = BNode(f"{name}_node")
     else:
@@ -85,16 +114,18 @@ def create_rdf_location(graph: Graph, geom: Polygon | MultiPolygon | Point, name
     geometry_bnode = BNode()
     geometry_wkt_literal = Literal(format_wkt(geom, bbox), datatype=GEO.wktLiteral)
     geom_type_uri = URIRef(f"{sf_uri}{geom.geom_type}")
-    graph.add((location_bnode, RDF.type, locn_ns.Location))
-    graph.add((location_bnode, locn_ns.geometry, geometry_bnode))
+    graph.add((location_bnode, RDF.type, DCTERMS.Location))
+    if bbox:
+        graph.add((location_bnode, DCAT.bbox, geometry_bnode))
+    else:
+        graph.add((location_bnode, locn_ns.geometry, geometry_bnode))
     graph.add((geometry_bnode, RDF.type, geom_type_uri))
     graph.add((geometry_bnode, GEO.asWKT, geometry_wkt_literal))
     if name:
         geographic_name_literal = Literal(name, datatype=XSD.string)
         graph.add((location_bnode, locn_ns.geographicName, geographic_name_literal))
 
-    return graph
-
+    return location_bnode
 
 
 if __name__ == "__main__":
@@ -104,5 +135,3 @@ if __name__ == "__main__":
     watershed = parse_geojson_file("kanawha-basin.geojson")
     create_rdf_location(graph, *watershed)
     graph.serialize("geometries.ttl", format="ttl")
-
-
