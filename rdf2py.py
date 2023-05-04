@@ -14,7 +14,7 @@ if __name__ == "__main__":
     print(pyrdf_path, rdf_path.lower())
 
     g = Graph()
-    g.parse(rdf_path.lower(), format="ttl")
+    g.parse(rdf_path.lower(), format="turtle")
 
     with open(pyrdf_path, "w") as f:
 

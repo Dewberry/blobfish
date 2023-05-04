@@ -163,10 +163,10 @@ def create_graph_triples(
 def handle_serialize(config: CompositeConfig, g: Graph | None = None, graph_creator: GraphCreator | None = None):
     logging.info("Serializing graphs")
     if config.output_format == DataFormat.S3 and g:
-        ttl_body = g.serialize(format="ttl")
+        ttl_body = g.serialize(format="turtle")
         upload_body(config.out_dir, config.out_path, ttl_body, client)
     elif config.output_format == DataFormat.LOCAL and g:
-        g.serialize(os.path.join(config.out_dir, config.out_path), format="ttl")
+        g.serialize(os.path.join(config.out_dir, config.out_path), format="turtle")
     elif config.output_format == DataFormat.S3 and graph_creator:
         graph_creator.serialize_graphs(config.out_path, True, client, config.out_dir)
     elif config.output_format == DataFormat.LOCAL and graph_creator:

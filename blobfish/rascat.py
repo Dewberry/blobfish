@@ -17,7 +17,7 @@ class TranspositionStatistic(enum.Enum):
 
 def query_events(rdf_url: str) -> tuple[datetime.datetime, datetime.datetime] | None:
     g = rdflib.Graph()
-    g.parse(rdf_url, format="ttl")
+    g.parse(rdf_url, format="turtle")
     results = g.query("""
     SELECT ?start ?end
     WHERE {
