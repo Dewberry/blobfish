@@ -1,7 +1,10 @@
 import rdflib
 import logging
+import requests
 from typing import Any
+from tempfile import TemporaryFile
 from .cloud_utils import upload_body
+
 
 class GraphCreator:
     def __init__(self, bindings: dict) -> None:
@@ -37,16 +40,25 @@ class GraphCreator:
             for filter_key, filter_graph in self.filter_graphs.items():
                 fn = filepath_pattern.format(filter_key)
                 if to_s3 and bucket:
-                    ttl_body = filter_graph.serialize(format="ttl")
+                    ttl_body = filter_graph.serialize(format="turtle")
                     upload_body(bucket, fn, ttl_body, client)
                 else:
-                    filter_graph.serialize(fn, format="ttl")
+                    filter_graph.serialize(fn, format="turtle")
                     logging.info(f"Graph serialized to {fn}")
         elif self.default_graph:
             fn = filepath_pattern.format("")
-            self.default_graph.serialize(fn, format="ttl")
+            self.default_graph.serialize(fn, format="turtle")
             logging.info(f"Graph serialized to {fn}")
         else:
             logging.error(f"No graph object was created, serialization failed")
             raise ValueError
 
+
+def load_to_graphdb(graph: rdflib.Graph, repository: str, base_url: str = "http://localhost:7200") -> None:
+    # Not working correctly for some reason
+    with TemporaryFile() as tempf:
+        graph.serialize(tempf, format="turtle")
+        endpoint = f"{base_url}/repositories/{repository}/statements"
+        headers = {"Content-Type": "text/turtle"}
+        resp = requests.post(endpoint, headers=headers, data=tempf.read())
+        logging.info(f"{resp.url}: {resp.status_code}")
