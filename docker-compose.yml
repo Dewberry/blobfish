@@ -7,3 +7,17 @@ services:
       - ./:/proj
     tty: true
     env_file: ./.env
+    networks:
+      - graph-net
+  graphdb:
+    image: ontotext/graphdb:10.2.1
+    container_name: db
+    volumes:
+      - ./graphdb-data/home:/opt/graphdb/home
+    ports:
+      - "7200:7200"
+    networks:
+      - graph-net
+networks:
+  graph-net:
+    driver: bridge
