@@ -1,8 +1,9 @@
 import rdflib
 import logging
 import requests
+import os
 from typing import Any
-from tempfile import TemporaryFile
+from tempfile import TemporaryDirectory
 from .cloud_utils import upload_body
 
 
@@ -54,11 +55,12 @@ class GraphCreator:
             raise ValueError
 
 
-def load_to_graphdb(graph: rdflib.Graph, repository: str, base_url: str = "http://localhost:7200") -> None:
+def load_to_graphdb(graph: rdflib.Graph, repository: str, base_url: str = "http://localhost:7200") -> requests.Response:
     # Not working correctly for some reason
-    with TemporaryFile() as tempf:
+    with TemporaryDirectory() as tempdir:
+        tempf = os.path.join(tempdir, "output.ttl")
         graph.serialize(tempf, format="turtle")
         endpoint = f"{base_url}/repositories/{repository}/statements"
-        headers = {"Content-Type": "text/turtle"}
-        resp = requests.post(endpoint, headers=headers, data=tempf.read())
-        logging.info(f"{resp.url}: {resp.status_code}")
+        with open(tempf, "rb") as f:
+            r = requests.post(endpoint, data=f, headers={"Content-Type": "application/x-turtle"})
+    return r
