@@ -21,6 +21,14 @@ class ParentNode:
 
 
 def validate_geom_type(geom) -> None:
+    """Ensures that geometry type of input geometry is either a Point, a Polygon, or a MultiPolygon, the expected options for a spatial coverage field in RDF
+
+    Args:
+        geom (shapely.Geometry): geometry to validate
+
+    Raises:
+        ValueError: _description_
+    """
     expected_geometry_types = [
         "Point",
         "Polygon",
@@ -33,6 +41,11 @@ def validate_geom_type(geom) -> None:
 def format_wkt(
     geom: Polygon | MultiPolygon | Point, bbox: bool, crs_uri: str = "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
 ) -> str:
+    """Formats WKT string as is expected for RDF formatting
+
+    Returns:
+        str: Formatted WKT
+    """
     if bbox:
         if geom.geom_type == "Point":
             logging.warning(
@@ -44,6 +57,19 @@ def format_wkt(
 
 
 def load_feature(features: list[dict], index: int | None) -> dict:
+    """Loads a single feature from geojson features
+
+    Args:
+        features (list[dict]): Geojson features
+        index (int | None): Index to use when selecting feature
+
+    Raises:
+        ValueError: Error to indicate that geojson provided has more than one feature and no index was provided
+        ValueError: Error to indicate that geojson provided does not have enough features to select the provided index
+
+    Returns:
+        dict: Geojson feature
+    """
     n = len(features)
     if n > 1:
         if index == None:
@@ -60,6 +86,15 @@ def load_feature(features: list[dict], index: int | None) -> dict:
 
 
 def parse_geojson_str(geojson_string: str, index: int | None = None) -> NamedSpatialProperty:
+    """Parse geojson string to a NamedSpatialProperty
+
+    Args:
+        geojson_string (str): GeoJSON string
+        index (int | None, optional): Index of feature of interest in geojson. Defaults to None.
+
+    Returns:
+        NamedSpatialProperty: Named geometry parsed from geojson
+    """
     geojson = json.loads(geojson_string)
     features = geojson["features"]
     name = geojson["name"]
@@ -70,6 +105,15 @@ def parse_geojson_str(geojson_string: str, index: int | None = None) -> NamedSpa
 
 
 def parse_geojson_file(fn: str, index: int | None = None) -> NamedSpatialProperty:
+    """Parse geojson file to a NamedSpatialProperty
+
+    Args:
+        fn (str): Filename
+        index (int | None, optional): Index of feature of interest in geojson. Defaults to None.
+
+    Returns:
+        NamedSpatialProperty: Named geometry parsed from geojson
+    """
     with open(fn, "r") as f:
         geojson = json.load(f)
         features = geojson["features"]
@@ -96,19 +140,63 @@ def create_rdf_location(
         ParentNode: Location node with attached attributes to create valid spatial property
 
     Follows general template:
+    -- Point
     ```
     @prefix locn: <http://w3.org/ns/locn#> .
     @prefix geo: <http://www.opengis.net/ont/geosparql#> .
-    @prefix sf: <http://www.opengis.net/ont/sf#> .
     @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
     @prefix dct: <http://purl.org/dc/terms/> .
 
     [] a dct:Location ;
       locn:geographicName "The house of Anne Frank"^^xsd:string ;
-      locn:geometry [ a sf:Point ;
-        geo:asWKT "<http://www.opengis.net/def/crs/OGC/1.3/CRS84> POINT(4.88412 52.37509)"^^geo:wktLiteral ] ;
+      locn:geometry [
+        a sf:Point ;
+        geo:asWKT "<http://www.opengis.net/def/crs/OGC/1.3/CRS84> POINT(4.88412 52.37509)"^^geo:wktLiteral
       ] ;
     ```
+    -- Polygon
+    ```
+    @prefix locn: <http://w3.org/ns/locn#> .
+    @prefix geo: <http://www.opengis.net/ont/geosparql#> .
+    @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+    @prefix dct: <http://purl.org/dc/terms/> .
+
+    [] a dct:Location ;
+      locn:geographicName "The house of Anne Frank"^^xsd:string ;
+      locn:geometry [
+        a sf:Polygon ;
+        geo:asWKT "<http://www.opengis.net/def/crs/OGC/1.3/CRS84> POLYGON ((
+        4.8842353 52.375108 , 4.884276 52.375153 ,
+        4.8842567 52.375159 , 4.883981 52.375254 ,
+        4.8838502 52.375109 , 4.883819 52.375075 ,
+        4.8841037 52.374979 , 4.884143 52.374965 ,
+        4.8842069 52.375035 , 4.884263 52.375016 ,
+        4.8843200 52.374996 , 4.884255 52.374926 ,
+        4.8843289 52.374901 , 4.884451 52.375034 ,
+        4.8842353 52.375108
+        ))"^^geo:wktLiteral ;
+      ] ;
+    ```
+    -- Bounding box
+    ```
+    @prefix locn: <http://w3.org/ns/locn#> .
+    @prefix geo: <http://www.opengis.net/ont/geosparql#> .
+    @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+    @prefix dct: <http://purl.org/dc/terms/> .
+
+    [] a dct:Location ;
+      locn:geographicName "The Netherlands"^^xsd:string ;
+      dcat:bbox "<http://www.opengis.net/def/crs/OGC/1.3/CRS84> POLYGON((
+      3.053 47.975 , 7.24  47.975 ,
+      7.24  53.504 , 3.053 53.504 ,
+      3.053 47.975
+    ))"^^geo:wktLiteral ;
+    ```
+
+    Location syntax recommendations provided:
+    https://semiceu.github.io/Core-Location-Vocabulary/releases/2.0.2/#examples
+    https://www.w3.org/TR/vocab-dcat-2/#Class:Location
+    https://www.w3.org/TR/vocab-dcat-2/#ex-spatial-coverage-bbox
     """
     # Create graph
     graph = Graph()

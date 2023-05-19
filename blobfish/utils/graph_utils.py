@@ -1,10 +1,15 @@
-import rdflib
+import json
 import logging
-import requests
 import os
-from typing import Any
 from tempfile import TemporaryDirectory
+from typing import Any
+from urllib.parse import urlencode
+
+import rdflib
+import requests
+
 from .cloud_utils import upload_body
+from .constants import DEFAULT_REPOSITORY_CONFIG
 
 
 class GraphCreator:
@@ -55,12 +60,78 @@ class GraphCreator:
             raise ValueError
 
 
+def query_repo(
+    repository: str,
+    query: str,
+    base_url: str = "http://localhost:7200",
+    infer: bool = True,
+    sameAs: bool = False,
+    limit: int = 1000,
+    offset: int = 0,
+) -> requests.Response:
+    # sameAs requires infer
+    if not infer and sameAs:
+        sameAs = False
+    # encode query string
+    endpoint = f"{base_url}/repositories/{repository}"
+    params = {"query": query, "infer": infer, "sameAs": sameAs, "limit": limit, "offset": offset}
+    url_encoded_params = urlencode(params, encoding="utf-8")
+    r = requests.post(
+        endpoint, data=url_encoded_params, headers={"Content-Type": "application/x-www-form-urlencoded"}
+    )
+    return r
+
+
+def create_repo(repository: str, base_url: str = "http://localhost:7200", **kwargs) -> requests.Response:
+    endpoint = f"{base_url}/rest/repositories"
+    params = DEFAULT_REPOSITORY_CONFIG
+    params.update({"id": repository})
+    params.update(kwargs)
+    params_string = json.dumps(params)
+    r = requests.post(endpoint, data=params_string, headers={"Content-Type": "application/json"})
+    return r
+
+
+def verify_repo(repository: str, base_url: str = "http://localhost:7200") -> bool:
+    endpoint = f"{base_url}/rest/repositories"
+    r = requests.get(endpoint)
+    data = r.json()
+    try:
+        ids = [repo.get("id") for repo in data]
+        if repository in ids:
+            return True
+        else:
+            raise ValueError("Repository not found")
+    except Exception as exc:
+        raise exc
+
+
+def delete_repo(repository: str, base_url: str = "http://localhost:7200", location: str = "") -> requests.Response:
+    endpoint = f"{base_url}/rest/repositories/{repository}?location={location}"
+    r = requests.delete(endpoint)
+    return r
+
+
 def load_to_graphdb(graph: rdflib.Graph, repository: str, base_url: str = "http://localhost:7200") -> requests.Response:
-    # Not working correctly for some reason
+    endpoint = f"{base_url}/repositories/{repository}/statements"
     with TemporaryDirectory() as tempdir:
         tempf = os.path.join(tempdir, "output.ttl")
         graph.serialize(tempf, format="turtle")
-        endpoint = f"{base_url}/repositories/{repository}/statements"
         with open(tempf, "rb") as f:
             r = requests.post(endpoint, data=f, headers={"Content-Type": "application/x-turtle"})
+    return r
+
+
+def enable_geosparql(repository: str, base_url: str = "http://localhost:7200", infer: bool = False, sameAs: bool = False) -> requests.Response:
+    # sameAs requires infer
+    if not infer and sameAs:
+        sameAs = False
+    endpoint = f"{base_url}/repositories/{repository}/statements"
+    enable_query = """
+    PREFIX geoSparql: <http://www.ontotext.com/plugins/geosparql#>
+    INSERT DATA { [] geoSparql:enabled "true" . }
+    """
+    params = {"update": enable_query, "infer": infer, "sameAs": sameAs}
+    url_encoded_params = urlencode(params)
+    r = requests.post(endpoint, data=url_encoded_params, headers={"Content-Type": "application/x-www-form-urlencoded"})
     return r
