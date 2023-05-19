@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   python:
-    image: "njroberts/blobfish-python@${HASH}"
+    image: "njroberts/blobfish-python@sha256:4cb4d04766c8e0f6b8b0394c374e73cebf1ab82c38f378b00b3071f220348291"
     volumes:
       - ./:/proj
     tty: true
