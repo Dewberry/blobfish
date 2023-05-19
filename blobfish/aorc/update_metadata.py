@@ -11,7 +11,7 @@ import re
 
 
 class TransferMetaBuilder:
-    def __init__(self, s3_object: dict, client: Any | None):
+    def __init__(self, s3_object: dict, docker_image: str, client: Any | None):
         self.base = s3_object
         self.client = client
         self.__verify()
@@ -152,26 +152,28 @@ class CompositeMetaBuilder:
             raise KeyError
 
 
-def update_mirrors(bucket: str, prefix: str, client: Any | None = None):
+def update_mirrors(bucket: str, prefix: str, docker_image: str, client: Any | None = None):
     for obj in get_s3_content(bucket, prefix, True, client):
         try:
-            update_mirror(obj, bucket)
+            update_mirror(obj, bucket, docker_image)
         except ValueError:
             logging.info(f"Object {obj.get('Key')} metadata has already been updated, skipping")
 
 
-def update_mirror(mirror_object: dict, bucket: str, client: Any | None = None) -> None:
-    new_meta_obj = TransferMetaBuilder(mirror_object, client)
+def update_mirror(mirror_object: dict, bucket: str, docker_image: str, client: Any | None = None) -> None:
+    new_meta_obj = TransferMetaBuilder(mirror_object, docker_image, client)
     transfer_metadata = asdict(new_meta_obj.as_transfer_metadata())
     update_metadata(bucket, new_meta_obj.mirror_uri, transfer_metadata, client)
 
 
-def update_composites(bucket: str, prefix: str, pattern: re.Pattern, client: Any | None = None) -> None:
+def update_composites(
+    bucket: str, prefix: str, pattern: re.Pattern, docker_image: str, client: Any | None = None
+) -> None:
     for obj in get_s3_content(bucket, prefix, True, client):
         key = cast(str, obj.get("Key"))
         if re.match(pattern, key):
             try:
-                update_composite(obj, bucket)
+                update_composite(obj, bucket, docker_image)
             except ValueError:
                 logging.info(f"Object {key} metadata has already been updated, skipping")
 
@@ -195,10 +197,10 @@ if __name__ == "__main__":
 
     client = get_client()
 
-    # update_mirrors(bucket, "mirrors/aorc/precip", client)
+    docker_url = "https://hub.docker.com/layers/njroberts/blobfish-python/latest/images/4cb4d04766c8e0f6b8b0394c374e73cebf1ab82c38f378b00b3071f220348291?context=repo"
 
     def mappable_update(year: int):
-        return update_composites(bucket, f"transforms/aorc/precipitation/{year}", metadata_pattern)
+        return update_composites(bucket, f"transforms/aorc/precipitation/{year}", metadata_pattern, docker_url)
 
     with Pool(processes=44) as pool:
         for i in pool.imap_unordered(mappable_update, range(1979, 2023)):

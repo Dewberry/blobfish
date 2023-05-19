@@ -204,7 +204,7 @@ if __name__ == "__main__":
 
     script_path = script(__file__, workdir="proj")
     if script_path:
-        docker_url = f"https://hub.docker.com/layers/njroberts/blobfish-python/{os.environ['TAG']}/images/{os.environ['HASH']}?context=repo"
+        docker_url = "https://hub.docker.com/layers/njroberts/blobfish-python/latest/images/4cb4d04766c8e0f6b8b0394c374e73cebf1ab82c38f378b00b3071f220348291?context=repo"
         main("mirrors", docker_url, script_path, 10)
     else:
         logging.error("Script name was not found")

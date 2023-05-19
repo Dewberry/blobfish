@@ -235,7 +235,7 @@ if __name__ == "__main__":
     set_up_logger()
 
     # script_path = script(__file__, workdir="proj")
-    # docker_url = f"https://hub.docker.com/layers/njroberts/blobfish-python/{os.environ['TAG']}/images/{os.environ['HASH']}?context=repo"
+    # docker_url = f"https://hub.docker.com/layers/njroberts/blobfish-python/latest/images/4cb4d04766c8e0f6b8b0394c374e73cebf1ab82c38f378b00b3071f220348291?context=repo"
     # if script_path:
     #     transfer_handler = TransferHandler(script_path, "tempest", "test", docker_url, dev=True, limit=10)
     #     transfer_handler.transfer_files()
