@@ -1,3 +1,4 @@
+""" Unit testing for geospatial RDF creation and querying capabilities"""
 import logging
 import os
 import unittest
@@ -10,8 +11,7 @@ from rdflib.query import ResultRow
 
 from ..utils.cloud_utils import download_object
 from ..utils.geo_rdf_utils import create_rdf_location, parse_geojson_file
-from ..utils.graph_utils import (create_repo, delete_repo, enable_geosparql,
-                                 load_to_graphdb, query_repo)
+from ..utils.graph_utils import create_repo, delete_repo, enable_geosparql, load_to_graphdb, query_repo
 
 
 class GeospatialQueryCapability(unittest.TestCase):
@@ -30,6 +30,7 @@ class GeospatialQueryCapability(unittest.TestCase):
         create_repo(self.repository, self.base_url)
 
     def test_a_create_node(self):
+        """Test creating a valid dct:Location instance"""
         spatial_object = parse_geojson_file(self.geojson_file)
         spatial_node = create_rdf_location(spatial_object.geom, self.region_name)
         rdflib_query_results = spatial_node.attached_graph.query(
@@ -79,7 +80,6 @@ class GeospatialQueryCapability(unittest.TestCase):
         SELECT ?n
         WHERE {
             ?l locn:geometry ?g .
-            ?g a ?t .
             ?g geo:asWKT ?gWKT .
             ?l locn:geographicName ?n .
             FILTER(geof:sfWithin('''
@@ -100,4 +100,3 @@ class GeospatialQueryCapability(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

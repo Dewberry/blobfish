@@ -14,11 +14,21 @@ from .constants import DEFAULT_REPOSITORY_CONFIG
 
 class GraphCreator:
     def __init__(self, bindings: dict) -> None:
+        """Initializes graph creator which separates out graph objects based on a provided filter
+
+        Args:
+            bindings (dict): Bindings to supply to the default created graph (eg: {"dct": rdflib.DCTERMS})
+        """
         self.bindings = bindings
         self.filter_graphs = dict()
         self.default_graph = None
 
     def __create_graph(self) -> rdflib.Graph:
+        """Creates graph
+
+        Returns:
+            rdflib.Graph: New graph object with class bindings
+        """
         logging.info("rdflib.Graph object created by graph creator")
         g = rdflib.Graph()
         for prefix, ns in self.bindings.items():
@@ -26,6 +36,14 @@ class GraphCreator:
         return g
 
     def get_graph(self, filter_key: str | None = None) -> rdflib.Graph:
+        """Attempts to find a graph which matches a given filter key and returns the default blank graph if no graph is found
+
+        Args:
+            filter_key (str | None, optional): Filter key to use to try to get a graph. Defaults to None.
+
+        Returns:
+            rdflib.Graph: _description_
+        """
         if filter_key:
             filter_graph = self.filter_graphs.get(filter_key)
             if filter_graph:
@@ -42,6 +60,17 @@ class GraphCreator:
     def serialize_graphs(
         self, filepath_pattern: str, to_s3: bool = False, client: Any | None = None, bucket: str | None = None
     ) -> None:
+        """Serializes all graphs associated with creator object
+
+        Args:
+            filepath_pattern (str): Pattern to format using provided filter key to generate filename (for local serialization) or path name (for s3 serialization)
+            to_s3 (bool, optional): If true, upload graphs to s3. Defaults to False.
+            client (Any | None, optional): s3 client used in upload. Defaults to None.
+            bucket (str | None, optional): s3 bucket to which graphs will be uploaded. Defaults to None.
+
+        Raises:
+            ValueError: If no graph objects were created by the creator object, fails with ValueError
+        """
         if len(self.filter_graphs.items()) > 0:
             for filter_key, filter_graph in self.filter_graphs.items():
                 fn = filepath_pattern.format(filter_key)
@@ -69,6 +98,20 @@ def query_repo(
     limit: int = 1000,
     offset: int = 0,
 ) -> requests.Response:
+    """Queries GraphDB repository
+
+    Args:
+        repository (str): ID string of repository
+        query (str): Query string
+        base_url (_type_, optional): GraphDB URL. Defaults to "http://localhost:7200".
+        infer (bool, optional): If true, use inference to imply classes of resources in repository (to see type of inference, check repository settings). Defaults to True.
+        sameAs (bool, optional): If true, use GraphDB owl:sameAs optimization. If false, do not use optimization. Defaults to False.
+        limit (int, optional): Limit of resources to retrieve. Defaults to 1000.
+        offset (int, optional): Offset to use when retrieving resources (skips provided number of resources). Defaults to 0.
+
+    Returns:
+        requests.Response: Response of GraphDB server
+    """
     # sameAs requires infer
     if not infer and sameAs:
         sameAs = False
@@ -76,13 +119,20 @@ def query_repo(
     endpoint = f"{base_url}/repositories/{repository}"
     params = {"query": query, "infer": infer, "sameAs": sameAs, "limit": limit, "offset": offset}
     url_encoded_params = urlencode(params, encoding="utf-8")
-    r = requests.post(
-        endpoint, data=url_encoded_params, headers={"Content-Type": "application/x-www-form-urlencoded"}
-    )
+    r = requests.post(endpoint, data=url_encoded_params, headers={"Content-Type": "application/x-www-form-urlencoded"})
     return r
 
 
 def create_repo(repository: str, base_url: str = "http://localhost:7200", **kwargs) -> requests.Response:
+    """Creates GraphDB repository with default repository parameters, stored in utils/constants.py, unless overriden using kwargs
+
+    Args:
+        repository (str): ID string of repository
+        base_url (str, optional): GraphDB URL. Defaults to "http://localhost:7200".
+
+    Returns:
+        requests.Response: Response of GraphDB server
+    """
     endpoint = f"{base_url}/rest/repositories"
     params = DEFAULT_REPOSITORY_CONFIG
     params.update({"id": repository})
@@ -93,6 +143,19 @@ def create_repo(repository: str, base_url: str = "http://localhost:7200", **kwar
 
 
 def verify_repo(repository: str, base_url: str = "http://localhost:7200") -> bool:
+    """Verifies that repository exists in GraphDB instance
+
+    Args:
+        repository (str): ID string of repository
+        base_url (str, optional): GraphDB URL. Defaults to "http://localhost:7200".
+
+    Raises:
+        ValueError: If repository is not found, raise error
+        exc: General exception to raise upon unexpected failure point
+
+    Returns:
+        bool: Returns true if successfully verified
+    """
     endpoint = f"{base_url}/rest/repositories"
     r = requests.get(endpoint)
     data = r.json()
@@ -107,12 +170,32 @@ def verify_repo(repository: str, base_url: str = "http://localhost:7200") -> boo
 
 
 def delete_repo(repository: str, base_url: str = "http://localhost:7200", location: str = "") -> requests.Response:
+    """Deletes GraphDB repository
+
+    Args:
+        repository (str): ID string of repository
+        base_url (str, optional): GraphDB URL. Defaults to "http://localhost:7200".
+        location (str, optional): Remote location of repository. Defaults to "", or no remote location.
+
+    Returns:
+        requests.Response: GraphDB server response
+    """
     endpoint = f"{base_url}/rest/repositories/{repository}?location={location}"
     r = requests.delete(endpoint)
     return r
 
 
 def load_to_graphdb(graph: rdflib.Graph, repository: str, base_url: str = "http://localhost:7200") -> requests.Response:
+    """Loads provided rdflib.Graph data to GraphDB repository
+
+    Args:
+        graph (rdflib.Graph): Graph data to upload
+        repository (str): ID string of target repository
+        base_url (str, optional): GraphDB URL. Defaults to "http://localhost:7200".
+
+    Returns:
+        requests.Response: GraphDB server response
+    """
     endpoint = f"{base_url}/repositories/{repository}/statements"
     with TemporaryDirectory() as tempdir:
         tempf = os.path.join(tempdir, "output.ttl")
@@ -122,7 +205,20 @@ def load_to_graphdb(graph: rdflib.Graph, repository: str, base_url: str = "http:
     return r
 
 
-def enable_geosparql(repository: str, base_url: str = "http://localhost:7200", infer: bool = False, sameAs: bool = False) -> requests.Response:
+def enable_geosparql(
+    repository: str, base_url: str = "http://localhost:7200", infer: bool = False, sameAs: bool = False
+) -> requests.Response:
+    """Enables GeoSPARQL support in GraphDB repository
+
+    Args:
+        repository (str): ID string of repository
+        base_url (str, optional): GraphDB URL. Defaults to "http://localhost:7200".
+        infer (bool, optional): If true, use inference to imply classes of resources in repository (to see type of inference, check repository settings). Defaults to True.
+        sameAs (bool, optional): If true, use GraphDB owl:sameAs optimization. If false, do not use optimization. Defaults to False.
+
+    Returns:
+        requests.Response: GraphDB response
+    """
     # sameAs requires infer
     if not infer and sameAs:
         sameAs = False
