@@ -27,7 +27,7 @@ def validate_geom_type(geom) -> None:
         geom (shapely.Geometry): geometry to validate
 
     Raises:
-        ValueError: _description_
+        ValueError: Error raised if geometry type is not of expected type (Point for point location, Polygon or MultiPolygon for spatial coverage, Polygon for bounding box)
     """
     expected_geometry_types = [
         "Point",
@@ -146,6 +146,7 @@ def create_rdf_location(
     @prefix geo: <http://www.opengis.net/ont/geosparql#> .
     @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
     @prefix dct: <http://purl.org/dc/terms/> .
+    @prefix sf: <http://www.opengis.net/ont/sf#> .
 
     [] a dct:Location ;
       locn:geographicName "The house of Anne Frank"^^xsd:string ;
@@ -160,6 +161,7 @@ def create_rdf_location(
     @prefix geo: <http://www.opengis.net/ont/geosparql#> .
     @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
     @prefix dct: <http://purl.org/dc/terms/> .
+    @prefix sf: <http://www.opengis.net/ont/sf#> .
 
     [] a dct:Location ;
       locn:geographicName "The house of Anne Frank"^^xsd:string ;
@@ -177,15 +179,24 @@ def create_rdf_location(
         ))"^^geo:wktLiteral ;
       ] ;
     ```
-    -- Bounding box
+    -- Bounding box (has both dcat:bbox data property and locn:geometry object property to both conform to DCAT and provide a more unified and therefore queryable approach to spatial attribution)
     ```
     @prefix locn: <http://w3.org/ns/locn#> .
     @prefix geo: <http://www.opengis.net/ont/geosparql#> .
     @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
     @prefix dct: <http://purl.org/dc/terms/> .
+    @prefix sf: <http://www.opengis.net/ont/sf#> .
 
     [] a dct:Location ;
       locn:geographicName "The Netherlands"^^xsd:string ;
+      locn:geometry [
+        a sf:Polygon ;
+        geo:asWKT "<http://www.opengis.net/def/crs/OGC/1.3/CRS84> POLYGON((
+        3.053 47.975 , 7.24  47.975 ,
+        7.24  53.504 , 3.053 53.504 ,
+        3.053 47.975
+        ))"^^geo:wktLiteral ;
+      ]
       dcat:bbox "<http://www.opengis.net/def/crs/OGC/1.3/CRS84> POLYGON((
       3.053 47.975 , 7.24  47.975 ,
       7.24  53.504 , 3.053 53.504 ,
@@ -223,12 +234,9 @@ def create_rdf_location(
     geometry_bnode = BNode()
     geometry_wkt_literal = Literal(format_wkt(geom, bbox), datatype=GEO.wktLiteral)
     if bbox:
-        graph.add((location_bnode, DCAT.bbox, geometry_bnode))
-        geom_type_uri = sf_ns.Polygon
-    else:
-        geom_type_uri = URIRef(f"{sf_uri}{geom.geom_type}")
-
-        graph.add((location_bnode, locn_ns.geometry, geometry_bnode))
+        graph.add((location_bnode, DCAT.bbox, geometry_wkt_literal))
+    geom_type_uri = URIRef(f"{sf_uri}{geom.geom_type}")
+    graph.add((location_bnode, locn_ns.geometry, geometry_bnode))
     graph.add((geometry_bnode, RDF.type, geom_type_uri))
     graph.add((geometry_bnode, GEO.asWKT, geometry_wkt_literal))
     if name:
