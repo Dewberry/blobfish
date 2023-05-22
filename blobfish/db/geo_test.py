@@ -29,7 +29,7 @@ class GeospatialQueryCapability(unittest.TestCase):
         download_object("tempest", "watersheds/kanawha/kanawha-transpo-area-v01.geojson", self.geojson_file)
         create_repo(self.repository, self.base_url)
 
-    def test_a_create_node(self):
+    def test_create_node(self):
         """Test creating a valid dct:Location instance"""
         spatial_object = parse_geojson_file(self.geojson_file)
         spatial_node = create_rdf_location(spatial_object.geom, self.region_name)
@@ -56,7 +56,7 @@ class GeospatialQueryCapability(unittest.TestCase):
             )
             break
 
-    def test_b_upload_node(self):
+    def test_upload_node(self):
         """Test upload of created spatial node to repository"""
         spatial_object = parse_geojson_file(self.geojson_file)
         spatial_node = create_rdf_location(spatial_object.geom, self.region_name)
@@ -65,7 +65,16 @@ class GeospatialQueryCapability(unittest.TestCase):
             response.ok, f"Test node upload query returned with failure status code: {response.status_code}"
         )
 
-    def test_c_geosparql_query(self):
+    def test_upload_bbox(self):
+        """Test upload of created spatial node with bounding box options enabled"""
+        bbox_object = parse_geojson_file(self.geojson_file)
+        bbox_node = create_rdf_location(bbox_object.geom, self.region_name, True)
+        response = load_to_graphdb(bbox_node.attached_graph, self.repository, self.base_url)
+        self.assertTrue(
+            response.ok, f"Test bbox upload query returned with failure status code: {response.status_code}"
+        )
+
+    def test_geosparql_query(self):
         """Test geosparql query"""
         enable_geosparql(self.repository, self.base_url)
         spatial_object = parse_geojson_file(self.geojson_file)
