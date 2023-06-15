@@ -17,8 +17,6 @@ A collection of ontologies and scripts for generating mirrors for use in data pi
  * [composite](./blobfish/aorc/composite.py) - Script for creating CONUS-level composite gridded datasets composed of mirrored AORC data which utilizes RDF metadata created during the mirroring process
  * [const](./blobfish/aorc/const.py) - Constants used in AORC processing or parsing
  * [parse_composite](./blobfish/aorc/parse_composite.py) - Script for parsing metadata from s3 objects of created composite gridded dataset to add onto existing RDF metadata created during the mirroring process in order to document the relationship between the mirrored datasets, the composited datasets, and the compositing process
- * [parse_transfer](./blobfish/aorc/parse_transfer.py) - Script for parsing metadata from s3 objects of mirrored datasets to create RDF metadata documenting the relationship between the mirror, the source, and the mirroring process
- * [transfer](./blobfish/aorc/transfer.py) - Script for transferring data from AORC http server to s3 bucket
 
  ##### Setup
 
