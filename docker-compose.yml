@@ -2,7 +2,8 @@ version: '3.8'
 
 services:
   python:
-    image: "njroberts/blobfish-python@${HASH}"
+    # image: "njroberts/blobfish-python:latest"
+    build: .
     volumes:
       - ./:/proj
     tty: true
