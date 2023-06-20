@@ -1,6 +1,8 @@
 # !/bin/bash
 
-## Script which attempts to make sure that the current commit hash can be found on
+## Script which attempts to make sure that both git and docker are representative of current state of repo, then export the digest
+## and commit hashes of the docker repo and git repo, respectively, to environment variables, and finally create the necessary containers
+## using a docker compose up
 
 # Check if current git branch has uncommitted changes
 if [[ $(git status --porcelain) ]]; then
@@ -10,7 +12,6 @@ fi
 
 # Check if current git branch has changes not tracked on repo
 [[ $(git rev-parse HEAD) = $(git rev-parse @{u}) ]] || echo "There are changes not pushed to remote. Exiting." && sleep 2 && exit 1
-if
 
 # Get git hash
 git_hash=$(git config --get remote.origin.url)/commit/$(git rev-parse HEAD)
@@ -23,11 +24,17 @@ if [ $response -ne 200 ]; then
   sleep 2 && exit 1
 fi
 
+# Push the state of the repo to the image
+docker push $1
+
+# Get docker digest hash
+docker_hash=$(docker inspect --format='{{index .RepoDigests 0}}' $1)
+
 # Export docker image hash
-export DOCKER_HASH=$(docker inspect --format='{{index .RepoDigests 0}}' $1);
+export DOCKER_HASH=$docker_hash
 
 # Export git hash
-export GIT_HASH=$git_hash;
+export GIT_HASH=$git_hash
 
 # Use compose file to orchestrate docker container creation
 docker compose up
