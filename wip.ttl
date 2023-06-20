@@ -72,13 +72,13 @@ aorc:normalizedBy a owl:ObjectProperty ;
 
 aorc:transpositionRegion a owl:ObjectProperty ;
     rdfs:comment "Indicates the transposition region to which the subject dataset refers" ;
-    rdfs:domain: dcat:Dataset ;
+    rdfs:domain: aorc:TranspositionDataset ;
     rdfs:range: dct:Location ;
     rdfs:subPropertyOf dct:spatial .
 
 aorc:watershedRegion a owl:ObjectProperty ;
     rdfs:comment "Indicates the watershed region to which the subject dataset refers" ;
-    rdfs:domain: dcat:Dataset ;
+    rdfs:domain: aorc:TranspositionDataset ;
     rdfs:range: dct:Location ;
     rdfs:subPropertyOf dct:spatial .
 
