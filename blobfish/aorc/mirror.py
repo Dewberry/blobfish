@@ -15,6 +15,7 @@ class RFCFeature:
     name: str
     geom: Polygon | MultiPolygon
 
+
 def get_rfc_features() -> list[RFCFeature]:
     rfc_feature_list = []
     for rfc_info in RFC_INFO_LIST:
@@ -27,8 +28,11 @@ def get_rfc_features() -> list[RFCFeature]:
                     rfc_feature_list.append(RFCFeature(rfc_info.alias, rfc_info.name, shp_geom))
                     break
                 else:
-                    raise TypeError(f"Received RFC geometry of unexpected type; expected polygon or multipolygon, got {shp_geom.geom_type}")
+                    raise TypeError(
+                        f"Received RFC geometry of unexpected type; expected polygon or multipolygon, got {shp_geom.geom_type}"
+                    )
     return rfc_feature_list
+
 
 def create_s3_resource(access_key_id: str, secret_access_key: str, region_name: str):
     session = boto3.Session(access_key_id, secret_access_key, region_name=region_name)
@@ -40,6 +44,8 @@ if __name__ == "__main__":
     import os
 
     from dotenv import load_dotenv
+
+    load_dotenv()
 
     access_key_id = os.environ["AWS_ACCESS_KEY_ID"]
     secret_access_key = os.environ["AWS_SECRET_ACCESS_KEY"]
