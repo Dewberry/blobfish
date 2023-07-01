@@ -1,7 +1,9 @@
-from dataclasses import dataclass
 import datetime
+from dataclasses import dataclass
+
 import rdflib
 from pyshacl import validate
+
 
 @dataclass
 class RFCInfo:
@@ -12,10 +14,10 @@ class RFCInfo:
     alias: str
     name: str
 
+
 @dataclass
 class AORCDataURL:
     url: str
-    data_start_dt: datetime.datetime
     rfc_alias: str
     last_modified: datetime.datetime = None
 
@@ -24,6 +26,7 @@ class AORCDataURL:
             prefix += "/"
         url_parts = self.url.split("/")
         return f"{prefix}{'/'.join(url_parts[-3:])}"
+
 
 class GraphCreator:
     def __init__(self, shacl_fn: str | None, ont_fn: str | None) -> None:
@@ -66,7 +69,7 @@ class GraphCreator:
     def validate_graphs(self, **kwargs):
         if self.shacl_graph:
             for graph in self.tracked_graphs.values():
-                validate_args = {"data_graph":graph, "shacl_graph": self.shacl_graph}
+                validate_args = {"data_graph": graph, "shacl_graph": self.shacl_graph}
                 if self.ont_graph:
                     validate_args["ont_graph"] = self.ont_graph
                 if kwargs:

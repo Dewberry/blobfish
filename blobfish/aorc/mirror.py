@@ -1,23 +1,22 @@
 """ Script to construct a mirror of NOAA AORC precipitation data on s3 """
+from __future__ import annotations
+
 import datetime
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 import boto3
 from const import FIRST_RECORD, FTP_HOST, RFC_INFO_LIST, RFC_TAR_SHP_URL
-from mirror_utils.aio import stream_zips_to_s3, verify_urls
-from mirror_utils.general import create_potential_urls, create_rfc_list
 from shapely.geometry import MultiPolygon, Polygon
 
 
 @dataclass
 class RFCFeature:
-    alias: str
     name: str
     geom: Polygon | MultiPolygon
 
 
-def get_rfc_features() -> list[RFCFeature]:
-    rfc_feature_list = []
+def get_rfc_features() -> dict[str, RFCFeature]:
+    rfc_feature_dict = {}
     for rfc_info in RFC_INFO_LIST:
         print(f"Matching {rfc_info} to geometry from shapefile")
         for shp_name, shp_geom in create_rfc_list(RFC_TAR_SHP_URL):
@@ -25,13 +24,13 @@ def get_rfc_features() -> list[RFCFeature]:
             shp_name_stripped = shp_name.replace("RFC", "")
             if shp_name_stripped == rfc_info.alias:
                 if shp_geom.geom_type in ["Polygon", "MultiPolygon"]:
-                    rfc_feature_list.append(RFCFeature(rfc_info.alias, rfc_info.name, shp_geom))
+                    rfc_feature_dict[rfc_info.alias] = RFCFeature(rfc_info.name, shp_geom)
                     break
                 else:
                     raise TypeError(
                         f"Received RFC geometry of unexpected type; expected polygon or multipolygon, got {shp_geom.geom_type}"
                     )
-    return rfc_feature_list
+    return rfc_feature_dict
 
 
 def create_s3_resource(access_key_id: str, secret_access_key: str, region_name: str):
@@ -44,6 +43,10 @@ if __name__ == "__main__":
     import os
 
     from dotenv import load_dotenv
+    from mirror_utils.aio import stream_zips_to_s3, verify_urls
+    from mirror_utils.array import check_metadata
+    from mirror_utils.general import create_potential_urls, create_rfc_list
+    from mirror_utils.rdf import create_source_dataset_jsonld
 
     load_dotenv()
 
@@ -54,8 +57,21 @@ if __name__ == "__main__":
     s3_resource = create_s3_resource(access_key_id, secret_access_key, default_region)
 
     start_dt = datetime.datetime.strptime(FIRST_RECORD, "%Y-%m-%d")
-    rfc_features = get_rfc_features()
-    potential_urls = create_potential_urls(rfc_features, start_dt, FTP_HOST)
-    verified_urls = [verified_url for verified_url in verify_urls(potential_urls)][:50]
+    rfc_features_dict = get_rfc_features()
+    potential_urls = create_potential_urls(rfc_features_dict.keys(), start_dt, FTP_HOST)
+    verified_urls = [verified_url for verified_url in verify_urls(potential_urls)][:2]
     for streamed_zip in stream_zips_to_s3(verified_urls, s3_resource, "tempest"):
-        print(streamed_zip)
+        nc4_meta = check_metadata(s3_resource, "tempest", streamed_zip.s3_key())
+        rfc_feature = rfc_features_dict[streamed_zip.rfc_alias]
+        source_dataset_json_ld = create_source_dataset_jsonld(
+            streamed_zip.url,
+            streamed_zip.last_modified,
+            rfc_feature.name,
+            streamed_zip.rfc_alias,
+            rfc_feature.geom,
+            nc4_meta.start_time,
+            nc4_meta.end_time,
+            nc4_meta.temporal_resolution,
+            nc4_meta.spatial_resolution_meters,
+        )
+        print(source_dataset_json_ld)

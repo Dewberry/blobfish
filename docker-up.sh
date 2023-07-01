@@ -4,6 +4,9 @@
 ## and commit hashes of the docker repo and git repo, respectively, to environment variables, and finally create the necessary containers
 ## using a docker compose up
 
+## Usage:
+## docker-up.sh docker-image-name
+
 # Check if current git branch has uncommitted changes
 if [[ $(git status --porcelain) ]]; then
   echo "There are uncommitted changes. Exiting."

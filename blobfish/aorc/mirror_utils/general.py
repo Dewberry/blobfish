@@ -1,6 +1,10 @@
 """ Synchronous operations for creating AORC data mirror on s3"""
-# Make sure script can access common classes
+from __future__ import annotations
+
 import sys
+
+# Make sure script can access common classes
+
 
 sys.path.append("../classes")
 
@@ -13,13 +17,28 @@ from tempfile import TemporaryDirectory
 
 import fiona
 import requests
-from classes.common import AORCDataURL, RFCInfo
-from shapely.geometry import (GeometryCollection, LinearRing, LineString,
-                              MultiLineString, MultiPoint, MultiPolygon, Point,
-                              Polygon, shape)
+from classes.common import AORCDataURL
+from shapely.geometry import (
+    GeometryCollection,
+    LinearRing,
+    LineString,
+    MultiLineString,
+    MultiPoint,
+    MultiPolygon,
+    Point,
+    Polygon,
+    shape,
+)
 
 
-def create_rfc_list(rfc_tar_shp_url: str) -> list[tuple[str, Point | MultiPoint | LineString | MultiLineString | Polygon | MultiPolygon | LinearRing | GeometryCollection]]:
+def create_rfc_list(
+    rfc_tar_shp_url: str,
+) -> list[
+    tuple[
+        str,
+        Point | MultiPoint | LineString | MultiLineString | Polygon | MultiPolygon | LinearRing | GeometryCollection,
+    ]
+]:
     with requests.get(rfc_tar_shp_url, stream=True) as resp:
         if resp.ok:
             with TemporaryDirectory() as tmpdir:
@@ -30,7 +49,9 @@ def create_rfc_list(rfc_tar_shp_url: str) -> list[tuple[str, Point | MultiPoint 
                             if member.name.endswith(".shp"):
                                 shp_path = os.path.join(tmpdir, member.name)
                                 with fiona.open(shp_path, driver="ESRI Shapefile") as f:
-                                    rfc_features = [(feature["properties"]["NAME"], shape(feature["geometry"])) for feature in f]
+                                    rfc_features = [
+                                        (feature["properties"]["NAME"], shape(feature["geometry"])) for feature in f
+                                    ]
                                     return rfc_features
                         else:
                             raise FileNotFoundError("No shapefile found in tarfile")
@@ -38,20 +59,43 @@ def create_rfc_list(rfc_tar_shp_url: str) -> list[tuple[str, Point | MultiPoint 
             raise requests.exceptions.ConnectionError(f"Request response status indicates faillure: {resp.status_code}")
 
 
-def create_potential_urls(rfcs: list[RFCInfo], start_dt: datetime.datetime, base_url: str) -> Iterator[AORCDataURL]:
+def create_potential_urls(
+    rfc_alias_list: list[str], start_dt: datetime.datetime, base_url: str
+) -> Iterator[AORCDataURL]:
     end_dt = datetime.datetime.now()
     end_dt = datetime.datetime(end_dt.year, end_dt.month, 1)
     start_dt = datetime.datetime(start_dt.year, start_dt.month, 1)
     current_dt = start_dt
     while current_dt < end_dt:
-        for rfc in rfcs:
-            potential_url = f"{base_url}/AORC_{rfc.alias}RFC_4km/{rfc.alias}RFC_precip_partition/AORC_APCP_4KM_{rfc.alias}RFC_{current_dt.strftime('%Y%m')}.zip"
-            yield AORCDataURL(potential_url, current_dt, rfc.alias)
+        for rfc_alias in rfc_alias_list:
+            potential_url = f"{base_url}/AORC_{rfc_alias}RFC_4km/{rfc_alias}RFC_precip_partition/AORC_APCP_4KM_{rfc_alias}RFC_{current_dt.strftime('%Y%m')}.zip"
+            yield AORCDataURL(potential_url, rfc_alias)
         if current_dt.month < 12:
             current_dt = datetime.datetime(current_dt.year, current_dt.month + 1, 1)
         else:
             current_dt = datetime.datetime(current_dt.year + 1, 1, 1)
 
 
-def check_zipped_nc_meta(zip_fn: str) -> dict:
-    return {}
+def upload_mirror_to_ckan(
+    ckan_url: str,
+    api_key: str,
+    datset_id: str,
+    title: str,
+    last_modified: datetime.datetime,
+    docker_file: str,
+    compose_file: str,
+    docker_image: str,
+    start_time: datetime.datetime,
+    end_time: datetime.datetime,
+    temporal_resolution: str,
+    spatial_resolution: float,
+    rfc_alias: str,
+    rfc_full_name: str,
+    rfc_wkt: str,
+    command_list: list[str],
+    source_dataset: dict | list,
+) -> int:
+    # TODO: Implement function which takes metadata for mirror dataset and uploads to CKAN instance
+    # resp = requests.get(ckan_url ...)
+    # return resp.status_code
+    pass
