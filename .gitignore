@@ -135,3 +135,6 @@ scratch*
 
 # Directory used for storing intermediary zip files
 blobfish/data
+
+# GraphDB temporary data
+graphdb-data/
