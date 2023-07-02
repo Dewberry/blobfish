@@ -3,8 +3,6 @@ version: '3.8'
 services:
   python:
     image: "${DOCKER_IMAGE}"
-    volumes:
-      - ./:/proj
     tty: true
     env_file: ./.env
     environment:
