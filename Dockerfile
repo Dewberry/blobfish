@@ -5,7 +5,7 @@ RUN apt-get update
 RUN mkdir proj
 WORKDIR /proj
 
-COPY blobfish/ ./
+COPY blobfish/aorc/ ./
 COPY requirements.txt .
 
 RUN pip install --upgrade pip
