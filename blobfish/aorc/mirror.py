@@ -57,7 +57,7 @@ if __name__ == "__main__":
     from mirror_utils.aio import stream_zips_to_s3, verify_urls
     from mirror_utils.array import check_metadata
     from mirror_utils.general import create_potential_urls, create_rfc_list, upload_mirror_to_ckan
-    from mirror_utils.rdf import create_source_dataset
+    from mirror_utils.rdf import create_source_dataset, timedelta_to_xsd_duration
     from general_utils.provenance import retrieve_meta, get_command_list
 
     load_dotenv()
@@ -68,7 +68,8 @@ if __name__ == "__main__":
 
     s3_resource = create_s3_resource(access_key_id, secret_access_key, default_region)
 
-    command_list = get_command_list
+    command_list = get_command_list()
+    print(f"Command list: {command_list}")
 
     start_dt = datetime.datetime.strptime(FIRST_RECORD, "%Y-%m-%d")
     rfc_features_dict = get_rfc_features()
@@ -103,10 +104,12 @@ if __name__ == "__main__":
             prov_meta,
             nc4_meta.start_time,
             nc4_meta.end_time,
-            nc4_meta.temporal_resolution,
+            str(timedelta_to_xsd_duration(nc4_meta.temporal_resolution)),
             nc4_meta.spatial_resolution_meters,
             streamed_zip.rfc_alias,
             rfc_feature.name,
             rfc_feature.geom,
+            command_list,
+            source_dataset_jsonld,
         )
         # TODO: test retrieval of docker details, git details, command list
