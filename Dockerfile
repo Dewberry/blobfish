@@ -5,7 +5,7 @@ RUN apt-get update
 RUN mkdir proj
 WORKDIR /proj
 
-COPY ./ ./
+COPY blobfish/ ./
 
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
