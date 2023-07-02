@@ -13,7 +13,7 @@ def retrieve_meta() -> ProvenanceMetadata:
     git_url = os.environ["GIT_REPO"]
     remote_composite = create_raw_content_url(relative_composite_path, git_url)
     remote_docker_file = create_raw_content_url(relative_docker_file_path, git_url)
-    ProvenanceMetadata(
+    prov_meta = ProvenanceMetadata(
         os.environ["DOCKER_IMAGE"],
         remote_composite,
         remote_docker_file,
@@ -22,7 +22,7 @@ def retrieve_meta() -> ProvenanceMetadata:
         os.environ["DOCKER_URL"],
         os.environ["DOCKER_HASH"],
     )
-    pass
+    return prov_meta
 
 
 def create_raw_content_url(relative_path: str, git_url: str) -> str:
@@ -35,4 +35,4 @@ def create_raw_content_url(relative_path: str, git_url: str) -> str:
 
 
 def get_command_list() -> list[str]:
-    return sys.argv
+    return [sys.executable, *sys.argv]
