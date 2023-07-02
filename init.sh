@@ -8,20 +8,23 @@
 ## docker-up.sh docker-image-name
 
 # Check if current git branch has uncommitted changes
+echo "Checking git status..."
 if [[ $(git status --porcelain) ]]; then
   echo "There are uncommitted changes. Exiting."
   sleep 2 && echo 1
 fi
 
 # Check if current git branch has changes not tracked on repo
+echo "Checking if remote is up to date..."
 [[ $(git rev-parse HEAD) = $(git rev-parse @{u}) ]] || echo "There are changes not pushed to remote. Exiting." && sleep 2 && exit 1
 
 # Get git hash URI
+echo "Retrieving git hash URI..."
 git_hash_uri=$(git config --get remote.origin.url)/commit/$(git rev-parse HEAD)
 
-# Check that git hash is reach URIable as URL
+# Check that git hash is reachable as URL
+echo "Testing reachability of git repo..."
 git_url=$(echo $git_hash_uri | sed --expression='s/git@/https:\/\//' | sed --expression='s/\.git//' | sed --expression='s/.com:/.com\//')
-echo $git_url
 response=$(curl --write-out %{http_code} --silent --output /dev/null $git_url)
 if [ $response -ne 200 ]; then
   echo "Error: HTTP status code $response"
@@ -29,12 +32,15 @@ if [ $response -ne 200 ]; then
 fi
 
 # Push the state of the repo to the image
+echo "Pushing current repo state to docker image $1 ..."
 docker push $1
 
 # Get docker digest hash
+echo "Getting docker digest hash..."
 docker_hash=$(docker inspect --format='{{index .RepoDigests 0}}' $1)
 
 # Export docker image hash
+echo "Exporting variables..."
 export DOCKER_HASH=$docker_hash
 
 # Export docker image name with default docker repo of docker.io
@@ -56,4 +62,5 @@ export GIT_HASH=$(git rev-parse HEAD)
 export GIT_REPO=$git_url
 
 # Use compose file to orchestrate docker container creation
+echo "Composing containers..."
 docker compose up
