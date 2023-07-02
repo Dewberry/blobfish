@@ -36,10 +36,6 @@ if [[ $response -ne 200 ]]; then
   sleep 2 && exit 1
 fi
 
-# Push the state of the repo to the image
-echo "Pushing current repo state to docker image $1 ..."
-docker push $1
-
 # Get docker digest hash
 echo "Getting docker digest hash..."
 docker_hash=$(docker inspect --format='{{index .RepoDigests 0}}' $1)
