@@ -109,6 +109,7 @@ def create_source_dataset(
     return g
 
 
+# TODO: Implement creation of RDF graph of datasets to use in pySHACL validation
 def create_mirror_dataset():
     pass
 
@@ -118,7 +119,3 @@ def timedelta_to_xsd_duration(timedelta_obj: datetime.timedelta) -> Literal:
     hours, remainder = divmod(timedelta_obj.seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
     return Literal(f"P{days}DT{hours}H{minutes}M{seconds}S", datatype=XSD.duration)
-
-
-# def skolemize_source_dataset_uri(rfc_alias: str, start_time: datetime.datetime) -> str:
-#     return f"sourceDataset{rfc_alias.upper()}_{start_time.strftime('%Y%m')}"
