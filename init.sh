@@ -7,10 +7,12 @@
 ## Usage:
 ## docker-up.sh docker-image-name
 
-if [[$# -neq 1]]; then
-  echo "Invalid number of arguments provided; expected 1, got $#"
+echo $#
+if [ $# -ne 1 ]
+  then echo "Expected target docker image name with tag to be supplied as only argument, got $# args"
   sleep 2 && exit 1
 fi
+
 # Check if current git branch has uncommitted changes
 echo "Checking git status..."
 if [[ $(git status --porcelain) ]]; then
