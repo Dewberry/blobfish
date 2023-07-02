@@ -1,115 +1,130 @@
-""" Script to construct a mirror of NOAA AORC precipitation data on s3 """
+""" Synchronous operations for creating AORC data mirror on s3"""
 from __future__ import annotations
 
+import sys
+from urllib.parse import quote
+
+# Make sure script can access common classes
+
+
+sys.path.append("../classes")
+
 import datetime
-import json
-from dataclasses import dataclass
+import io
+import os
+import tarfile
+from collections.abc import Iterator
+from tempfile import TemporaryDirectory
 
-import boto3
-from const import FIRST_RECORD, FTP_HOST, RFC_INFO_LIST, RFC_TAR_SHP_URL
-from shapely.geometry import MultiPolygon, Polygon
-
-
-@dataclass
-class RFCFeature:
-    name: str
-    geom: Polygon | MultiPolygon
-
-
-def get_rfc_features() -> dict[str, RFCFeature]:
-    rfc_feature_dict = {}
-    for rfc_info in RFC_INFO_LIST:
-        print(f"Matching {rfc_info} to geometry from shapefile")
-        for shp_name, shp_geom in create_rfc_list(RFC_TAR_SHP_URL):
-            # Strip RFC from name retrieved from shapefile
-            shp_name_stripped = shp_name.replace("RFC", "")
-            if shp_name_stripped == rfc_info.alias:
-                if shp_geom.geom_type in ["Polygon", "MultiPolygon"]:
-                    rfc_feature_dict[rfc_info.alias] = RFCFeature(rfc_info.name, shp_geom)
-                    break
-                else:
-                    raise TypeError(
-                        f"Received RFC geometry of unexpected type; expected polygon or multipolygon, got {shp_geom.geom_type}"
-                    )
-    return rfc_feature_dict
+import fiona
+import requests
+from classes.mirror import AORCDataURL
+from classes.common import ProvenanceMetadata
+from shapely.geometry import (
+    GeometryCollection,
+    LinearRing,
+    LineString,
+    MultiLineString,
+    MultiPoint,
+    MultiPolygon,
+    Point,
+    Polygon,
+    shape,
+)
 
 
-def create_s3_resource(access_key_id: str, secret_access_key: str, region_name: str):
-    session = boto3.Session(access_key_id, secret_access_key, region_name=region_name)
-    resource = session.resource("s3")
-    return resource
+def create_rfc_list(
+    rfc_tar_shp_url: str,
+) -> list[
+    tuple[
+        str,
+        Point | MultiPoint | LineString | MultiLineString | Polygon | MultiPolygon | LinearRing | GeometryCollection,
+    ]
+]:
+    with requests.get(rfc_tar_shp_url, stream=True) as resp:
+        if resp.ok:
+            with TemporaryDirectory() as tmpdir:
+                with io.BytesIO(resp.content) as stream:
+                    with tarfile.open(fileobj=stream, mode="r:gz") as tar:
+                        tar.extractall(tmpdir)
+                        for member in tar.getmembers():
+                            if member.name.endswith(".shp"):
+                                shp_path = os.path.join(tmpdir, member.name)
+                                with fiona.open(shp_path, driver="ESRI Shapefile") as f:
+                                    rfc_features = [
+                                        (feature["properties"]["NAME"], shape(feature["geometry"])) for feature in f
+                                    ]
+                                    return rfc_features
+                        else:
+                            raise FileNotFoundError("No shapefile found in tarfile")
+        else:
+            raise requests.exceptions.ConnectionError(f"Request response status indicates faillure: {resp.status_code}")
 
 
-def create_mirror_dataset_identifiers(
-    start_date: datetime.datetime, end_date: datetime.datetime, rfc_alias: str
-) -> tuple[str, str]:
-    dataset_id = f"mirror_{rfc_alias.upper()}_{start_date.strftime('%Y%m')}"
-    dataset_title = (
-        f"Mirror Dataset - {rfc_alias.upper()}, {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}"
-    )
-    return dataset_id, dataset_title
+def create_potential_urls(
+    rfc_alias_list: list[str], start_dt: datetime.datetime, base_url: str
+) -> Iterator[AORCDataURL]:
+    end_dt = datetime.datetime.now()
+    end_dt = datetime.datetime(end_dt.year, end_dt.month, 1)
+    start_dt = datetime.datetime(start_dt.year, start_dt.month, 1)
+    current_dt = start_dt
+    while current_dt < end_dt:
+        for rfc_alias in rfc_alias_list:
+            potential_url = f"{base_url}/AORC_{rfc_alias}RFC_4km/{rfc_alias}RFC_precip_partition/AORC_APCP_4KM_{rfc_alias}RFC_{current_dt.strftime('%Y%m')}.zip"
+            yield AORCDataURL(potential_url, rfc_alias)
+        if current_dt.month < 12:
+            current_dt = datetime.datetime(current_dt.year, current_dt.month + 1, 1)
+        else:
+            current_dt = datetime.datetime(current_dt.year + 1, 1, 1)
 
 
-if __name__ == "__main__":
-    import os
-
-    from dotenv import load_dotenv
-    from mirror_utils.aio import stream_zips_to_s3, verify_urls
-    from mirror_utils.array import check_metadata
-    from mirror_utils.general import create_potential_urls, create_rfc_list, upload_mirror_to_ckan
-    from mirror_utils.rdf import create_source_dataset, timedelta_to_xsd_duration
-    from general_utils.provenance import retrieve_meta, get_command_list
-
-    load_dotenv()
-
-    access_key_id = os.environ["AWS_ACCESS_KEY_ID"]
-    secret_access_key = os.environ["AWS_SECRET_ACCESS_KEY"]
-    default_region = os.environ["AWS_DEFAULT_REGION"]
-
-    s3_resource = create_s3_resource(access_key_id, secret_access_key, default_region)
-
-    command_list = get_command_list()
-    print(f"Command list: {command_list}")
-
-    start_dt = datetime.datetime.strptime(FIRST_RECORD, "%Y-%m-%d")
-    rfc_features_dict = get_rfc_features()
-    potential_urls = create_potential_urls(rfc_features_dict.keys(), start_dt, FTP_HOST)
-    verified_urls = [verified_url for verified_url in verify_urls(potential_urls)][:2]
-    for streamed_zip in stream_zips_to_s3(verified_urls, s3_resource, "tempest"):
-        nc4_meta = check_metadata(s3_resource, "tempest", streamed_zip.s3_key())
-        rfc_feature = rfc_features_dict[streamed_zip.rfc_alias]
-        source_dataset = create_source_dataset(
-            streamed_zip.additional_args["url"],
-            streamed_zip.additional_args["last_modified"],
-            rfc_feature.name,
-            streamed_zip.rfc_alias,
-            rfc_feature.geom,
-            nc4_meta.start_time,
-            nc4_meta.end_time,
-            nc4_meta.temporal_resolution,
-            nc4_meta.spatial_resolution_meters,
-        )
-        source_dataset_jsonld = json.loads(source_dataset.serialize(format="json-ld"))
-        mirror_dataset_id, mirror_dataset_title = create_mirror_dataset_identifiers(
-            nc4_meta.start_time, nc4_meta.end_time, streamed_zip.rfc_alias
-        )
-        prov_meta = retrieve_meta()
-        upload_mirror_to_ckan(
-            os.environ["CKAN_URL"],
-            os.environ["CKAN_API_KEY"],
-            os.environ["CKAN_DATA_GROUP"],
-            mirror_dataset_id,
-            mirror_dataset_title,
-            streamed_zip.last_modified,
-            prov_meta,
-            nc4_meta.start_time,
-            nc4_meta.end_time,
-            str(timedelta_to_xsd_duration(nc4_meta.temporal_resolution)),
-            nc4_meta.spatial_resolution_meters,
-            streamed_zip.rfc_alias,
-            rfc_feature.name,
-            rfc_feature.geom,
-            command_list,
-            source_dataset_jsonld,
-        )
-        # TODO: test retrieval of docker details, git details, command list
+def upload_mirror_to_ckan(
+    ckan_base_url: str,
+    api_key: str,
+    owner_org: str,
+    dataset_id: str,
+    title: str,
+    last_modified: datetime.datetime,
+    provenance_meta: ProvenanceMetadata,
+    start_time: datetime.datetime,
+    end_time: datetime.datetime,
+    temporal_resolution: str,
+    spatial_resolution: float,
+    rfc_alias: str,
+    rfc_full_name: str,
+    rfc_geom: Polygon | MultiPolygon,
+    command_list: list[str],
+    source_dataset: dict | list,
+    **kwargs,
+) -> int:
+    if not ckan_base_url.endswith("/"):
+        ckan_base_url = ckan_base_url[:-1]
+    upload_endpoint = f"{ckan_base_url}/api/3/action/package_create"
+    headers = {"Authorization": api_key, "Content-Type": "application/json"}
+    data = {
+        "name": dataset_id,
+        "owner_org": owner_org,
+        "title": title,
+        "private": False,
+        "url": quote(dataset_id),
+        "last_modified": last_modified.isoformat(),
+        "docker_file": provenance_meta.remote_docker_file,
+        "compose_file": provenance_meta.remote_compose_file,
+        "docker_image": provenance_meta.docker_image,
+        "git_repo": provenance_meta.git_repo,
+        "commit_hash": provenance_meta.commit_hash,
+        "docker_repo": provenance_meta.docker_repo,
+        "digest_hash": provenance_meta.digest_hash,
+        "start_time": start_time.isoformat(),
+        "end_time": end_time.isoformat(),
+        "temporal_resolution": temporal_resolution,
+        "spatial_resolution": spatial_resolution,
+        "rfc_alias": rfc_alias,
+        "rfc_full_name": rfc_full_name,
+        "rfc_wkt": rfc_geom.wkt,
+        "command_list": command_list,
+        "source_dataset": source_dataset,
+    }
+    data.update(kwargs)
+    response = requests.post(upload_endpoint, headers=headers, json=data)
+    return response.status_code
