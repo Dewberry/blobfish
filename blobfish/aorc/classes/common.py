@@ -1,36 +1,23 @@
-import datetime
-from dataclasses import dataclass
-
+from typing import Any
 import rdflib
+from dataclasses import dataclass
 from pyshacl import validate
 
 
 @dataclass
-class RFCInfo:
-    """
-    Data Property: Regional Forecast Center (RFC) names and aliases
-    """
-
-    alias: str
-    name: str
-
-
-@dataclass
-class AORCDataURL:
-    url: str
-    rfc_alias: str
-    last_modified: datetime.datetime = None
-
-    def s3_key(self, prefix: str = "test/mirrors/aorc/precip/") -> str:
-        if prefix[-1] != "/":
-            prefix += "/"
-        url_parts = self.url.split("/")
-        return f"{prefix}{'/'.join(url_parts[-3:])}"
+class ProvenanceMetadata:
+    docker_image: str
+    remote_compose_file: str
+    remote_docker_file: str
+    git_repo: str
+    commit_hash: str
+    docker_repo: str
+    digest_hash: str
 
 
 class GraphCreator:
     def __init__(self, shacl_fn: str | None, ont_fn: str | None) -> None:
-        self.tracked_graphs = {}
+        self.tracked_graphs: dict[Any, rdflib.Graph] = {}
         self.shacl_graph = self.__load_shacl(shacl_fn)
         self.ont_graph = self.__load_ont(ont_fn)
 

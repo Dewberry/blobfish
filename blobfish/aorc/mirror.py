@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime
+import json
 from dataclasses import dataclass
 
 import boto3
@@ -39,6 +40,16 @@ def create_s3_resource(access_key_id: str, secret_access_key: str, region_name: 
     return resource
 
 
+def create_mirror_dataset_identifiers(
+    start_date: datetime.datetime, end_date: datetime.datetime, rfc_alias: str
+) -> tuple[str, str]:
+    dataset_id = f"mirror_{rfc_alias.upper()}_{start_date.strftime('%Y%m')}"
+    dataset_title = (
+        f"Mirror Dataset - {rfc_alias.upper()}, {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}"
+    )
+    return dataset_id, dataset_title
+
+
 if __name__ == "__main__":
     import os
 
@@ -46,7 +57,8 @@ if __name__ == "__main__":
     from mirror_utils.aio import stream_zips_to_s3, verify_urls
     from mirror_utils.array import check_metadata
     from mirror_utils.general import create_potential_urls, create_rfc_list, upload_mirror_to_ckan
-    from mirror_utils.rdf import create_source_dataset_jsonld
+    from mirror_utils.rdf import create_source_dataset
+    from general_utils.provenance import retrieve_meta, get_command_list
 
     load_dotenv()
 
@@ -56,6 +68,8 @@ if __name__ == "__main__":
 
     s3_resource = create_s3_resource(access_key_id, secret_access_key, default_region)
 
+    command_list = get_command_list
+
     start_dt = datetime.datetime.strptime(FIRST_RECORD, "%Y-%m-%d")
     rfc_features_dict = get_rfc_features()
     potential_urls = create_potential_urls(rfc_features_dict.keys(), start_dt, FTP_HOST)
@@ -63,9 +77,9 @@ if __name__ == "__main__":
     for streamed_zip in stream_zips_to_s3(verified_urls, s3_resource, "tempest"):
         nc4_meta = check_metadata(s3_resource, "tempest", streamed_zip.s3_key())
         rfc_feature = rfc_features_dict[streamed_zip.rfc_alias]
-        source_dataset_json_ld = create_source_dataset_jsonld(
-            streamed_zip.url,
-            streamed_zip.last_modified,
+        source_dataset = create_source_dataset(
+            streamed_zip.additional_args["url"],
+            streamed_zip.additional_args["last_modified"],
             rfc_feature.name,
             streamed_zip.rfc_alias,
             rfc_feature.geom,
@@ -74,5 +88,25 @@ if __name__ == "__main__":
             nc4_meta.temporal_resolution,
             nc4_meta.spatial_resolution_meters,
         )
-        # upload_mirror_to_ckan()
+        source_dataset_jsonld = json.loads(source_dataset.serialize(format="json-ld"))
+        mirror_dataset_id, mirror_dataset_title = create_mirror_dataset_identifiers(
+            nc4_meta.start_time, nc4_meta.end_time, streamed_zip.rfc_alias
+        )
+        prov_meta = retrieve_meta()
+        upload_mirror_to_ckan(
+            os.environ["CKAN_URL"],
+            os.environ["CKAN_API_KEY"],
+            os.environ["CKAN_DATA_GROUP"],
+            mirror_dataset_id,
+            mirror_dataset_title,
+            streamed_zip.last_modified,
+            prov_meta,
+            nc4_meta.start_time,
+            nc4_meta.end_time,
+            nc4_meta.temporal_resolution,
+            nc4_meta.spatial_resolution_meters,
+            streamed_zip.rfc_alias,
+            rfc_feature.name,
+            rfc_feature.geom,
+        )
         # TODO: test retrieval of docker details, git details, command list

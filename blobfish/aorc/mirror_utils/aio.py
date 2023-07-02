@@ -6,11 +6,12 @@ sys.path.append("../classes")
 
 import asyncio
 import datetime
+from dataclasses import asdict
 import io
 from collections.abc import Iterator
 
 from aiohttp import ClientSession, ClientTimeout
-from classes.common import AORCDataURL
+from classes.mirror import AORCDataURL
 
 
 async def async_verify_url(session: ClientSession, url: str, **kwargs) -> dict | None:
@@ -43,6 +44,7 @@ async def async_stream_zip_to_s3(
         s3_url.url = f"s3://{bucket}/{zip_url.s3_key()}"
         obj.load()
         s3_url.last_modified = obj.last_modified
+        s3_url.additional_args = asdict(zip_url)
     return s3_url
 
 

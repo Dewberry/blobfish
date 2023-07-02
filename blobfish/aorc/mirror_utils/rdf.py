@@ -5,16 +5,18 @@ import sys
 sys.path.append("../classes")
 
 import datetime
-import json
 
 from classes.namespaces import AORC, EU, IANA_APP, LOCN
-from rdflib import DCAT, DCTERMS, ORG, RDF, SKOS, XSD, BNode, Graph, Literal, URIRef
+from rdflib import DCAT, DCTERMS, ORG, RDF, SKOS, XSD, BNode, Graph, Literal, URIRef, IdentifiedNode
 from rdflib.namespace._GEO import GEO
 from shapely.geometry import MultiPolygon, Polygon
 
 
-def create_source_dataset_jsonld(
-    url: str,
+def _add_common_dataset_attributes(
+    target_graph: Graph,
+    dataset_node: IdentifiedNode,
+    distribution_node: IdentifiedNode,
+    download_url: str,
     last_modification: datetime.datetime,
     rfc_name: str,
     rfc_alias: str,
@@ -23,7 +25,62 @@ def create_source_dataset_jsonld(
     end_time: datetime.datetime,
     temporal_resolution: datetime.timedelta,
     spatial_resolution: float,
-) -> dict | list:
+) -> None:
+    target_graph.add((distribution_node, DCAT.compressFormat, IANA_APP.zip))
+    target_graph.add((distribution_node, DCTERMS.format, EU.NETCDF))
+    target_graph.add((dataset_node, DCAT.distribution, distribution_node))
+
+    url_literal = Literal(download_url, datatype=XSD.anyURI)
+    target_graph.add((distribution_node, DCAT.downloadURL, url_literal))
+
+    last_modification_literal = Literal(last_modification.isoformat(), datatype=XSD.dateTime)
+    target_graph.add((dataset_node, DCTERMS.modified, last_modification_literal))
+
+    rfc_b_node = BNode()
+    rfc_alias_literal = Literal(rfc_alias, datatype=XSD.string)
+    rfc_name_literal = Literal(rfc_name, datatype=XSD.string)
+    target_graph.add((rfc_b_node, SKOS.altLabel, rfc_alias_literal))
+    target_graph.add((rfc_b_node, SKOS.prefLabel, rfc_name_literal))
+    target_graph.add((rfc_b_node, RDF.type, AORC.RFC))
+    target_graph.add((dataset_node, AORC.hasRFC, rfc_b_node))
+
+    rfc_geom_b_node = BNode()
+    rfc_geom_wkt_literal = Literal(rfc_geom.wkt, datatype=GEO.wktLiteral)
+    target_graph.add((rfc_geom_b_node, RDF.type, LOCN.Geometry))
+    target_graph.add((rfc_b_node, LOCN.geometry, rfc_geom_b_node))
+    target_graph.add((rfc_geom_b_node, GEO.asWKT, rfc_geom_wkt_literal))
+
+    rfc_org_uri = URIRef("https://noaa.gov/")
+    target_graph.add((rfc_b_node, ORG.unitOf, rfc_org_uri))
+
+    period_of_time_b_node = BNode()
+    start_time_literal = Literal(start_time.isoformat(), datatype=XSD.dateTime)
+    end_time_literal = Literal(end_time.isoformat(), datatype=XSD.dateTime)
+    target_graph.add((period_of_time_b_node, RDF.type, DCTERMS.PeriodOfTime))
+    target_graph.add((period_of_time_b_node, DCAT.startDate, start_time_literal))
+    target_graph.add((period_of_time_b_node, DCAT.endDate, end_time_literal))
+    target_graph.add((dataset_node, DCTERMS.temporal, period_of_time_b_node))
+
+    spatial_resolution_literal = Literal(spatial_resolution, datatype=XSD.float)
+    target_graph.add((dataset_node, DCAT.spatialResolutionInMeters, spatial_resolution_literal))
+
+    temporal_resolution_literal = timedelta_to_xsd_duration(temporal_resolution)
+    target_graph.add((dataset_node, DCAT.temporalResolution, temporal_resolution_literal))
+
+    return
+
+
+def create_source_dataset(
+    download_url: str,
+    last_modification: datetime.datetime,
+    rfc_name: str,
+    rfc_alias: str,
+    rfc_geom: Polygon | MultiPolygon,
+    start_time: datetime.datetime,
+    end_time: datetime.datetime,
+    temporal_resolution: datetime.timedelta,
+    spatial_resolution: float,
+) -> Graph:
     g = Graph()
 
     # # skolemize source dataset blank node URI
@@ -33,50 +90,27 @@ def create_source_dataset_jsonld(
 
     source_distribution_b_node = BNode()
     g.add((source_distribution_b_node, RDF.type, DCAT.Distribution))
-    g.add((source_distribution_b_node, DCAT.compressFormat, IANA_APP.zip))
-    g.add((source_distribution_b_node, DCTERMS.format, EU.NETCDF))
-    g.add((source_dataset_b_node, DCAT.distribution, source_distribution_b_node))
 
-    url_literal = Literal(url, datatype=XSD.anyURI)
-    g.add((source_distribution_b_node, DCAT.downloadURL, url_literal))
+    _add_common_dataset_attributes(
+        g,
+        source_dataset_b_node,
+        source_distribution_b_node,
+        download_url,
+        last_modification,
+        rfc_name,
+        rfc_alias,
+        rfc_geom,
+        start_time,
+        end_time,
+        temporal_resolution,
+        spatial_resolution,
+    )
 
-    last_modification_literal = Literal(last_modification.isoformat(), datatype=XSD.dateTime)
-    g.add((source_dataset_b_node, DCTERMS.modified, last_modification_literal))
+    return g
 
-    rfc_b_node = BNode()
-    rfc_alias_literal = Literal(rfc_alias, datatype=XSD.string)
-    rfc_name_literal = Literal(rfc_name, datatype=XSD.string)
-    g.add((rfc_b_node, SKOS.altLabel, rfc_alias_literal))
-    g.add((rfc_b_node, SKOS.prefLabel, rfc_name_literal))
-    g.add((rfc_b_node, RDF.type, AORC.RFC))
-    g.add((source_dataset_b_node, AORC.hasRFC, rfc_b_node))
 
-    rfc_geom_b_node = BNode()
-    rfc_geom_wkt_literal = Literal(rfc_geom.wkt, datatype=GEO.wktLiteral)
-    g.add((rfc_geom_b_node, RDF.type, LOCN.Geometry))
-    g.add((rfc_b_node, LOCN.geometry, rfc_geom_b_node))
-    g.add((rfc_geom_b_node, GEO.asWKT, rfc_geom_wkt_literal))
-
-    rfc_org_uri = URIRef("https://noaa.gov/")
-    g.add((rfc_b_node, ORG.unitOf, rfc_org_uri))
-
-    period_of_time_b_node = BNode()
-    start_time_literal = Literal(start_time.isoformat(), datatype=XSD.dateTime)
-    end_time_literal = Literal(end_time.isoformat(), datatype=XSD.dateTime)
-    g.add((period_of_time_b_node, RDF.type, DCTERMS.PeriodOfTime))
-    g.add((period_of_time_b_node, DCAT.startDate, start_time_literal))
-    g.add((period_of_time_b_node, DCAT.endDate, end_time_literal))
-    g.add((source_dataset_b_node, DCTERMS.temporal, period_of_time_b_node))
-
-    spatial_resolution_literal = Literal(spatial_resolution, datatype=XSD.float)
-    g.add((source_dataset_b_node, DCAT.spatialResolutionInMeters, spatial_resolution_literal))
-
-    temporal_resolution_literal = timedelta_to_xsd_duration(temporal_resolution)
-    g.add((source_dataset_b_node, DCAT.temporalResolution, temporal_resolution_literal))
-
-    json_ld = g.serialize(format="json-ld")
-    json_ld_verified = json.loads(json_ld)
-    return json_ld_verified
+def create_mirror_dataset():
+    pass
 
 
 def timedelta_to_xsd_duration(timedelta_obj: datetime.timedelta) -> Literal:
