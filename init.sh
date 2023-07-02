@@ -21,6 +21,7 @@ if [[ $(git rev-parse HEAD) == $(git rev-parse @{u}) ]]; then
 else
   echo "There are changes not pushed to remote. Exiting."
   sleep 2 && exit 1
+fi
 
 # Get git hash URI
 echo "Retrieving git hash URI..."
