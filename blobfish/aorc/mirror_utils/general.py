@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sys
+from urllib.parse import quote
 
 # Make sure script can access common classes
 
@@ -77,9 +78,10 @@ def create_potential_urls(
 
 
 def upload_mirror_to_ckan(
-    ckan_url: str,
+    ckan_base_url: str,
     api_key: str,
-    datset_id: str,
+    owner_org: str,
+    dataset_id: str,
     title: str,
     last_modified: datetime.datetime,
     docker_file: str,
@@ -94,8 +96,62 @@ def upload_mirror_to_ckan(
     rfc_wkt: str,
     command_list: list[str],
     source_dataset: dict | list,
+    **kwargs,
 ) -> int:
-    # TODO: Implement function which takes metadata for mirror dataset and uploads to CKAN instance
-    # resp = requests.get(ckan_url ...)
-    # return resp.status_code
+    if not ckan_base_url.endswith("/"):
+        ckan_base_url = ckan_base_url[:-1]
+    upload_endpoint = f"{ckan_base_url}/api/3/action/package_create"
+    headers = {"Authorization": api_key, "Content-Type": "application/json"}
+    docker_repo, digest_hash = parse_image(docker_image)
+    git_repo, commit_hash = parse_file(compose_file)
+    data = {
+        "name": dataset_id,
+        "owner_org": owner_org,
+        "title": title,
+        "private": False,
+        "url": quote(dataset_id),
+        "last_modified": last_modified,
+        "docker_file": docker_file,
+        "compose_file": compose_file,
+        "docker_image": docker_image,
+        "git_repo": git_repo,
+        "commit_hash": commit_hash,
+        "docker_repo": docker_repo,
+        "digest_hash": digest_hash,
+        "start_time": start_time.isoformat(),
+        "end_time": end_time.isoformat(),
+        "temporal_resolution": temporal_resolution,
+        "spatial_resolution": spatial_resolution,
+        "rfc_alias": rfc_alias,
+        "rfc_full_name": rfc_full_name,
+        "rfc_wkt": rfc_wkt,
+        "command_list": command_list,
+        "source_dataset": source_dataset,
+    }
+    data.update(kwargs)
+    response = requests.post(upload_endpoint, headers=headers, json=data)
+    return response.status_code
+
+
+def parse_image(docker_image: str) -> tuple[str, str]:
+    """Function to parse docker image digest hash and base repository from docker image name
+
+    Args:
+        docker_image (str): Docker image name
+
+    Returns:
+        tuple[str, str]: Docker repo and digest hash, respectively
+    """
+    pass
+
+
+def parse_file(compose_file: str) -> tuple[str, str]:
+    """Function to parse git commit hash and base repository from path to compose file on remote
+
+    Args:
+        compose_file (str): Compose file remote path
+
+    Returns:
+        tuple[str, str]: Git repo and commit hash, respectively
+    """
     pass

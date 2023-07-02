@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import datetime
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 
 import boto3
 from const import FIRST_RECORD, FTP_HOST, RFC_INFO_LIST, RFC_TAR_SHP_URL
@@ -45,7 +45,7 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
     from mirror_utils.aio import stream_zips_to_s3, verify_urls
     from mirror_utils.array import check_metadata
-    from mirror_utils.general import create_potential_urls, create_rfc_list
+    from mirror_utils.general import create_potential_urls, create_rfc_list, upload_mirror_to_ckan
     from mirror_utils.rdf import create_source_dataset_jsonld
 
     load_dotenv()
@@ -74,4 +74,5 @@ if __name__ == "__main__":
             nc4_meta.temporal_resolution,
             nc4_meta.spatial_resolution_meters,
         )
-        print(source_dataset_json_ld)
+        # upload_mirror_to_ckan()
+        # TODO: test retrieval of docker details, git details, command list
