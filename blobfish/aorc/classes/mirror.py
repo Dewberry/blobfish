@@ -17,7 +17,7 @@ class AORCDataURL:
     url: str
     rfc_alias: str
     last_modified: datetime.datetime = None
-    additional_args: dict
+    additional_args: dict = None
 
     def s3_key(self, prefix: str = "test/mirrors/aorc/precip/") -> str:
         if prefix[-1] != "/":
