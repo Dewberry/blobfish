@@ -36,6 +36,10 @@ if [[ $response -ne 200 ]]; then
   sleep 2 && exit 1
 fi
 
+# Pull docker image
+echo "Pulling image $1"
+docker pull $1
+
 # Get docker digest hash
 echo "Getting docker digest hash..."
 docker_hash=$(docker inspect --format='{{index .RepoDigests 0}}' $1)
