@@ -7,6 +7,10 @@
 ## Usage:
 ## docker-up.sh docker-image-name
 
+if [[$# -neq 1]]; then
+  echo "Invalid number of arguments provided; expected 1, got $#"
+  sleep 2 && exit 1
+fi
 # Check if current git branch has uncommitted changes
 echo "Checking git status..."
 if [[ $(git status --porcelain) ]]; then
