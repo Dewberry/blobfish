@@ -1,10 +1,6 @@
 """ Synchronous operations for creating AORC data mirror on s3"""
 from __future__ import annotations
 
-import sys
-
-sys.argv.extend(["../classes", "../"])
-
 import datetime
 import io
 import json
@@ -16,6 +12,9 @@ from urllib.parse import quote
 
 import fiona
 import requests
+from classes.common import ProvenanceMetadata
+from classes.mirror import AORCDataURL
+from const import NOAA_URL
 from shapely.geometry import (
     GeometryCollection,
     LinearRing,
@@ -27,10 +26,6 @@ from shapely.geometry import (
     Polygon,
     shape,
 )
-
-from classes.common import ProvenanceMetadata
-from classes.mirror import AORCDataURL
-from const import NOAA_URL
 
 
 def create_rfc_list(

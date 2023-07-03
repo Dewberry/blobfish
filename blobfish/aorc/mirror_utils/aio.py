@@ -1,8 +1,4 @@
 """ Asynchronous operations for creating AORC data mirror on s3"""
-import sys
-
-sys.argv.extend(["../classes"])
-
 import asyncio
 import datetime
 import io

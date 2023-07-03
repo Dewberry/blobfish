@@ -2,8 +2,6 @@
 import os
 import sys
 
-sys.argv.extend(["../classes"])
-
 from classes.common import ProvenanceMetadata
 
 
