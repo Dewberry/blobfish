@@ -8,20 +8,13 @@ from dataclasses import dataclass
 import boto3
 from const import FIRST_RECORD, FTP_HOST, RFC_INFO_LIST, RFC_TAR_SHP_URL
 from shapely.geometry import MultiPolygon, Polygon
+from shapely import convex_hull
 
 
 @dataclass
 class RFCFeature:
     name: str
     geom: Polygon | MultiPolygon
-
-
-def simplify_with_size_tolerance(geom: Polygon | MultiPolygon, max_size=30000):
-    tolerance = 0.001
-    while len(geom.wkt) > max_size:
-        geom = geom.simplify(tolerance)
-        tolerance += 0.001
-    return geom
 
 
 def get_rfc_features() -> dict[str, RFCFeature]:
@@ -32,8 +25,8 @@ def get_rfc_features() -> dict[str, RFCFeature]:
             shp_name_stripped = shp_name.replace("RFC", "")
             if shp_name_stripped == rfc_info.alias:
                 if shp_geom.geom_type in ["Polygon", "MultiPolygon"]:
-                    simplified_geom = simplify_with_size_tolerance(shp_geom)
-                    rfc_feature_dict[rfc_info.alias] = RFCFeature(rfc_info.name, simplified_geom)
+                    hull = convex_hull(shp_geom)
+                    rfc_feature_dict[rfc_info.alias] = RFCFeature(rfc_info.name, hull)
                     break
                 else:
                     raise TypeError(

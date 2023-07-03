@@ -5,7 +5,7 @@ sys.argv.extend(["../classes", "../"])
 
 import datetime
 
-from rdflib import DCAT, DCTERMS, ORG, RDF, SKOS, XSD, BNode, Graph, IdentifiedNode, Literal, URIRef
+from rdflib import DCAT, DCTERMS, ORG, RDF, RDFS, SKOS, XSD, BNode, Graph, IdentifiedNode, Literal, URIRef
 from rdflib.namespace._GEO import GEO
 from shapely.geometry import MultiPolygon, Polygon
 
@@ -47,9 +47,13 @@ def _add_common_dataset_attributes(
 
     rfc_geom_b_node = BNode()
     rfc_geom_wkt_literal = Literal(rfc_geom.wkt, datatype=GEO.wktLiteral)
+    geom_label_literal = Literal(
+        "This geometry is a convex hull of the RFC region, not an exact geometry, and therefore may produce false positives when querying for points covered by the region."
+    )
     target_graph.add((rfc_geom_b_node, RDF.type, LOCN.Geometry))
     target_graph.add((rfc_b_node, LOCN.geometry, rfc_geom_b_node))
     target_graph.add((rfc_geom_b_node, GEO.asWKT, rfc_geom_wkt_literal))
+    target_graph.add((rfc_geom_b_node, RDFS.label, geom_label_literal))
 
     rfc_org_uri = URIRef(NOAA_URL)
     target_graph.add((rfc_b_node, ORG.unitOf, rfc_org_uri))
