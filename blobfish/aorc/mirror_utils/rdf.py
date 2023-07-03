@@ -1,12 +1,16 @@
 """ Utilities used in creating RDF metadata for s3 mirror creation """
+import sys
+
+sys.argv.extend(["../classes", "../"])
+
 import datetime
 
 from rdflib import DCAT, DCTERMS, ORG, RDF, SKOS, XSD, BNode, Graph, IdentifiedNode, Literal, URIRef
 from rdflib.namespace._GEO import GEO
 from shapely.geometry import MultiPolygon, Polygon
 
-from ..classes.namespaces import AORC, EU, IANA_APP, LOCN
-from ..const import NOAA_URL
+from classes.namespaces import AORC, EU, IANA_APP, LOCN
+from const import NOAA_URL
 
 
 def _add_common_dataset_attributes(

@@ -1,6 +1,10 @@
 """ Synchronous operations for creating AORC data mirror on s3"""
 from __future__ import annotations
 
+import sys
+
+sys.argv.extend(["../classes", "../"])
+
 import datetime
 import io
 import json
@@ -24,9 +28,9 @@ from shapely.geometry import (
     shape,
 )
 
-from ..classes.common import ProvenanceMetadata
-from ..classes.mirror import AORCDataURL
-from ..const import NOAA_URL
+from classes.common import ProvenanceMetadata
+from classes.mirror import AORCDataURL
+from const import NOAA_URL
 
 
 def create_rfc_list(
@@ -48,8 +52,7 @@ def create_rfc_list(
                                 shp_path = os.path.join(tmpdir, member.name)
                                 with fiona.open(shp_path, driver="ESRI Shapefile") as f:
                                     rfc_features = [
-                                        (feature["properties"]["NAME"], shape(feature["geometry"]).simplify("0.005"))
-                                        for feature in f
+                                        (feature["properties"]["NAME"], shape(feature["geometry"])) for feature in f
                                     ]
                                     return rfc_features
                         else:

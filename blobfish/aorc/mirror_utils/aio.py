@@ -1,4 +1,8 @@
 """ Asynchronous operations for creating AORC data mirror on s3"""
+import sys
+
+sys.argv.extend(["../classes"])
+
 import asyncio
 import datetime
 import io
@@ -6,7 +10,7 @@ from collections.abc import Iterator
 from dataclasses import asdict
 
 from aiohttp import ClientSession, ClientTimeout
-from ..classes.mirror import AORCDataURL
+from classes.mirror import AORCDataURL
 
 
 async def async_verify_url(session: ClientSession, url: str, **kwargs) -> dict | None:

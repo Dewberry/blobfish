@@ -2,7 +2,9 @@
 import os
 import sys
 
-from ..classes.common import ProvenanceMetadata
+sys.argv.extend(["../classes"])
+
+from classes.common import ProvenanceMetadata
 
 
 def retrieve_meta() -> ProvenanceMetadata:
