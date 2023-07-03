@@ -48,7 +48,8 @@ def create_rfc_list(
                                 shp_path = os.path.join(tmpdir, member.name)
                                 with fiona.open(shp_path, driver="ESRI Shapefile") as f:
                                     rfc_features = [
-                                        (feature["properties"]["NAME"], shape(feature["geometry"])) for feature in f
+                                        (feature["properties"]["NAME"], shape(feature["geometry"]).simplify("0.005"))
+                                        for feature in f
                                     ]
                                     return rfc_features
                         else:
@@ -102,7 +103,7 @@ def upload_mirror_to_ckan(
     data = {
         "dataset_id": dataset_id,
         "type": "aorc_MirrorDataset",
-        "name": dataset_id,
+        "name": dataset_id.lower(),
         "owner_org": owner_org,
         "title": title,
         "private": False,
