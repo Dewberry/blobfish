@@ -29,12 +29,6 @@ def get_rfc_features() -> dict[str, RFCFeature]:
     return rfc_feature_dict
 
 
-def create_s3_resource(access_key_id: str, secret_access_key: str, region_name: str):
-    session = boto3.Session(access_key_id, secret_access_key, region_name=region_name)
-    resource = session.resource("s3")
-    return resource
-
-
 def create_mirror_dataset_identifiers(
     start_date: datetime.datetime, end_date: datetime.datetime, rfc_alias: str, rfc_name: str
 ) -> BasicDescriptors:
@@ -58,8 +52,9 @@ if __name__ == "__main__":
     from mirror_utils.array import check_metadata
     from mirror_utils.general import create_potential_urls, create_rfc_list, upload_mirror_to_ckan
     from mirror_utils.rdf import create_source_dataset, timedelta_to_xsd_duration
+    from general_utils.cloud import create_s3_resource
     from general_utils.provenance import retrieve_meta, get_command_list
-    from general_utils.resource import create_ckan_resource
+    from blobfish.aorc.general_utils.ckan import create_ckan_resource
     from classes.namespaces import IANA_APP, EU
 
     load_dotenv()

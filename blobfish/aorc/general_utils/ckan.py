@@ -1,3 +1,7 @@
+import requests
+from rdflib import Graph
+
+
 def create_ckan_resource(
     download_url: str,
     format: str,
@@ -17,3 +21,7 @@ def create_ckan_resource(
         }
     )
     return args_dict
+
+
+def query_ckan_catalog(catalog_url: str) -> Graph:
+    pass
