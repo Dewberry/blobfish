@@ -105,7 +105,6 @@ def upload_mirror_to_ckan(
     upload_endpoint = f"{ckan_base_url}/api/3/action/package_create"
     headers = {"Authorization": api_key, "Content-Type": "application/json"}
     # Make sure last modified date has no timezone
-    last_modified = last_modified.replace(tzinfo=None)
     data = {
         "dataset_id": dataset_id,
         "type": "aorc_MirrorDataset",
