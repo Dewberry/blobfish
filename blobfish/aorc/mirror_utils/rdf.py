@@ -1,15 +1,12 @@
 """ Utilities used in creating RDF metadata for s3 mirror creation """
-# Make sure script can access common classes
-import sys
-
-sys.path.append("../classes")
-
 import datetime
 
-from classes.namespaces import AORC, EU, IANA_APP, LOCN
-from rdflib import DCAT, DCTERMS, ORG, RDF, SKOS, XSD, BNode, Graph, Literal, URIRef, IdentifiedNode
+from rdflib import DCAT, DCTERMS, ORG, RDF, SKOS, XSD, BNode, Graph, IdentifiedNode, Literal, URIRef
 from rdflib.namespace._GEO import GEO
 from shapely.geometry import MultiPolygon, Polygon
+
+from ..classes.namespaces import AORC, EU, IANA_APP, LOCN
+from ..const import NOAA_URL
 
 
 def _add_common_dataset_attributes(
@@ -50,7 +47,7 @@ def _add_common_dataset_attributes(
     target_graph.add((rfc_b_node, LOCN.geometry, rfc_geom_b_node))
     target_graph.add((rfc_geom_b_node, GEO.asWKT, rfc_geom_wkt_literal))
 
-    rfc_org_uri = URIRef("https://noaa.gov/")
+    rfc_org_uri = URIRef(NOAA_URL)
     target_graph.add((rfc_b_node, ORG.unitOf, rfc_org_uri))
 
     period_of_time_b_node = BNode()
@@ -83,8 +80,6 @@ def create_source_dataset(
 ) -> Graph:
     g = Graph()
 
-    # # skolemize source dataset blank node URI
-    # source_dataset_b_node = BNode(skolemize_source_dataset_uri(rfc_alias, start_time))
     source_dataset_b_node = BNode()
     g.add((source_dataset_b_node, RDF.type, AORC.SourceDataset))
 

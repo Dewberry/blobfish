@@ -1,17 +1,12 @@
 """ Asynchronous operations for creating AORC data mirror on s3"""
-# Make sure script can access common classes
-import sys
-
-sys.path.append("../classes")
-
 import asyncio
 import datetime
-from dataclasses import asdict
 import io
 from collections.abc import Iterator
+from dataclasses import asdict
 
 from aiohttp import ClientSession, ClientTimeout
-from classes.mirror import AORCDataURL
+from ..classes.mirror import AORCDataURL
 
 
 async def async_verify_url(session: ClientSession, url: str, **kwargs) -> dict | None:

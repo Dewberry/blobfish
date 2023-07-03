@@ -1,25 +1,17 @@
 """ Synchronous operations for creating AORC data mirror on s3"""
 from __future__ import annotations
 
-import sys
-from urllib.parse import quote
-
-# Make sure script can access common classes
-
-
-sys.path.append("../classes")
-
 import datetime
 import io
+import json
 import os
 import tarfile
 from collections.abc import Iterator
 from tempfile import TemporaryDirectory
+from urllib.parse import quote
 
 import fiona
 import requests
-from classes.mirror import AORCDataURL
-from classes.common import ProvenanceMetadata
 from shapely.geometry import (
     GeometryCollection,
     LinearRing,
@@ -31,6 +23,10 @@ from shapely.geometry import (
     Polygon,
     shape,
 )
+
+from ..classes.common import ProvenanceMetadata
+from ..classes.mirror import AORCDataURL
+from ..const import NOAA_URL
 
 
 def create_rfc_list(
@@ -101,7 +97,11 @@ def upload_mirror_to_ckan(
         ckan_base_url = ckan_base_url[:-1]
     upload_endpoint = f"{ckan_base_url}/api/3/action/package_create"
     headers = {"Authorization": api_key, "Content-Type": "application/json"}
+    # Make sure last modified date has no timezone
+    last_modified = last_modified.replace(tzinfo=None)
     data = {
+        "dataset_id": dataset_id,
+        "type": "aorc_MirrorDataset",
         "name": dataset_id,
         "owner_org": owner_org,
         "title": title,
@@ -122,9 +122,15 @@ def upload_mirror_to_ckan(
         "rfc_alias": rfc_alias,
         "rfc_full_name": rfc_full_name,
         "rfc_wkt": rfc_geom.wkt,
+        "rfc_parent_organization": NOAA_URL,
         "command_list": command_list,
         "source_dataset": source_dataset,
     }
     data.update(kwargs)
-    response = requests.post(upload_endpoint, headers=headers, json=data)
-    return response.status_code
+
+    with open(dataset_id + ".json", "w") as f:
+        f.write(json.dumps(data))
+
+    # response = requests.post(upload_endpoint, headers=headers, json=data)
+    # return response.status_code
+    return 200

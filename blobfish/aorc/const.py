@@ -23,3 +23,5 @@ RFC_INFO_LIST = [
     RFCInfo("SE", "SOUTHEAST"),
     RFCInfo("WG", "WEST GULF"),
 ]
+
+NOAA_URL = "https://noaa.gov/"

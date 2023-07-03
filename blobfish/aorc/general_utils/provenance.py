@@ -1,10 +1,8 @@
-# Make sure script can access common classes
+""" Functions used to retrieve information used in determining data provenance, like git and docker info"""
 import os
 import sys
 
-sys.path.append("../classes")
-
-from classes.common import ProvenanceMetadata
+from ..classes.common import ProvenanceMetadata
 
 
 def retrieve_meta() -> ProvenanceMetadata:
