@@ -133,6 +133,7 @@ def upload_mirror_to_ckan(
         "rfc_parent_organization": NOAA_URL,
         "command_list": command_list,
         "source_dataset": source_dataset,
+        "resources": resources,
     }
     data.update(kwargs)
 
