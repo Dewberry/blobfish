@@ -98,6 +98,7 @@ def upload_mirror_to_ckan(
     rfc_wkt: str,
     command_list: list[str],
     source_dataset: str,
+    resources: list[dict],
     **kwargs,
 ) -> int:
     if not ckan_base_url.endswith("/"):

@@ -2,28 +2,13 @@
 from __future__ import annotations
 
 import datetime
-from dataclasses import dataclass
 
 import boto3
 from const import FIRST_RECORD, FTP_HOST, RFC_INFO_LIST, RFC_TAR_SHP_URL
-from shapely.geometry import MultiPolygon, Polygon
+from classes.common import BasicDescriptors
+from classes.mirror import RFCFeature
 from shapely import convex_hull
 from urllib.parse import quote
-
-
-@dataclass
-class RFCFeature:
-    name: str
-    geom: Polygon | MultiPolygon
-
-
-@dataclass
-class BasicDescriptors:
-    title: str
-    dataset_id: str
-    name: str
-    url: str
-    notes: str
 
 
 def get_rfc_features() -> dict[str, RFCFeature]:
@@ -74,6 +59,8 @@ if __name__ == "__main__":
     from mirror_utils.general import create_potential_urls, create_rfc_list, upload_mirror_to_ckan
     from mirror_utils.rdf import create_source_dataset, timedelta_to_xsd_duration
     from general_utils.provenance import retrieve_meta, get_command_list
+    from general_utils.resource import create_ckan_resource
+    from classes.namespaces import IANA_APP, EU
 
     load_dotenv()
 
@@ -109,6 +96,15 @@ if __name__ == "__main__":
             nc4_meta.start_time, nc4_meta.end_time, streamed_zip.rfc_alias, rfc_feature.name
         )
         prov_meta = retrieve_meta()
+        resources = [
+            create_ckan_resource(
+                streamed_zip.url,
+                EU.NETCDF,
+                IANA_APP.zip,
+                "Distribution of zipped NetCDF file containing precipitation data",
+                True,
+            )
+        ]
         upload_mirror_to_ckan(
             os.environ["CKAN_URL"],
             os.environ["CKAN_API_KEY"],
@@ -135,5 +131,6 @@ if __name__ == "__main__":
             rfc_feature.geom.wkt,
             command_list,
             source_dataset_ttl,
+            resources,
         )
         # TODO: test retrieval of docker details, git details, command list

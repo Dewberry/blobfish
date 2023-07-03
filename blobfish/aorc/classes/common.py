@@ -5,6 +5,15 @@ from pyshacl import validate
 
 
 @dataclass
+class BasicDescriptors:
+    title: str
+    dataset_id: str
+    name: str
+    url: str
+    notes: str
+
+
+@dataclass
 class ProvenanceMetadata:
     docker_image: str
     remote_compose_file: str

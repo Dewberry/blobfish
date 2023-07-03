@@ -1,5 +1,12 @@
 import datetime
 from dataclasses import dataclass
+from shapely.geometry import Polygon, MultiPolygon
+
+
+@dataclass
+class RFCFeature:
+    name: str
+    geom: Polygon | MultiPolygon
 
 
 @dataclass
