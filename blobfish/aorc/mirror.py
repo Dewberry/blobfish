@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import datetime
-import json
 from dataclasses import dataclass
 
 import boto3
@@ -90,7 +89,7 @@ if __name__ == "__main__":
             nc4_meta.temporal_resolution,
             nc4_meta.spatial_resolution_meters,
         )
-        source_dataset_jsonld = json.loads(source_dataset.serialize(format="json-ld"))
+        source_dataset_ttl = source_dataset.serialize(format="ttl")
         mirror_dataset_id, mirror_dataset_title = create_mirror_dataset_identifiers(
             nc4_meta.start_time, nc4_meta.end_time, streamed_zip.rfc_alias
         )
@@ -111,6 +110,6 @@ if __name__ == "__main__":
             rfc_feature.name,
             rfc_feature.geom,
             command_list,
-            source_dataset_jsonld,
+            source_dataset_ttl,
         )
         # TODO: test retrieval of docker details, git details, command list
