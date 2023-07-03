@@ -20,7 +20,7 @@ class RFCFeature:
 @dataclass
 class BasicDescriptors:
     title: str
-    id: str
+    dataset_id: str
     name: str
     url: str
     notes: str
@@ -112,7 +112,7 @@ if __name__ == "__main__":
         upload_mirror_to_ckan(
             os.environ["CKAN_URL"],
             os.environ["CKAN_API_KEY"],
-            descriptors.id,
+            descriptors.dataset_id,
             descriptors.name,
             os.environ["CKAN_DATA_GROUP"],
             descriptors.title,
