@@ -9,6 +9,11 @@ from rdflib.namespace._GEO import GEO
 from shapely.geometry import MultiPolygon, Polygon
 
 
+def _bind_namespaces(target_graph: Graph) -> None:
+    target_graph.bind("aorc", AORC)
+    target_graph.bind("locn", LOCN)
+
+
 def _add_common_dataset_attributes(
     target_graph: Graph,
     dataset_node: IdentifiedNode,
@@ -83,6 +88,8 @@ def create_source_dataset(
     spatial_resolution: float,
 ) -> Graph:
     g = Graph()
+
+    _bind_namespaces(g)
 
     source_dataset_b_node = BNode()
     g.add((source_dataset_b_node, RDF.type, AORC.SourceDataset))
