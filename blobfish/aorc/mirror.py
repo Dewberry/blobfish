@@ -68,6 +68,9 @@ if __name__ == "__main__":
     command_list = get_command_list()
     print(f"Command list: {command_list}")
 
+    # Retrieve docker and git details
+    prov_meta = retrieve_meta()
+
     start_dt = datetime.datetime.strptime(FIRST_RECORD, "%Y-%m-%d")
     rfc_features_dict = get_rfc_features()
     potential_urls = create_potential_urls(rfc_features_dict.keys(), start_dt, FTP_HOST)
@@ -90,7 +93,6 @@ if __name__ == "__main__":
         descriptors = create_mirror_dataset_identifiers(
             nc4_meta.start_time, nc4_meta.end_time, streamed_zip.rfc_alias, rfc_feature.name
         )
-        prov_meta = retrieve_meta()
         resources = [
             create_ckan_resource(
                 streamed_zip.url,
