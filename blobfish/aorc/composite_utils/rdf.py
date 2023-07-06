@@ -3,7 +3,7 @@ from typing import Iterator
 from classes.composite import RetrievedMirror
 from classes.namespaces import AORC, LOCN
 from general_utils.ckan import query_ckan_catalog
-from rdflib import DCAT, Graph, Literal
+from rdflib import DCAT, DCTERMS, Graph, Literal
 from rdflib.namespace._GEO import GEO
 
 
@@ -18,15 +18,16 @@ def retrieve_mirror_dataset_metadata(ckan_base_url: str, rfc_count: int) -> Iter
             WHERE   {
                 ?mda a aorc:MirrorDataset .
                 ?mda dcat:distribution/dcat:downloadURL ?url .
-                ?mda dcat:startDate ?sd .
-                ?mda dcat:endDate ?ed .
+                ?mda dct:temporal ?t .
+                ?t dcat:startDate ?sd .
+                ?t dcat:endDate ?ed .
                 ?mda dcat:spatialResolutionInMeters ?res .
                 ?mda aorc:hasRFC/locn:geometry/geo:asWKT ?wkt .
             }
         """
         results = catalog_graph.query(
             query_string,
-            initNs={"aorc": AORC, "dcat": DCAT, "geo": GEO, "locn": LOCN},
+            initNs={"aorc": AORC, "dcat": DCAT, "geo": GEO, "locn": LOCN, "dct": DCTERMS},
             initBindings={"sd": start_date_literal, "ed": end_date_literal},
         )
         mirror_meta_list = [
@@ -43,15 +44,18 @@ def verify_date_rfc_count(catalog_graph: Graph, rfc_count: int) -> Iterator[tupl
         SELECT ?sd ?ed
                     (COUNT(?s) AS ?date_count)
         WHERE   {
-            ?s dcat:startDate ?sd .
-            ?s dcat:endDate ?ed .
+            ?s a aorc:MirrorDataset .
+            ?s dct:temporal ?t .
+            ?t dcat:startDate ?sd .
+            ?t dcat:endDate ?ed .
         }
         GROUP BY ?sd ?ed
     """
-    for result_row in catalog_graph.query(query_string, initNs={"dcat": DCAT}):
+    for result_row in catalog_graph.query(query_string, initNs={"dcat": DCAT, "aorc": AORC, "dct": DCTERMS}):
         if result_row.date_count != rfc_count:
             raise ValueError(
                 f"Expected start date {result_row.sd} and end date {result_row.ed} to have number of matches equal to number of RFCs ({rfc_count}); Instead got {result_row.date_count}"
             )
+            # pass
         else:
             yield result_row.sd, result_row.ed
