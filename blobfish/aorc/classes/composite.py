@@ -1,4 +1,5 @@
 import datetime
+import logging
 import re
 import sqlite3
 from dataclasses import dataclass
@@ -27,10 +28,16 @@ class DatasetTracker:
         self.cur.execute("create table mirror_datasets(t timestamp, uri TEXT, nc_path TEXT)")
         return self
 
-    def __exit__(self) -> Self:
+    def __exit__(self, exception_type, exception_value, traceback) -> Self:
         self.cur.close()
         self.con.commit()
         self.con.close()
+        if exception_type:
+            logging.warning(f"Data tracker exited with exception type {exception_type}")
+        if exception_value:
+            logging.warning(f"Exception value: {exception_value}")
+        if traceback:
+            logging.warning(f"Traceback: {traceback}")
 
     def register_netcdfs(self, mirror_dataset: URIRef, nc_paths: list[str]) -> None:
         insert_rows = []
