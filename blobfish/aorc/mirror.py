@@ -130,4 +130,3 @@ if __name__ == "__main__":
             source_dataset_ttl,
             resources,
         )
-        # TODO: test retrieval of docker details, git details, command list
