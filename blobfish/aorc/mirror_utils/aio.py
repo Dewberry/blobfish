@@ -32,6 +32,8 @@ async def async_stream_zip_to_s3(
             data.write(chunk)
         data.seek(0)
         print(f"All data loaded for {zip_url.url}")
+        source_url = zip_url.url
+        source_last_modified = zip_url.last_modified
         obj = s3_bucket.Object(zip_url.s3_key())
         print(f"Starting upload for {zip_url.s3_key()}")
         obj.upload_fileobj(data)
@@ -39,7 +41,7 @@ async def async_stream_zip_to_s3(
         s3_url.url = f"s3://{bucket}/{zip_url.s3_key()}"
         obj.load()
         s3_url.last_modified = obj.last_modified
-        s3_url.additional_args = asdict(zip_url)
+        s3_url.additional_args = {"url": source_url, "last_modified": source_last_modified}
     return s3_url
 
 
