@@ -3,12 +3,10 @@ from __future__ import annotations
 
 import datetime
 import io
-import json
 import os
 import tarfile
 from collections.abc import Iterator
 from tempfile import TemporaryDirectory
-from urllib.parse import quote
 
 import fiona
 import requests

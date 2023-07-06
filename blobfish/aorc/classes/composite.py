@@ -9,8 +9,12 @@ from rdflib import Literal, URIRef
 
 @dataclass
 class RetrievedMirror:
-    mirror_dataset: URIRef
-    s3_url: Literal
+    uri: URIRef
+    url: Literal
+    start_date: Literal
+    end_date: Literal
+    resolution: Literal
+    wkt: Literal
 
 
 class DatasetTracker:
@@ -43,11 +47,21 @@ class DatasetTracker:
         self.cur.executemany("insert into mirror_datasets VALUES(?)", insert_rows)
 
     def get_nc_files(self, timestamp: datetime.datetime) -> list[str]:
-        self.cur.execute("select nc_path where nc_path = ?", timestamp.isoformat())
+        self.cur.execute("select nc_path from mirror_datasets where t = ?", timestamp.isoformat())
         nc_files = [f[0] for f in self.cur.fetchall()]
         return nc_files
 
     def get_mirror_datasets(self, timestamp: datetime.datetime) -> list[URIRef]:
-        self.cur.execute("select DISTINCT mirror_dataset where nc_path = ?", timestamp.isoformat())
+        self.cur.execute("select DISTINCT uri from mirror_datasets where t = ?", timestamp.isoformat())
         mirror_datasets = [URIRef(f[0]) for f in self.cur.fetchall()]
         return mirror_datasets
+
+    def group_data_by_time(self) -> list[tuple[list[str], list[URIRef], datetime.datetime]]:
+        results = []
+        for nc_path_concat, uri_concat, t in self.cur.execute(
+            "select GROUP_CONCAT(nc_path) AS nc_path_concat, GROUP_CONCAT(uri) AS uri_concat, t from mirror_datasets group by t"
+        ):
+            nc_paths = nc_path_concat.split(",")
+            mirror_dataset_uris = [URIRef(uri) for uri in uri_concat.split(",")]
+            results.append((nc_paths, mirror_dataset_uris, t))
+        return results

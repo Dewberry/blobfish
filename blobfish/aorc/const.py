@@ -25,3 +25,5 @@ RFC_INFO_LIST = [
 ]
 
 NOAA_URL = "https://noaa.gov/"
+
+ZARR_CURRENT_VERSION_URI = "https://github.com/zarr-developers/zarr-python/tree/v2.14.2"
