@@ -8,7 +8,7 @@ from general_utils.cloud import extract_bucketname_and_keyname
 
 def stream_s3_zipped(s3_resource, s3_uri: str, extract_directory: str) -> list[str]:
     bucket, key = extract_bucketname_and_keyname(s3_uri)
-    response = s3_resource.meta.client.get_object(bucket=bucket, Key=key)
+    response = s3_resource.meta.client.get_object(Bucket=bucket, Key=key)
     zip_data = response["Body"].read()
     with ZipFile(BytesIO(zip_data), "r") as zf:
         outpaths = [os.path.join(extract_directory, info.filename) for info in zf.filelist]
