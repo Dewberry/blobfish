@@ -52,7 +52,7 @@ def verify_date_rfc_count(catalog_graph: Graph, rfc_count: int) -> Iterator[tupl
         GROUP BY ?sd ?ed
     """
     for result_row in catalog_graph.query(query_string, initNs={"dcat": DCAT, "aorc": AORC, "dct": DCTERMS}):
-        if result_row.date_count != rfc_count:
+        if int(result_row.date_count) != rfc_count:
             raise ValueError(
                 f"Expected start date {result_row.sd} and end date {result_row.ed} to have number of matches equal to number of RFCs ({rfc_count}); Instead got {result_row.date_count}"
             )
