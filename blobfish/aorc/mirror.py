@@ -54,7 +54,7 @@ if __name__ == "__main__":
     from mirror_utils.rdf import create_source_dataset, timedelta_to_xsd_duration
     from general_utils.cloud import create_s3_resource
     from general_utils.provenance import retrieve_meta, get_command_list
-    from blobfish.aorc.general_utils.ckan import create_ckan_resource
+    from general_utils.ckan import create_ckan_resource
     from classes.namespaces import IANA_APP, EU
 
     load_dotenv()
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     start_dt = datetime.datetime.strptime(FIRST_RECORD, "%Y-%m-%d")
     rfc_features_dict = get_rfc_features()
     potential_urls = create_potential_urls(rfc_features_dict.keys(), start_dt, FTP_HOST)
-    verified_urls = [verified_url for verified_url in verify_urls(potential_urls)][:2]
+    verified_urls = [verified_url for verified_url in verify_urls(potential_urls)]
     for streamed_zip in stream_zips_to_s3(verified_urls, s3_resource, "tempest"):
         nc4_meta = check_metadata(s3_resource, "tempest", streamed_zip.s3_key())
         rfc_feature = rfc_features_dict[streamed_zip.rfc_alias]
