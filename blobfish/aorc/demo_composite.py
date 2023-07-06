@@ -18,10 +18,10 @@ from general_utils.provenance import get_command_list, retrieve_meta
 def create_composite_dataset_identifiers(
     start_date: datetime.datetime, end_date: datetime.datetime, location_name: str
 ) -> BasicDescriptors:
-    dataset_id = f"composite_{start_date.strftime('%Y%m')}"
+    dataset_id = f"composite_{start_date.strftime('%Y%m%d%H')}"
     dataset_name = dataset_id.lower()
-    start_time_formatted = start_date.strftime("%Y-%m-%d")
-    end_time_formatted = end_date.strftime("%Y-%m-%d")
+    start_time_formatted = start_date.strftime("%Y-%m-%d %H:%M")
+    end_time_formatted = end_date.strftime("%Y-%m-%d %H:%M")
     dataset_title = f"{location_name} Composite Dataset, {start_time_formatted} to {end_time_formatted}"
     dataset_description = f"A composite dataset of AORC precipitation data covering {location_name}, from {start_time_formatted} to {end_time_formatted}"
     dataset_url = quote(dataset_id)
