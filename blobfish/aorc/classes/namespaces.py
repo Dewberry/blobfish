@@ -27,7 +27,7 @@ class AORC(DefinedNamespace):
     normalizedMeanPrecipitation: URIRef
     sumPrecipitation: URIRef
 
-    _NS = Namespace("https://raw.githubusercontent.com/Dewberry/blobfish/v0.9/semantics/rdf/aorc.ttl")
+    _NS = Namespace("https://raw.githubusercontent.com/Dewberry/blobfish/v0.9/semantics/rdf/aorc.ttl#")
 
 
 IANA_APP = Namespace("https://www.iana.org/assignments/media-types/application/")
