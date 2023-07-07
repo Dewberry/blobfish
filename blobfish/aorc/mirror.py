@@ -58,6 +58,7 @@ if __name__ == "__main__":
 
     load_dotenv()
 
+    bucket = os.environ["MIRROR_BUCKET"]
     access_key_id = os.environ["AWS_ACCESS_KEY_ID"]
     secret_access_key = os.environ["AWS_SECRET_ACCESS_KEY"]
     default_region = os.environ["AWS_DEFAULT_REGION"]
@@ -74,8 +75,8 @@ if __name__ == "__main__":
     rfc_features_dict = get_rfc_features()
     potential_urls = create_potential_urls(rfc_features_dict.keys(), start_dt, FTP_HOST)
     verified_urls = [verified_url for verified_url in verify_urls(potential_urls)]
-    for streamed_zip in stream_zips_to_s3(verified_urls, s3_resource, "tempest"):
-        nc4_meta = check_metadata(s3_resource, "tempest", streamed_zip.s3_key())
+    for streamed_zip in stream_zips_to_s3(verified_urls, s3_resource, bucket):
+        nc4_meta = check_metadata(s3_resource, bucket, streamed_zip.s3_key())
         rfc_feature = rfc_features_dict[streamed_zip.rfc_alias]
         source_dataset = create_source_dataset(
             streamed_zip.additional_args["url"],

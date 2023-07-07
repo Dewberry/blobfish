@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     load_dotenv()
 
-    bucket = "tempest"
+    bucket = os.environ["MIRROR_BUCKET"]
     access_key_id = os.environ["AWS_ACCESS_KEY_ID"]
     secret_access_key = os.environ["AWS_SECRET_ACCESS_KEY"]
     default_region = os.environ["AWS_DEFAULT_REGION"]
