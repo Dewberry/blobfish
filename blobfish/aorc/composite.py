@@ -70,6 +70,7 @@ if __name__ == "__main__":
                         create_ckan_resource(
                             mirror.url,
                             ZARR_CURRENT_VERSION_URI,
+                            None,
                             "Distribution of s3 zarr containing precipitation data",
                             True,
                         )
