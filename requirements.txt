@@ -47,7 +47,6 @@ owlrl==6.0.2
 packaging==23.0
 pandas==1.5.3
 partd==1.4.0
-pkg_resources==0.0.0
 prettytable==2.5.0
 pydantic==2.0.2
 pydantic_core==2.1.2
