@@ -32,8 +32,8 @@ def get_rfc_features() -> dict[str, RFCFeature]:
 def create_mirror_dataset_identifiers(
     start_date: datetime.datetime, end_date: datetime.datetime, rfc_alias: str, rfc_name: str
 ) -> BasicDescriptors:
-    dataset_id = f"mirror_{rfc_alias.upper()}_{start_date.strftime('%Y%m')}"
-    dataset_name = dataset_id.lower()
+    dataset_id = f"mirror_{rfc_alias}_{start_date.strftime('%Y%m')}".lower()
+    dataset_name = dataset_id
     proper_rfc_name = " ".join([r.capitalize() for r in rfc_name.split()])
     start_time_formatted = start_date.strftime("%Y-%m-%d")
     end_time_formatted = end_date.strftime("%Y-%m-%d")
