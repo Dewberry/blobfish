@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import datetime
 
-import boto3
 from const import FIRST_RECORD, FTP_HOST, RFC_INFO_LIST, RFC_TAR_SHP_URL
 from classes.common import BasicDescriptors
 from classes.mirror import RFCFeature
