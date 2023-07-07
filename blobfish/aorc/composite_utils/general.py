@@ -58,7 +58,7 @@ def upload_composite_to_ckan(
         "location_name": location_name,
         "location_wkt": location_wkt,
         "command_list": command_list,
-        "mirror_dataset": mirror_dataset,
+        "mirror_datasets": mirror_dataset,
         "resources": resources,
     }
     data.update(kwargs)
