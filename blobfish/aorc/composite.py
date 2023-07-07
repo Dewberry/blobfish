@@ -4,15 +4,6 @@ from tempfile import TemporaryDirectory
 from urllib.parse import quote
 
 from classes.common import BasicDescriptors
-from classes.composite import DatasetTracker
-from composite_utils.array import create_composite_dataset, upload_zarr
-from composite_utils.cloud import check_zarr_modification, stream_s3_zipped
-from composite_utils.general import create_composite_wkt, upload_composite_to_ckan
-from composite_utils.rdf import retrieve_mirror_dataset_metadata
-from const import RFC_INFO_LIST, ZARR_CURRENT_VERSION_URI
-from general_utils.ckan import create_ckan_resource
-from general_utils.cloud import create_s3_resource
-from general_utils.provenance import get_command_list, retrieve_meta
 
 
 def create_composite_dataset_identifiers(
@@ -34,6 +25,19 @@ def create_composite_s3_path(bucket: str, start_time: datetime.datetime) -> str:
 
 
 if __name__ == "__main__":
+    from classes.composite import DatasetTracker
+    from composite_utils.array import create_composite_dataset, upload_zarr
+    from composite_utils.cloud import check_zarr_modification, stream_s3_zipped
+    from composite_utils.general import create_composite_wkt, upload_composite_to_ckan
+    from composite_utils.rdf import retrieve_mirror_dataset_metadata
+    from const import RFC_INFO_LIST, ZARR_CURRENT_VERSION_URI
+    from dotenv import load_dotenv
+    from general_utils.ckan import create_ckan_resource
+    from general_utils.cloud import create_s3_resource
+    from general_utils.provenance import get_command_list, retrieve_meta
+
+    load_dotenv()
+
     bucket = "tempest"
     access_key_id = os.environ["AWS_ACCESS_KEY_ID"]
     secret_access_key = os.environ["AWS_SECRET_ACCESS_KEY"]
