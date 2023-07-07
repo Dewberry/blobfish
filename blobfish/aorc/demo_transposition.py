@@ -7,8 +7,8 @@ Connect to meilisearch database
 Query database to retrieve: (
     start time,
     duration,
-    s3 paths to watershed, transposition, and DSS file,
-    ATLAS14 dataset used to normalize precip,
+    s3 paths to watershed and transposition geojsons,
+    s3 path of image PNG,
     watershed name,
     transposition region name,
     mean precip,
@@ -18,7 +18,11 @@ Query database to retrieve: (
     normalized mean precip,
     maximum precip point
     )
-For row in results (if I understand NoSQL):
+If normalized mean was fetched:
+    Deduce ATLAS file used to normalize based on time period, spatial region
+Deduce s3 path of DSS file
+For hit in results (if I understand NoSQL):
+    Download DSS file
     with DSS file opened:
         Check spatial resolution
         Make sure number of records matches duration
