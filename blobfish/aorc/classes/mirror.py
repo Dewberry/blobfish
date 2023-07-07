@@ -26,7 +26,7 @@ class AORCDataURL:
     last_modified: datetime.datetime = None
     additional_args: dict = None
 
-    def s3_key(self, prefix: str = "test/mirrors/aorc/precip/") -> str:
+    def s3_key(self, prefix: str = "mirrors/aorc/precip/") -> str:
         if prefix[-1] != "/":
             prefix += "/"
         url_parts = self.url.split("/")
