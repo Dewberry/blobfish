@@ -19,3 +19,12 @@ The third stage is using the data now that it has been transformed into a more c
 With the exception of the source datasets, the metadata created by this repo is not RDF, but rather plain JSON (not JSON-LD, an RDF format). This is because this repo works in tandem with extensions created on the CKAN api specifically for parsing and serializing the uploaded metadata into an RDF format.
 
 These extensions can be found (here)[https://example.org]
+
+## Usage
+First, populate your .env variables as shown in .env.example in order to connect to AWS, Meilisearch, and CKAN
+In order to use this repo to produce metadata for AORC data, you must be using a linux-style OS that can execute shell scripts like 'init.sh'
+If you are on a linux machine, follow these steps in order
+- execute the init.sh shell script with the parameter of the remote docker image that will be used (this repo is tracked on docker.io/njroberts/blobfish-python)
+- eg: <source init.sh njroberts/blobfish-python:1.0.0>
+- attach to the created docker container
+- execute one of the main scripts (mirror.py, composite.py, or transposition_meta.py)
