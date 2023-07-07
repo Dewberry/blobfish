@@ -1,40 +1,31 @@
 ## AORC
+Holds the main scripts as well as the utility scripts and classes that are used to upload metadata necessary for the creation of metadata to CKAN
 
-A collection of ontologies and scripts for generating mirrors for use in data pipelines to support the development of geospatial datasets used in risk and resilience studies.
+### /classes
+Holds classes used by individual processes as well as classes shared between processes in the AORC pipeline
 
+### /composite_utils
+Holds utility scripts used by the composite task of the AORC pipeline
 
----
+### /general_utils
+Holds general utility scripts used by multiple processes of the AORC pipeline
 
-#### Ontologies:
+### /mirror_utils
+Holds utility scripts used by the mirror task of the AORC pipeline
 
-[AORC](http://htmlpreview.github.io/?https://github.com/Dewberry/blobfish/blob/aorc/semantics/html/aorc/index.html): Analysis of Record for Calibration precipitation and temperature datasets.
+### /transposition_utils
+Holds utility scripts used by the transposition metadata collection task of the AORC pipeline
 
----
+### composite.py
+Main script for the composite creation task
+Responsible for querying the available mirror datasets from CKAN, aligning the data based on shared temporal coverage, and converting the monthly zipped data to hourly zarr format data, as well as collecting and uploading relevant metadata from this process
 
-#### Scripts:
+### const.py
+Holds constants used in the AORC pipeline, including URIs for data formats, RFC info, data portal URLs, etc.
 
-[AORC](./blobfish/aorc/):
- * [composite](./blobfish/aorc/composite.py) - Script for creating CONUS-level composite gridded datasets composed of mirrored AORC data which utilizes RDF metadata created during the mirroring process
- * [const](./blobfish/aorc/const.py) - Constants used in AORC processing or parsing
- * [parse_composite](./blobfish/aorc/parse_composite.py) - Script for parsing metadata from s3 objects of created composite gridded dataset to add onto existing RDF metadata created during the mirroring process in order to document the relationship between the mirrored datasets, the composited datasets, and the compositing process
+### mirror.py
+Main script for the mirror creation task
+Responsible for verifying the total available data from NOAA, its asynchronous acquistion, and its upload to s3, as well as collecting and uploading relevant metadata not only for the source data but also the mirror datasets created in the process
 
- ##### Setup
-
- To run the scripts in this repo, you should have a .env file in the same directory as this repo which has the following keys:
-
- ```
-AWS_ACCESS_KEY_ID=access_id_here
-AWS_SECRET_ACCESS_KEY=access_key_here
-AWS_DEFAULT_REGION=aws_region_here
-TAG=docker_image_tag
-HASH=docker_image_hash
- ```
-
- The workflow during development was to launch a docker container using the specified tag and hash from the docker hub image https://hub.docker.com/layers/njroberts/blobfish-python/ and use the container to run the scripts in the following sequence in order to both complete the composite process and create RDF TTL files documenting the metadata for the jobs:
-
- ```
-python -m blobfish.aorc.transfer
-python -m blobfish.aorc.parse_transfer
-python -m blobfish.aorc.composite
-python -m blobfish.aorc.parse_composite
- ```
+### transposition_meta.py
+Main script for collecting, parsing, and submitting metadata created during stochaistic storm transposition models to CKAN for serialization as RDF
