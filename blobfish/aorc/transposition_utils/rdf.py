@@ -1,9 +1,8 @@
 import datetime
 
-from classes.namespaces import AORC, LOCN
+from classes.namespaces import AORC
 from general_utils.ckan import query_ckan_catalog
 from rdflib import DCAT, DCTERMS, XSD, Literal, URIRef
-from rdflib.namespace._GEO import GEO
 
 
 def retrieve_composite_dataset_uris(
@@ -27,7 +26,7 @@ def retrieve_composite_dataset_uris(
     end_date_literal = Literal(end.isoformat(), datatype=XSD.dateTime)
     results = catalog_graph.query(
         query_string,
-        initNs={"aorc": AORC, "dcat": DCAT, "geo": GEO, "locn": LOCN, "dct": DCTERMS},
+        initNs={"aorc": AORC, "dcat": DCAT, "dct": DCTERMS},
         initBindings={"start": start_date_literal, "end": end_date_literal},
     )
     composite_uris = [result_row.cda for result_row in results]
