@@ -136,7 +136,7 @@ def upload_mirror_to_ckan(
     }
     data.update(kwargs)
 
-    with open(f"{dataset_id}.json") as jf:
+    with open(f"{dataset_id}.json", "w") as jf:
         json.dump(data, jf)
     return 200
 
