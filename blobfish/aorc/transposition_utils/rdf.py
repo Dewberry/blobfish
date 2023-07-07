@@ -19,8 +19,8 @@ def retrieve_composite_dataset_uris(
             ?cda dct:temporal ?t .
             ?t dcat:startDate ?sd .
             ?t dcat:endDate ?ed .
+            FILTER(?start <= ?sd && ?ed <= ?end)
         }
-        FILTER(?start <= ?sd && ?ed <= ?end)
     """
     start_date_literal = Literal(start.isoformat(), datatype=XSD.dateTime)
     end_date_literal = Literal(end.isoformat(), datatype=XSD.dateTime)
