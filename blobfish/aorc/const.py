@@ -27,3 +27,7 @@ RFC_INFO_LIST = [
 NOAA_URL = "https://noaa.gov/"
 
 ZARR_CURRENT_VERSION_URI = "https://github.com/zarr-developers/zarr-python/tree/v2.14.2"
+
+MS_INDEX = "events"
+
+HEC_DSS_URI = "https://www.hec.usace.army.mil/software/hec-dss/"
