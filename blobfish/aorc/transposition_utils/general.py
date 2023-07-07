@@ -1,24 +1,29 @@
 import datetime
 import json
+import logging
 
 import requests
 from shapely.geometry import MultiPolygon, Polygon, shape
+from shapely import convex_hull
 
 
 def stream_geojson_from_s3(s3_resource, bucket: str, key: str) -> Polygon | MultiPolygon:
     response = s3_resource.meta.client.get_object(Bucket=bucket, Key=key)
     geojson_data = response["Body"].read().decode("utf-8")
     geojson = json.loads(geojson_data)
-    geometry = shape(geojson["geometry"])
+    if len(geojson["features"]) > 1:
+        logging.warning(f"Multiple geometries found for {key}, taking first geometry")
+    feature = geojson["features"][0]
+    geometry = shape(feature["geometry"])
     if geometry.geom_type not in ("MultiPolygon", "Polygon"):
         raise TypeError(f"Expected geom type of either polygon or multipolygon, got {geometry.geom_type}")
-    return geometry
+    return convex_hull(geometry)
 
 
 def get_dss_last_modification(s3_resource, bucket: str, dss_key: str) -> datetime.datetime:
     obj = s3_resource.Object(bucket, dss_key)
     obj.load()
-    return obj.last_modified
+    return obj.last_modified.replace(tzinfo=None)
 
 
 def upload_transposition_to_ckan(
