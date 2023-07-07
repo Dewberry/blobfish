@@ -53,53 +53,53 @@ if __name__ == "__main__":
                 for mirror in mirror_list:
                     nc_paths = stream_s3_zipped(s3_resource, mirror.url, tmpdir)
                     tracker.register_netcdfs(mirror.uri, nc_paths)
-                    for nc_paths, uris, start_time in tracker.group_data_by_time():
-                        end_time = start_time + datetime.timedelta(hours=1)
-                        composite_dataset = create_composite_dataset(nc_paths)
-                        zarr_s3_path = create_composite_s3_path(bucket, start_time)
-                        upload_zarr(zarr_s3_path, composite_dataset)
-                        composite_last_modified = check_zarr_modification(s3_resource, zarr_s3_path)
+                for nc_paths, uris, start_time in tracker.group_data_by_time():
+                    end_time = start_time + datetime.timedelta(hours=1)
+                    composite_dataset = create_composite_dataset(nc_paths)
+                    zarr_s3_path = create_composite_s3_path(bucket, start_time)
+                    upload_zarr(zarr_s3_path, composite_dataset)
+                    composite_last_modified = check_zarr_modification(s3_resource, zarr_s3_path)
 
-                        # Create upload to CKAN
-                        descriptors = create_composite_dataset_identifiers(
-                            start_time,
-                            end_time,
-                            composite_location_name,
+                    # Create upload to CKAN
+                    descriptors = create_composite_dataset_identifiers(
+                        start_time,
+                        end_time,
+                        composite_location_name,
+                    )
+                    resources = [
+                        create_ckan_resource(
+                            mirror.url,
+                            ZARR_CURRENT_VERSION_URI,
+                            "Distribution of s3 zarr containing precipitation data",
+                            True,
                         )
-                        resources = [
-                            create_ckan_resource(
-                                mirror.url,
-                                ZARR_CURRENT_VERSION_URI,
-                                "Distribution of s3 zarr containing precipitation data",
-                                True,
-                            )
-                        ]
-                        upload_composite_to_ckan(
-                            ckan_base_url,
-                            os.environ["CKAN_API_KEY"],
-                            descriptors.dataset_id,
-                            descriptors.name,
-                            os.environ["CKAN_DATA_GROUP"],
-                            descriptors.title,
-                            descriptors.url,
-                            descriptors.notes,
-                            composite_last_modified.replace(tzinfo=None).isoformat(),
-                            prov_meta.remote_docker_file,
-                            prov_meta.remote_compose_file,
-                            prov_meta.docker_image,
-                            prov_meta.git_repo,
-                            prov_meta.commit_hash,
-                            prov_meta.docker_repo,
-                            prov_meta.digest_hash,
-                            start_time.isoformat(),
-                            end_time.isoformat(),
-                            mirror.resolution,
-                            composite_location_name,
-                            composite_wkt,
-                            command_list,
-                            mirror.uri,
-                            resources,
-                        )
+                    ]
+                    upload_composite_to_ckan(
+                        ckan_base_url,
+                        os.environ["CKAN_API_KEY"],
+                        descriptors.dataset_id,
+                        descriptors.name,
+                        os.environ["CKAN_DATA_GROUP"],
+                        descriptors.title,
+                        descriptors.url,
+                        descriptors.notes,
+                        composite_last_modified.replace(tzinfo=None).isoformat(),
+                        prov_meta.remote_docker_file,
+                        prov_meta.remote_compose_file,
+                        prov_meta.docker_image,
+                        prov_meta.git_repo,
+                        prov_meta.commit_hash,
+                        prov_meta.docker_repo,
+                        prov_meta.digest_hash,
+                        start_time.isoformat(),
+                        end_time.isoformat(),
+                        mirror.resolution,
+                        composite_location_name,
+                        composite_wkt,
+                        command_list,
+                        mirror.uri,
+                        resources,
+                    )
 
 
 """
