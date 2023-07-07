@@ -98,7 +98,7 @@ if __name__ == "__main__":
                         composite_location_name,
                         composite_wkt,
                         command_list,
-                        mirror.uri,
+                        uris,
                         resources,
                     )
 
