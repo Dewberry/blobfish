@@ -1,6 +1,5 @@
 import datetime
 from urllib.parse import quote
-from blobfish.aorc.transposition_utils.rdf import retrieve_composite_dataset_uris
 
 from classes.common import BasicDescriptors
 
@@ -38,6 +37,7 @@ if __name__ == "__main__":
         get_dss_last_modification,
     )
     from transposition_utils.ms import create_meilisearch_client, retrieve_ms_data
+    from transposition_utils.rdf import retrieve_composite_dataset_uris
 
     load_dotenv()
 
@@ -67,6 +67,12 @@ if __name__ == "__main__":
         dss_bucket, dss_key = extract_bucketname_and_keyname(hit.dss_s3)
         dss_last_modification = get_dss_last_modification(s3_resource, dss_bucket, dss_key)
         composite_datasets = retrieve_composite_dataset_uris(ckan_base_url, hit.start_time, hit.end_time)
+        composite_normalized_dict = {}
+        if hit.norm_mean_precip:
+            for ds in composite_datasets:
+                composite_normalized_dict[str(ds)] = hit.atlas_s3
+            else:
+                composite_normalized_dict[str(ds)] = None
         resources = [
             create_ckan_resource(
                 hit.dss_s3,
