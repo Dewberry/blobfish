@@ -51,7 +51,7 @@ class DatasetTracker:
                     nc_path,
                 )
             )
-        self.cur.executemany("insert into mirror_datasets VALUES(?)", insert_rows)
+        self.cur.executemany("insert into mirror_datasets VALUES(?, ?, ?)", insert_rows)
 
     def get_nc_files(self, timestamp: datetime.datetime) -> list[str]:
         self.cur.execute("select nc_path from mirror_datasets where t = ?", timestamp.isoformat())
