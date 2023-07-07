@@ -1,225 +1,138 @@
-""" Script to handle creation of CONUS composites from s3 mirrors of AORC precip files utilizing and adding to transfer job metadata """
-
-import boto3
-import pathlib
-import os
-import pathlib
 import datetime
-import xarray as xr
-import logging
-import zarr.storage as storage
-from io import BytesIO
-from collections.abc import Generator
-from rdflib import XSD, DCAT, DCTERMS, PROV, Graph, Literal
-from typing import cast
-from zipfile import ZipFile
+import os
 from tempfile import TemporaryDirectory
-from dataclasses import dataclass
-from contextlib import closing
+from urllib.parse import quote
 
-from .const import RFC_INFO_LIST
-from ..pyrdf import AORC
-
-
-@dataclass
-class DatedPaths:
-    start_date: datetime.datetime
-    end_date: datetime.datetime
-    paths: list[str]
-
-    def __post_init__(self):
-        # Alter end date from referring to first hour of end date (00) to last hour of end date (23)
-        # in order to capture all data from covered time period for dataset
-        self.end_date = self.end_date.replace(hour=23)
+from classes.common import BasicDescriptors
+from classes.composite import DatasetTracker
+from composite_utils.array import create_composite_dataset, upload_zarr
+from composite_utils.cloud import check_zarr_modification, stream_s3_zipped
+from composite_utils.general import create_composite_wkt, upload_composite_to_ckan
+from composite_utils.rdf import retrieve_mirror_dataset_metadata
+from const import RFC_INFO_LIST, ZARR_CURRENT_VERSION_URI
+from general_utils.ckan import create_ckan_resource
+from general_utils.cloud import create_s3_resource
+from general_utils.provenance import get_command_list, retrieve_meta
 
 
-class CompositeMembershipMetadata:
-    def __init__(
-        self, start_time: datetime.datetime, docker_image_url: str, script_name: str, members: set[str]
-    ) -> None:
-        self.start_time = start_time
-        self.end_time = start_time + datetime.timedelta(hours=1)
-        self.docker_image_url = docker_image_url
-        self.script_name = script_name
-        self.members = ",".join(members)
-
-    def serialize(self) -> dict:
-        serializable_dictionary = {
-            "start_time": self.start_time.isoformat(),
-            "end_time": self.end_time.isoformat(),
-            "members": self.members,
-            "docker_image_url": self.docker_image_url,
-            "composite_script": self.script_name,
-        }
-        return serializable_dictionary
+def create_composite_dataset_identifiers(
+    start_date: datetime.datetime, end_date: datetime.datetime, location_name: str
+) -> BasicDescriptors:
+    dataset_id = f"composite_{start_date.strftime('%Y%m%d%H')}".lower()
+    dataset_name = dataset_id
+    start_time_formatted = start_date.strftime("%Y-%m-%d %H:%M")
+    end_time_formatted = end_date.strftime("%Y-%m-%d %H:%M")
+    dataset_title = f"{location_name} Composite Dataset, {start_time_formatted} to {end_time_formatted}"
+    dataset_description = f"A composite dataset of AORC precipitation data covering {location_name}, from {start_time_formatted} to {end_time_formatted}"
+    dataset_url = quote(dataset_id)
+    descriptors = BasicDescriptors(dataset_title, dataset_id, dataset_name, dataset_url, dataset_description)
+    return descriptors
 
 
-class CloudHandler:
-    def __init__(self) -> None:
-        self.client = self.__create_client()
-
-    def __create_client(self):
-        client = boto3.client(
-            service_name="s3",
-            aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-            aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-            region_name=os.environ["AWS_DEFAULT_REGION"],
-        )
-        return client
-
-    def __partition_bucket_key_names(self, s3_path: str) -> tuple[str, str]:
-        if not s3_path.startswith("s3://"):
-            raise ValueError(f"s3path does not start with s3://: {s3_path}")
-        bucket, _, key = s3_path[5:].partition("/")
-        return bucket, key
-
-    def get_object(self, s3_path: str) -> bytes:
-        bucket, key = self.__partition_bucket_key_names(s3_path)
-        data = self.client.get_object(Bucket=bucket, Key=key)
-        data_bytes = data["Body"].read()
-        return data_bytes
-
-    def send_composite_zarr(
-        self, merged_hourly_data: xr.Dataset, template_s3_path: str, timestamp: datetime.datetime, metadata: dict
-    ) -> None:
-        # Create s3 destination filepath using template s3 path bucket and assumed structure of s3://{bucket}/transforms/aorc/precipitation/{year}/{datetime_string}.zarr
-        template_bucket, _ = self.__partition_bucket_key_names(template_s3_path)
-        destination_fn = f"s3://{template_bucket}/test/transforms/aorc/precipitation/{timestamp.year}/{timestamp.strftime('%Y%m%d%H')}.zarr"
-        store = storage.FSStore(destination_fn, s3_additional_kwargs={"Metadata": metadata})
-        merged_hourly_data.to_zarr(store, mode="w")
-
-
-def create_graph(ttl_directory: str) -> Graph:
-    g = Graph()
-    g.bind("dcat", DCAT)
-    g.bind("dct", DCTERMS)
-    g.bind("prov", PROV)
-    g.bind("aorc", AORC)
-    for filepath in pathlib.Path(ttl_directory).glob("*.ttl"):
-        g.parse(filepath)
-    return g
-
-
-def format_xsd_date(xsd_date_object: Literal) -> datetime.datetime:
-    xsd_string = str(xsd_date_object)
-    return datetime.datetime.strptime(xsd_string, "%Y-%m-%d")
-
-
-def query_metadata(g: Graph) -> Generator[DatedPaths, None, None]:
-    # Get unique start date and end date pairs which denote distinct periods of temporal coverage for datasets
-    time_coverage_query = """
-    SELECT  DISTINCT ?sd ?ed
-    WHERE   {
-        ?s dcat:startDate ?sd .
-        ?s dcat:endDate ?ed
-    }
-    """
-    time_results = g.query(time_coverage_query, initNs={"dcat": DCAT})
-    for result in time_results:
-        start_date, end_date = cast(list, result)
-        new_query = (
-            """
-        SELECT  ?mda
-        WHERE   {\n"""
-            + f"""\t\t"{start_date}"^^xsd:date ^dcat:startDate/^dct:temporal/^aorc:hasSourceDataset ?mda ."""
-            + """\n\t}"""
-        )
-        source_results = g.query(new_query, initNs={"dcat": DCAT, "xsd": XSD, "dct": DCTERMS, "aorc": AORC})
-        formatted_start_date = format_xsd_date(start_date)
-        formatted_end_date = format_xsd_date(end_date)
-        s3_paths = [str(cast(list, result)[0]) for result in source_results]
-        # Check to make sure the length of the s3 paths is the same as the length of the list of RFC offices
-        if len(RFC_INFO_LIST) == len(s3_paths):
-            logging.error(f"Expected {len(RFC_INFO_LIST)} to match RFC office number, got {len(s3_paths)}")
-            # raise AttributeError
-        yield DatedPaths(formatted_start_date, formatted_end_date, s3_paths)
-
-
-def unzip_composite_files(dated_s3_paths: DatedPaths, directory: str, cloud_handler: CloudHandler) -> None:
-    for s3_path in dated_s3_paths.paths:
-        data_bytes = cloud_handler.get_object(s3_path)
-        with ZipFile(BytesIO(data_bytes)) as zf:
-            zf.extractall(directory)
-
-
-def align_hourly_data(
-    directory: str,
-    start_date: datetime.datetime,
-    end_date: datetime.datetime,
-    source_paths: list[str],
-    docker_image_url: str,
-    script_name: str,
-) -> Generator[tuple[CompositeMembershipMetadata, set[str], int], None, None]:
-    directory_path = pathlib.Path(directory)
-    current_datetime = start_date
-    i = 0
-    while current_datetime <= end_date:
-        search_pattern = f"{current_datetime.strftime('*_%Y%m%d%H.nc4')}"
-        match_set = {str(match) for match in directory_path.glob(search_pattern)}
-        if len(match_set) != len(RFC_INFO_LIST):
-            logging.error(f"Expected {len(RFC_INFO_LIST)} to match RFC office number, got {len(match_set)}")
-            # raise AttributeError
-        yield CompositeMembershipMetadata(
-            current_datetime, docker_image_url, script_name, set(source_paths)
-        ), match_set, i
-        current_datetime += datetime.timedelta(hours=1)
-        i += 1
-
-
-def create_composite_datset(dataset_paths: set[str]) -> xr.Dataset:
-    datasets = []
-    for dataset_path in dataset_paths:
-        ds = xr.open_dataset(dataset_path)
-        ds.rio.write_crs(4326, inplace=True)
-        datasets.append(ds)
-    merged_hourly_data = xr.merge(datasets, compat="no_conflicts", combine_attrs="drop_conflicts")
-    return merged_hourly_data
-
-
-def main(ttl_directory: str, docker_image_url: str, script_name: str, limit: int | None = None) -> None:
-    g = create_graph(ttl_directory)
-    cloud_handler = CloudHandler()
-    breaker = False
-    for dated_s3_paths in query_metadata(g):
-        if breaker:
-            break
-        with TemporaryDirectory() as tempdir:
-            unzip_composite_files(dated_s3_paths, tempdir, cloud_handler)
-            for dated_match_set, matches, i in align_hourly_data(
-                tempdir,
-                dated_s3_paths.start_date,
-                dated_s3_paths.end_date,
-                dated_s3_paths.paths,
-                docker_image_url,
-                script_name,
-            ):
-                with closing(create_composite_datset(matches)) as merged_data:
-                    cloud_handler.send_composite_zarr(
-                        merged_data,
-                        dated_s3_paths.paths[0],
-                        dated_match_set.start_time,
-                        dated_match_set.serialize(),
-                    )
-                    if limit and i >= limit:
-                        breaker = True
-                        break
+def create_composite_s3_path(bucket: str, start_time: datetime.datetime) -> str:
+    return f"s3://{bucket}/transforms/aorc/precipitation/{start_time.year}/{start_time.strftime('%Y%m%d%H')}.zarr"
 
 
 if __name__ == "__main__":
-    from dotenv import load_dotenv
-    from ..utils.dockerinfo import script
-    from ..utils.cloud_utils import view_downloads, clear_downloads
-    from ..utils.logger import set_up_logger
+    bucket = "tempest"
+    access_key_id = os.environ["AWS_ACCESS_KEY_ID"]
+    secret_access_key = os.environ["AWS_SECRET_ACCESS_KEY"]
+    default_region = os.environ["AWS_DEFAULT_REGION"]
+    ckan_base_url = os.environ["CKAN_URL"]
 
-    load_dotenv()
-    set_up_logger(level=logging.INFO)
+    s3_resource = create_s3_resource(access_key_id, secret_access_key, default_region)
+    command_list = get_command_list()
+    prov_meta = retrieve_meta()
+    rfc_count = len(RFC_INFO_LIST)
+    for mirror_list in retrieve_mirror_dataset_metadata(ckan_base_url, rfc_count):
+        mirror_wkts = [str(mirror.wkt) for mirror in mirror_list]
+        composite_wkt = create_composite_wkt(mirror_wkts)
+        composite_location_name = "Contiguous United States"
+        with TemporaryDirectory() as tmpdir:
+            with DatasetTracker() as tracker:
+                for mirror in mirror_list:
+                    nc_paths = stream_s3_zipped(s3_resource, mirror.url, tmpdir)
+                    tracker.register_netcdfs(mirror.uri, nc_paths)
+                for nc_paths, uris, start_time in tracker.group_data_by_time():
+                    end_time = start_time + datetime.timedelta(hours=1)
+                    composite_dataset = create_composite_dataset(nc_paths)
+                    zarr_s3_path = create_composite_s3_path(bucket, start_time)
+                    upload_zarr(zarr_s3_path, composite_dataset)
+                    composite_last_modified = check_zarr_modification(s3_resource, zarr_s3_path)
 
-    script_path = script(__file__, workdir="proj")
-    if script_path:
-        docker_url = f"https://hub.docker.com/layers/njroberts/blobfish-python/{os.environ['TAG']}/images/{os.environ['HASH']}?context=repo"
-        main("mirrors", docker_url, script_path, 10)
-    else:
-        logging.error("Script name was not found")
+                    # Create upload to CKAN
+                    descriptors = create_composite_dataset_identifiers(
+                        start_time,
+                        end_time,
+                        composite_location_name,
+                    )
+                    resources = [
+                        create_ckan_resource(
+                            mirror.url,
+                            ZARR_CURRENT_VERSION_URI,
+                            "Distribution of s3 zarr containing precipitation data",
+                            True,
+                        )
+                    ]
+                    upload_composite_to_ckan(
+                        ckan_base_url,
+                        os.environ["CKAN_API_KEY"],
+                        descriptors.dataset_id,
+                        descriptors.name,
+                        os.environ["CKAN_DATA_GROUP"],
+                        descriptors.title,
+                        descriptors.url,
+                        descriptors.notes,
+                        composite_last_modified.replace(tzinfo=None).isoformat(),
+                        prov_meta.remote_docker_file,
+                        prov_meta.remote_compose_file,
+                        prov_meta.docker_image,
+                        prov_meta.git_repo,
+                        prov_meta.commit_hash,
+                        prov_meta.docker_repo,
+                        prov_meta.digest_hash,
+                        start_time.isoformat(),
+                        end_time.isoformat(),
+                        mirror.resolution,
+                        composite_location_name,
+                        composite_wkt,
+                        command_list,
+                        mirror.uri,
+                        resources,
+                    )
 
-    # view_downloads("tempest", "test/transforms")
-    # clear_downloads("tempest", "test/transforms")
+
+"""
+Pseudocode
+
+Get command list
+Get provenance data (docker, git details)
+Query CKAN endpoint for catalog of MirrorDataset instances
+Query retrieved graph to get unique start dates from datasets
+For each unique start date:
+    Query mirror dataset catalog graph for datasets with start date of current iteration value, retrieving the following attributes - (
+        mirror dataset uri
+        downloadURL
+        rfc geometry
+        start date
+        end date
+        spatial resolution
+    Ensure uniform end date (time periods align exactly)
+    Ensure quantity of unique datasets is equal to expected number (should be same as list of RFCs in constants)
+    Create multipolygon from rfc geoms, create convex hull of multipolygon to act as new spatial extent
+    With temporary directory as td:
+        With dataset tracker as tracker:
+            For each unique mirror dataset:
+                Stream zipped data from s3 as bytes
+                Extract to td
+                Register association between mirror dataset and netCDF file in tracker
+            Execute query which groups all netCDF paths and parent mirror dataset URI paths by common timestamp
+            For each unique timestamp, concat nc paths, and concat mirror paths:
+                Split concat nc paths and concat mirror paths into lists of strings
+                Create xarray multifile dataset from nc paths
+                Save xarray multifile dataset to s3 as zarr
+                Load s3 object metadata with head request
+                Record last modification date from s3
+                Use retrieved spatial resolution, last modification, timestamp, end time (timestamp + 1 hour), provenance metadata, lsit of mirror dataset URIs, location name ("CONUS"), and merged convex hull WKT to create JSON of composite metadata
+                Send POST request to CKAN instance
+"""
