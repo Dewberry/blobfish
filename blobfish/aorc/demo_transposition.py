@@ -18,6 +18,8 @@ Query database to retrieve: (
     normalized mean precip,
     maximum precip point
     )
+Load composite dataset catalog as RDF graph
+Query composite dataset graph for datasets with temporal coverage between start of model period and end of model period
 If normalized mean was fetched:
     Deduce ATLAS file used to normalize based on time period, spatial region
 Deduce s3 path of DSS file
