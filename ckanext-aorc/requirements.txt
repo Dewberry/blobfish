@@ -1,0 +1,9 @@
+-e git+https://github.com/ckan/ckan.git@9915ba0022b9a74a65e61c097b2fee584b044087#egg=ckan
+ckantoolkit==0.0.7
+future==0.18.3
+Flask==2.0.3
+Jinja2==3.1.2
+psycopg2==2.9.3
+rdflib==6.1.1
+requests==2.28.1
+SQLAlchemy==1.4.41
