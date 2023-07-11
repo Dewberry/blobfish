@@ -1,6 +1,7 @@
 """ Utilities used in creating RDF metadata for s3 mirror creation """
 
 import datetime
+import logging
 
 from classes.namespaces import AORC, EU, IANA_APP, LOCN
 from const import NOAA_URL
@@ -87,6 +88,7 @@ def create_source_dataset(
     temporal_resolution: datetime.timedelta,
     spatial_resolution: float,
 ) -> Graph:
+    logging.info(f"Creating source dataset representing AORC data from {download_url}")
     g = Graph()
 
     _bind_namespaces(g)

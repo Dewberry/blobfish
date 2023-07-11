@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os
 from dataclasses import dataclass
 from tempfile import TemporaryDirectory
@@ -17,7 +18,7 @@ class NCMetadata:
 
 
 def check_metadata(s3_resource, bucket: str, zipped_data_key: str) -> NCMetadata:
-    print(f"Checking netCDF resources in {zipped_data_key} for metadata")
+    logging.info(f"Checking netCDF resources in {zipped_data_key} for metadata")
     with TemporaryDirectory() as tmpdir:
         zipped_data_basename = os.path.basename(zipped_data_key)
         download_fn = os.path.join(tmpdir, zipped_data_basename)

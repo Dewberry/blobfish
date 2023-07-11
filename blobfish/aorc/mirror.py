@@ -2,15 +2,17 @@
 from __future__ import annotations
 
 import datetime
+import logging
+from urllib.parse import quote
 
-from const import FIRST_RECORD, FTP_HOST, RFC_INFO_LIST, RFC_TAR_SHP_URL
 from classes.common import BasicDescriptors
 from classes.mirror import RFCFeature
+from const import FIRST_RECORD, FTP_HOST, RFC_INFO_LIST, RFC_TAR_SHP_URL
 from shapely import convex_hull
-from urllib.parse import quote
 
 
 def get_rfc_features() -> dict[str, RFCFeature]:
+    logging.info(f"Collecting RFC data from {RFC_TAR_SHP_URL}")
     rfc_feature_dict = {}
     for rfc_info in RFC_INFO_LIST:
         for shp_name, shp_geom in create_rfc_list(RFC_TAR_SHP_URL):
@@ -31,6 +33,7 @@ def get_rfc_features() -> dict[str, RFCFeature]:
 def create_mirror_dataset_identifiers(
     start_date: datetime.datetime, end_date: datetime.datetime, rfc_alias: str, rfc_name: str
 ) -> BasicDescriptors:
+    logging
     dataset_id = f"mirror_{rfc_alias}_{start_date.strftime('%Y%m')}".lower()
     dataset_name = dataset_id
     proper_rfc_name = " ".join([r.capitalize() for r in rfc_name.split()])
@@ -46,17 +49,20 @@ def create_mirror_dataset_identifiers(
 if __name__ == "__main__":
     import os
 
+    from classes.namespaces import EU, IANA_APP
     from dotenv import load_dotenv
+    from general_utils.ckan import create_ckan_resource
+    from general_utils.cloud import create_s3_resource
+    from general_utils.logs import log_setup
+    from general_utils.provenance import get_command_list, retrieve_meta
     from mirror_utils.aio import stream_zips_to_s3, verify_urls
     from mirror_utils.array import check_metadata
     from mirror_utils.general import create_potential_urls, create_rfc_list, upload_mirror_to_ckan
     from mirror_utils.rdf import create_source_dataset, timedelta_to_xsd_duration
-    from general_utils.cloud import create_s3_resource
-    from general_utils.provenance import retrieve_meta, get_command_list
-    from general_utils.ckan import create_ckan_resource
-    from classes.namespaces import IANA_APP, EU
 
     load_dotenv()
+
+    log_setup()
 
     bucket = os.environ["MIRROR_BUCKET"]
     access_key_id = os.environ["AWS_ACCESS_KEY_ID"]
@@ -66,7 +72,6 @@ if __name__ == "__main__":
     s3_resource = create_s3_resource(access_key_id, secret_access_key, default_region)
 
     command_list = get_command_list()
-    print(f"Command list: {command_list}")
 
     # Retrieve docker and git details
     prov_meta = retrieve_meta()

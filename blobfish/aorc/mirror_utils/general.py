@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import datetime
 import io
-import json
+import logging
 import os
 import tarfile
 from collections.abc import Iterator
@@ -135,6 +135,8 @@ def upload_mirror_to_ckan(
         "resources": resources,
     }
     data.update(kwargs)
+
+    logging.info(f"Uploading aorc:MirrorDataset instance to {upload_endpoint}: {data}")
 
     response = requests.post(upload_endpoint, headers=headers, json=data)
     return response.status_code

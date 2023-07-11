@@ -1,4 +1,5 @@
 """ Functions used to retrieve information used in determining data provenance, like git and docker info"""
+import logging
 import os
 import sys
 
@@ -20,6 +21,7 @@ def retrieve_meta() -> ProvenanceMetadata:
         os.environ["DOCKER_URL"],
         os.environ["DOCKER_HASH"],
     )
+    logging.info(f"Retrieved provenance metadata from environment variables: {prov_meta}")
     return prov_meta
 
 
@@ -33,4 +35,6 @@ def create_raw_content_url(relative_path: str, git_url: str) -> str:
 
 
 def get_command_list() -> list[str]:
-    return [sys.executable, *sys.argv]
+    command_list = [sys.executable, *sys.argv]
+    logging.info(f"Command list: {command_list}")
+    return command_list
