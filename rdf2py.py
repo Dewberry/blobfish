@@ -3,21 +3,20 @@ from rdflib import Graph
 from rdflib.namespace import OWL
 from datetime import datetime
 
-# example usage: python rdf2py.py atlas14 semantics/rdf/atlas14.ttl
+# example usage: python rdf2py.py atlas14 semantics/rdf/atlas14.ttl blobfish/aorc/classes/_ATLAS.py
 
 if __name__ == "__main__":
     args = sys.argv
     namespace = args[1]
     rdf_path = args[2]
+    pyrdf_path = args[3]
 
-    pyrdf_path = "blobfish/pyrdf/_{0}.py".format(namespace.upper())
-    print(pyrdf_path, rdf_path.lower())
+    print(f"Parsing RDF from {rdf_path} to namespace class {namespace} in file {pyrdf_path}")
 
     g = Graph()
     g.parse(rdf_path.lower(), format="ttl")
 
     with open(pyrdf_path, "w") as f:
-
         header = '''\
         \nfrom rdflib import URIRef, Namespace \
         \nfrom rdflib.namespace import DefinedNamespace \
@@ -45,6 +44,6 @@ if __name__ == "__main__":
             print(f"\t{s.fragment}: URIRef", file=f)
 
         print(
-            """\n\t_NS = Namespace("http://github.com/Dewberry/blobfish/semantics/rdf/{0}#")""".format(namespace),
+            """\n\t_NS = Namespace("http://github.com/Dewberry/blobfish/{0}#")""".format(rdf_path),
             file=f,
         )
