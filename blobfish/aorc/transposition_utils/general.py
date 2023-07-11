@@ -8,7 +8,20 @@ from shapely.geometry import MultiPolygon, Polygon, shape
 from shapely import convex_hull
 
 
-def stream_geojson_from_s3(s3_resource, bucket: str, key: str) -> Polygon | MultiPolygon:
+def stream_geojson_from_s3(s3_resource, bucket: str, key: str) -> Polygon:
+    """Stream geojson from s3 URI to convex polygon
+
+    Args:
+        s3_resource: s3 resource to use in acquiring geojson data
+        bucket (str): bucket of geojson
+        key (str): key of geojson
+
+    Raises:
+        TypeError: If geometry is not of expected type (Polygon or MultiPolygon)
+
+    Returns:
+        Polygon: convex hull of geojson
+    """
     logging.info(f"Streaming geojson data from s3://{bucket}/{key}")
     response = s3_resource.meta.client.get_object(Bucket=bucket, Key=key)
     geojson_data = response["Body"].read().decode("utf-8")
@@ -23,6 +36,16 @@ def stream_geojson_from_s3(s3_resource, bucket: str, key: str) -> Polygon | Mult
 
 
 def get_dss_last_modification(s3_resource, bucket: str, dss_key: str) -> datetime.datetime:
+    """Gets DSS file's last modification date
+
+    Args:
+        s3_resource: s3 resource to use in checking DSS file properties
+        bucket (str): DSS file bucket
+        dss_key (str): DSS file key
+
+    Returns:
+        datetime.datetime: Datetime of last modification
+    """
     obj = s3_resource.Object(bucket, dss_key)
     obj.load()
     return obj.last_modified.replace(tzinfo=None)
@@ -66,6 +89,7 @@ def upload_transposition_to_ckan(
     resources: list[dict],
     **kwargs,
 ) -> int:
+    """Upload aorc:TranspositionDataset to CKAN"""
     if not ckan_base_url.endswith("/"):
         ckan_base_url = ckan_base_url[:-1]
     upload_endpoint = f"{ckan_base_url}/api/3/action/package_create"

@@ -1,7 +1,7 @@
 # blobfish
 
 ## Summary
-This repository is a proof of concept to evaluate the usability of resource description framework (RDF) metadata in documenting extensible data pipelines. The data pipeline documented by this repository is the mirroring, transformation, and subsequent use of NOAA AORC gridded precipitation data for stochaistic storm transposition (SST) modeling.
+This repository is a proof of concept to evaluate the usability of resource description framework (RDF) metadata in documenting extensible data pipelines. The data pipeline documented by this repository is the mirroring, transformation, and subsequent use of NOAA AORC gridded precipitation data for stochastic storm transposition (SST) modeling.
 
 ## Pipeline Description
 This pipeline can be broken into 3 stages

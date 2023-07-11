@@ -10,6 +10,16 @@ from classes.common import BasicDescriptors
 def create_composite_dataset_identifiers(
     start_date: datetime.datetime, end_date: datetime.datetime, location_name: str
 ) -> BasicDescriptors:
+    """Creates required identifiers for composite dataset
+
+    Args:
+        start_date (datetime.datetime): start date for composite dataset
+        end_date (datetime.datetime): end date for composite dataset
+        location_name (str): name of spatial coverage location
+
+    Returns:
+        BasicDescriptors: Descriptors including title, id, name, URL, and description
+    """
     dataset_id = f"composite_{start_date.strftime('%Y%m%d%H')}".lower()
     dataset_name = dataset_id
     start_time_formatted = start_date.strftime("%Y-%m-%d %H:%M")
@@ -22,6 +32,15 @@ def create_composite_dataset_identifiers(
 
 
 def create_composite_s3_path(bucket: str, start_time: datetime.datetime) -> str:
+    """Creates s3 URI of zarr for composite dataset
+
+    Args:
+        bucket (str): Target bucket
+        start_time (datetime.datetime): start time for dataset
+
+    Returns:
+        str: s3 URI
+    """
     return f"s3://{bucket}/transforms/aorc/precipitation/{start_time.year}/{start_time.strftime('%Y%m%d%H')}.zarr"
 
 

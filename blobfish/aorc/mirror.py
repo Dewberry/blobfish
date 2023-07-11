@@ -12,6 +12,14 @@ from shapely import convex_hull
 
 
 def get_rfc_features() -> dict[str, RFCFeature]:
+    """Creates RFC features associated with RFC aliases using the RFC shapefile
+
+    Raises:
+        TypeError: If geometry type is unexpectedly not polygon or multipolygon
+
+    Returns:
+        dict[str, RFCFeature]: Dictionary associating alias with RFC feature for each RFC of interest
+    """
     logging.info(f"Collecting RFC data from {RFC_TAR_SHP_URL}")
     rfc_feature_dict = {}
     for rfc_info in RFC_INFO_LIST:
@@ -33,7 +41,17 @@ def get_rfc_features() -> dict[str, RFCFeature]:
 def create_mirror_dataset_identifiers(
     start_date: datetime.datetime, end_date: datetime.datetime, rfc_alias: str, rfc_name: str
 ) -> BasicDescriptors:
-    logging
+    """Creates required identifiers for mirror dataset
+
+    Args:
+        start_date (datetime.datetime): start date for mirror dataset
+        end_date (datetime.datetime): end date for mirror dataset
+        rfc_alias (str): 2 character id for RFC
+        rfc_name (str): Full name for RFC
+
+    Returns:
+        BasicDescriptors: Descriptors including title, id, name, URL, and description
+    """
     dataset_id = f"mirror_{rfc_alias}_{start_date.strftime('%Y%m')}".lower()
     dataset_name = dataset_id
     proper_rfc_name = " ".join([r.capitalize() for r in rfc_name.split()])

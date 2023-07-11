@@ -33,6 +33,8 @@ def upload_composite_to_ckan(
     resources: list[dict],
     **kwargs,
 ) -> int:
+    """Uploads composite dataset JSON data to CKAN"""
+
     if not ckan_base_url.endswith("/"):
         ckan_base_url = ckan_base_url[:-1]
     upload_endpoint = f"{ckan_base_url}/api/3/action/package_create"
@@ -73,6 +75,14 @@ def upload_composite_to_ckan(
 
 
 def create_composite_wkt(mirror_wkts: list[str]) -> str:
+    """Converts list of polygon WKTs into a convex hull of all the provided WKTs merged together
+
+    Args:
+        mirror_wkts (list[str]): List of polygon WKTs
+
+    Returns:
+        str: Convex hull of merged polygons
+    """
     logging.info("Merging geometries from RFC regions into composite coverage area")
     polys = [shapely.wkt.loads(wkt) for wkt in mirror_wkts]
     multipoly = MultiPolygon(polys)

@@ -12,13 +12,25 @@ def create_transposition_dataset_identifiers(
     watershed_name: str,
     transposition_name: str,
 ) -> BasicDescriptors:
+    """Creates required identifiers for transposition dataset
+
+    Args:
+        dataset_id (str): ID for transposition dataset
+        start_date (datetime.datetime): start date for transposition dataset
+        end_date (datetime.datetime): end date for transposition dataset
+        watershed_name (str): Name of watershed modeled
+        transposition_name (str): Name of transposition region modeled
+
+    Returns:
+        BasicDescriptors: Descriptors including title, id, name, URL, and description
+    """
     dataset_name = dataset_id
     start_time_formatted = start_date.strftime("%Y-%m-%d")
     end_time_formatted = end_date.strftime("%Y-%m-%d")
     dataset_title = (
         f"{watershed_name} Transposition Dataset, {start_time_formatted} to {end_time_formatted} ({transposition_name})"
     )
-    dataset_description = f"Results of stochaistic storm transposition modeling for the watershed {watershed_name} within the transposition region {transposition_name}"
+    dataset_description = f"Results of stochastic storm transposition modeling for the watershed {watershed_name} within the transposition region {transposition_name}"
     dataset_url = quote(dataset_id)
     descriptors = BasicDescriptors(dataset_title, dataset_id, dataset_name, dataset_url, dataset_description)
     return descriptors

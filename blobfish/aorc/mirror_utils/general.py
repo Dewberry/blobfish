@@ -34,6 +34,18 @@ def create_rfc_list(
         Point | MultiPoint | LineString | MultiLineString | Polygon | MultiPolygon | LinearRing | GeometryCollection,
     ]
 ]:
+    """Creates RFC list
+
+    Args:
+        rfc_tar_shp_url (str): URL of tar compressed shapefile of RFCs
+
+    Raises:
+        FileNotFoundError: If shapefile doesn't exist in tar compressed resource
+        requests.exceptions.ConnectionError: Connection error if URL is invalid
+
+    Returns:
+        list[ tuple[ str, Point | MultiPoint | LineString | MultiLineString | Polygon | MultiPolygon | LinearRing | GeometryCollection, ] ]: list of tuples containing RFC alias and RFC geometry
+    """
     with requests.get(rfc_tar_shp_url, stream=True) as resp:
         if resp.ok:
             with TemporaryDirectory() as tmpdir:
@@ -57,6 +69,16 @@ def create_rfc_list(
 def create_potential_urls(
     rfc_alias_list: list[str], start_dt: datetime.datetime, base_url: str
 ) -> Iterator[AORCDataURL]:
+    """Creates potential URLs for AORC source datasets
+
+    Args:
+        rfc_alias_list (list[str]): _description_
+        start_dt (datetime.datetime): _description_
+        base_url (str): _description_
+
+    Yields:
+        Iterator[AORCDataURL]: _description_
+    """
     end_dt = datetime.datetime.now()
     end_dt = datetime.datetime(end_dt.year, end_dt.month, 1)
     start_dt = datetime.datetime(start_dt.year, start_dt.month, 1)
@@ -100,6 +122,7 @@ def upload_mirror_to_ckan(
     resources: list[dict],
     **kwargs,
 ) -> int:
+    """Uploads mirror dataset to CKAN"""
     if not ckan_base_url.endswith("/"):
         ckan_base_url = ckan_base_url[:-1]
     upload_endpoint = f"{ckan_base_url}/api/3/action/package_create"

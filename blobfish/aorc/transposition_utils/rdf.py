@@ -10,6 +10,16 @@ from rdflib import DCAT, DCTERMS, XSD, Literal, URIRef
 def retrieve_composite_dataset_uris(
     ckan_base_url: str, start: datetime.datetime, end: datetime.datetime
 ) -> list[URIRef]:
+    """Retrieves composite dataset URIs from composite dataset instances
+
+    Args:
+        ckan_base_url (str): CKAN base URL
+        start (datetime.datetime): Start of period of interest
+        end (datetime.datetime): End of period of interest
+
+    Returns:
+        list[URIRef]: List of composite dataset URIs
+    """
     logging.info("Retrieving composite dataset metadata from CKAN")
     if not ckan_base_url.endswith("/"):
         ckan_base_url += "/"

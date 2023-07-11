@@ -28,4 +28,4 @@ Main script for the mirror creation task
 Responsible for verifying the total available data from NOAA, its asynchronous acquistion, and its upload to s3, as well as collecting and uploading relevant metadata not only for the source data but also the mirror datasets created in the process
 
 ### transposition_meta.py
-Main script for collecting, parsing, and submitting metadata created during stochaistic storm transposition models to CKAN for serialization as RDF
+Main script for collecting, parsing, and submitting metadata created during stochastic storm transposition models to CKAN for serialization as RDF

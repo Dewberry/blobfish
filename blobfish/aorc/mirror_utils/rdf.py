@@ -10,6 +10,11 @@ from shapely.geometry import MultiPolygon, Polygon
 
 
 def _bind_namespaces(target_graph: Graph) -> None:
+    """Binds additional namespaces used in mirror dataset creation
+
+    Args:
+        target_graph (Graph): Graph which needs namespaces bound
+    """
     target_graph.bind("aorc", AORC)
     target_graph.bind("locn", LOCN)
 
@@ -28,6 +33,7 @@ def _add_common_dataset_attributes(
     temporal_resolution: datetime.timedelta,
     spatial_resolution: float,
 ) -> None:
+    """Adds attributes common to both aorc:SourceDataset and aorc:MirrorDataset instances"""
     target_graph.add((distribution_node, DCAT.compressFormat, IANA_APP.zip))
     target_graph.add((distribution_node, DCTERMS.format, EU.NETCDF))
     target_graph.add((dataset_node, DCAT.distribution, distribution_node))
@@ -87,6 +93,22 @@ def create_source_dataset(
     temporal_resolution: datetime.timedelta,
     spatial_resolution: float,
 ) -> Graph:
+    """Creates source dataset graph
+
+    Args:
+        download_url (str): Zip file download URL
+        last_modification (datetime.datetime): Date of last modification for source dataset
+        rfc_name (str): Full name of RFC associated with source dataset
+        rfc_alias (str): Alias of RFC associated with source dataset
+        rfc_geom (Polygon | MultiPolygon): Geometry of RFC associated with source dataset
+        start_time (datetime.datetime): Start of temporal coverage for source dataset
+        end_time (datetime.datetime): End of temporal coverage for source dataset
+        temporal_resolution (datetime.timedelta): Temporal resolution (time between records) for source dataset
+        spatial_resolution (float): Spatial resolution (in meters) for source dataset
+
+    Returns:
+        Graph: Graph with an aorc:SourceDataset instance
+    """
     logging.info(f"Creating source dataset representing AORC data from {download_url}")
     g = Graph()
 
@@ -122,6 +144,14 @@ def create_mirror_dataset():
 
 
 def timedelta_to_xsd_duration(timedelta_obj: datetime.timedelta) -> Literal:
+    """Converts timedelta to an XSD duration literal
+
+    Args:
+        timedelta_obj (datetime.timedelta): timedelta object of interest
+
+    Returns:
+        Literal: Duration literal
+    """
     days = timedelta_obj.days
     hours, remainder = divmod(timedelta_obj.seconds, 3600)
     minutes, seconds = divmod(remainder, 60)

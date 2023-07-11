@@ -7,6 +7,11 @@ from classes.common import ProvenanceMetadata
 
 
 def retrieve_meta() -> ProvenanceMetadata:
+    """Retrieves provenance metadata from environment variables
+
+    Returns:
+        ProvenanceMetadata: Provenance metadata
+    """
     relative_composite_path = os.environ["COMPOSE_FILE_PATH"]
     relative_docker_file_path = os.environ["DOCKER_FILE_PATH"]
     git_url = os.environ["GIT_REPO"]
@@ -26,6 +31,18 @@ def retrieve_meta() -> ProvenanceMetadata:
 
 
 def create_raw_content_url(relative_path: str, git_url: str) -> str:
+    """Creates the publicly accessible format of raw content at github address
+
+    Args:
+        relative_path (str): relative path of resource in git repo
+        git_url (str): github repo url
+
+    Raises:
+        ValueError: GitHub url is not in correct format
+
+    Returns:
+        str: Raw content URL
+    """
     if not git_url.startswith("raw."):
         git_url = git_url.replace("https://github.com", "https://raw.githubusercontent.com/", 1)
         git_url = git_url.replace("/commit", "", 1)
@@ -35,6 +52,11 @@ def create_raw_content_url(relative_path: str, git_url: str) -> str:
 
 
 def get_command_list() -> list[str]:
+    """Retrieves command list supplied to python
+
+    Returns:
+        list[str]: Commands, split by space delimiter
+    """
     command_list = [sys.executable, *sys.argv]
     logging.info(f"Command list: {command_list}")
     return command_list

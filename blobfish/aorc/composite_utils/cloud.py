@@ -8,6 +8,16 @@ from general_utils.cloud import extract_bucketname_and_keyname
 
 
 def stream_s3_zipped(s3_resource, s3_uri: str, extract_directory: str) -> list[str]:
+    """Streams zipped s3 resource to provided directory
+
+    Args:
+        s3_resource: s3 service resource to use in streaming
+        s3_uri (str): s3 uri of zipped resource (ie s3://bucket/key.zip)
+        extract_directory (str): Directory to which zipped resources will be extracted
+
+    Returns:
+        list[str]: Paths of unzipped data
+    """
     bucket, key = extract_bucketname_and_keyname(s3_uri)
     response = s3_resource.meta.client.get_object(Bucket=bucket, Key=key)
     zip_data = response["Body"].read()
@@ -18,6 +28,15 @@ def stream_s3_zipped(s3_resource, s3_uri: str, extract_directory: str) -> list[s
 
 
 def check_zarr_modification(s3_resource, zarr_path: str) -> datetime.datetime:
+    """Checks modification date of a .zmetadata resource in a zarr dataset
+
+    Args:
+        s3_resource: s3 service resource to use in streaming
+        zarr_path (str): s3 uri of zarr dataset (ie s3://bucket/zarr_dataset)
+
+    Returns:
+        datetime.datetime: _description_
+    """
     bucket, key = extract_bucketname_and_keyname(zarr_path)
     key += "/.zmetadata"
     obj = s3_resource.Object(bucket, key)

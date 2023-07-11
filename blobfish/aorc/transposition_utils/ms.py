@@ -8,12 +8,31 @@ from meilisearch import Client
 
 
 def create_meilisearch_client(host: str, api_key: str) -> Client:
+    """Creates meilisearch client
+
+    Args:
+        host (str): Host of meilisearch NoSQL database
+        api_key (str): API key used to access meilisearch
+
+    Returns:
+        Client: Client used to interface with meilisearch database
+    """
     logging.info("Creating meilisearch client")
     ms_client = Client(host, api_key=api_key)
     return ms_client
 
 
 def paginate_search_result(ms_client: Client, index: str, query: str) -> Iterator[dict]:
+    """Paginates through ms results
+
+    Args:
+        ms_client (Client): meilisearch client
+        index (str): target index name
+        query (str): query to use when searching database
+
+    Yields:
+        Iterator[dict]: yields hit object
+    """
     offset = 0
     limit = 10
     while True:
@@ -26,6 +45,15 @@ def paginate_search_result(ms_client: Client, index: str, query: str) -> Iterato
 
 
 def retrieve_ms_data(ms_client: Client, index: str) -> Iterator[TranspositionMetadata]:
+    """Paginates through meilisearch records, pulling relevant metadata
+
+    Args:
+        ms_client (Client): meilisearch client
+        index (str): target index name
+
+    Yields:
+        Iterator[TranspositionMetadata]: _description_
+    """
     logging.info(f"Retrieving transposition model metadata from meilisearch index {index}")
     for hit in paginate_search_result(ms_client, index, ""):
         start_date_str = hit["start"]["datetime"]

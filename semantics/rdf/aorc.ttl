@@ -60,7 +60,7 @@ aorc:SourceDataset a rdfs:Class,
 
 aorc:TranspositionDataset a rdfs:Class,
         owl:Class ;
-    rdfs:comment"A dataset which is the resultant product of stochaistic storm transposition modeling using AORC precipitation data summarized over a specified time window and geographic location" ;
+    rdfs:comment"A dataset which is the resultant product of stochastic storm transposition modeling using AORC precipitation data summarized over a specified time window and geographic location" ;
     rdfs:subClassOf dcat:Dataset .
 
 # Object Properties

@@ -10,6 +10,15 @@ from classes.mirror import AORCDataURL
 
 
 async def async_verify_url(session: ClientSession, url: str, **kwargs) -> dict | None:
+    """Asynchronously verifies that a URL is valid
+
+    Args:
+        session (ClientSession): Session to issue request
+        url (str): URL to verify
+
+    Returns:
+        dict | None: If verified, return dict of url and last modification of resource, else return None
+    """
     logging.info(f"Verifying {url}")
     async with session.head(url) as resp:
         if resp.ok:
@@ -19,11 +28,23 @@ async def async_verify_url(session: ClientSession, url: str, **kwargs) -> dict |
             if kwargs:
                 result.update(kwargs)
             return result
+        return None
 
 
 async def async_stream_zip_to_s3(
     zip_url: AORCDataURL, client_session: ClientSession, s3_resource, bucket: str
 ) -> AORCDataURL:
+    """Asynchronously streams zipped data from web address to s3 resource
+
+    Args:
+        zip_url (AORCDataURL): URL of zip data
+        client_session (ClientSession): Client to use in getting zip data
+        s3_resource: s3 resource to use in uploading zip data
+        bucket (str): Bucket to target when uploading data
+
+    Returns:
+        AORCDataURL: Annotated s3 URI
+    """
     s3_bucket = s3_resource.Bucket(bucket)
     logging.info(f"Starting download for {zip_url.url}")
     async with client_session.get(zip_url.url) as resp:
@@ -45,7 +66,17 @@ async def async_stream_zip_to_s3(
     return s3_url
 
 
-async def async_verify_url_iter(potential_urls: Iterator[AORCDataURL], limit: int, timeout: float):
+async def async_verify_url_iter(potential_urls: Iterator[AORCDataURL], limit: int, timeout: float) -> list[dict | None]:
+    """Verifies a list of URLs
+
+    Args:
+        potential_urls (Iterator[AORCDataURL]): Iterator of annotated URLs
+        limit (int): Limit of concurrent requests
+        timeout (float): Timeout for each request
+
+    Returns:
+        list[dict | None]: List of results from async_verify_url function
+    """
     timeout = ClientTimeout(timeout)
     semaphore = asyncio.BoundedSemaphore(limit)
     async with ClientSession(timeout=timeout) as session:
@@ -64,7 +95,19 @@ async def async_verify_url_iter(potential_urls: Iterator[AORCDataURL], limit: in
 
 async def async_stream_zip_to_s3_iter(
     zip_urls: Iterator[AORCDataURL], s3_resource, bucket: str, limit: int, timeout: float
-):
+) -> list[AORCDataURL | None]:
+    """Iterates through iterable of annotated zipped resource URLs and uploads them to s3
+
+    Args:
+        zip_urls (Iterator[AORCDataURL]): Iterator of verified zip urls
+        s3_resource: s3 resource to use in uploads
+        bucket (str): s3 bucket to target in uploads
+        limit (int): Limit of concurrent requests
+        timeout (float): Timeout for each request
+
+    Returns:
+        _type_: _description_
+    """
     timeout = ClientTimeout(timeout)
     semaphore = asyncio.BoundedSemaphore(limit)
     async with ClientSession(timeout=timeout) as session:
@@ -78,6 +121,16 @@ async def async_stream_zip_to_s3_iter(
 
 
 def verify_urls(potential_urls: Iterator[AORCDataURL], limit: int = 5, timeout: float = 2000) -> Iterator[AORCDataURL]:
+    """Synchronous wrapper for async URL verification
+
+    Args:
+        potential_urls (Iterator[AORCDataURL]): URLs to verify
+        limit (int): Limit of concurrent requests. Defaults to 5.
+        timeout (float): Timeout for each request in seconds. Defaults to 2000.
+
+    Yields:
+        Iterator[AORCDataURL]: Yields annotated zipped data web address that has been verified for source datasets
+    """
     results_list = asyncio.run(async_verify_url_iter(potential_urls, limit, timeout))
     for result in results_list:
         if result != None:
@@ -87,6 +140,18 @@ def verify_urls(potential_urls: Iterator[AORCDataURL], limit: int = 5, timeout: 
 def stream_zips_to_s3(
     zip_urls: Iterator[AORCDataURL], s3_resource, bucket: str, limit: int = 5, timeout: float = 10000
 ) -> Iterator[AORCDataURL]:
+    """Synchronous wrapper for async zip s3 upload
+
+    Args:
+        zip_urls (Iterator[AORCDataURL]): Iterator of annotated zipped data web addresses
+        s3_resource: s3 resource to use when uploading data to s3
+        bucket (str): s3 target bucket
+        limit (int): Limit of concurrent requests. Defaults to 5.
+        timeout (float): Timeout for each request in seconds. Defaults to 2000.
+
+    Yields:
+        Iterator[AORCDataURL]: Yields annoted s3 URIs for mirrored datasets
+    """
     results_list = asyncio.run(async_stream_zip_to_s3_iter(zip_urls, s3_resource, bucket, limit, timeout))
     for result in results_list:
         if result != None:

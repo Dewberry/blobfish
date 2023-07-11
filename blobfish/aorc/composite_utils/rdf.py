@@ -10,6 +10,15 @@ from rdflib.namespace._GEO import GEO
 
 
 def retrieve_mirror_dataset_metadata(ckan_base_url: str, rfc_count: int) -> Iterator[list[RetrievedMirror]]:
+    """Get mirror dataset metadata from CKAN catalog
+
+    Args:
+        ckan_base_url (str): Base CKAN instance URL
+        rfc_count (int): RFC count
+
+    Yields:
+        Iterator[list[RetrievedMirror]]: Yields mirror dataset metadata
+    """
     logging.info("Retreiving mirror dataset metadata")
     if not ckan_base_url.endswith("/"):
         ckan_base_url += "/"
@@ -43,6 +52,18 @@ def retrieve_mirror_dataset_metadata(ckan_base_url: str, rfc_count: int) -> Iter
 
 
 def verify_date_rfc_count(catalog_graph: Graph, rfc_count: int) -> Iterator[tuple[Literal, Literal]]:
+    """Verifies that mirror dataset count in a catalog matches expected count
+
+    Args:
+        catalog_graph (Graph): Graph of mirror dataset catalog
+        rfc_count (int): Count of RFCs that will be merged together when composite dataset is created
+
+    Raises:
+        ValueError: Error if count doesn't match
+
+    Yields:
+        Iterator[tuple[Literal, Literal]]: Yields tuple of unique start date and end date literals found in catalog associated with mirror datasets
+    """
     logging.info(f"Verifying match between mirror dataset count and RFC count")
     query_string = """
         SELECT ?sd ?ed

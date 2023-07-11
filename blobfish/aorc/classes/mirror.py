@@ -28,6 +28,14 @@ class AORCDataURL:
     additional_args: dict = None
 
     def s3_key(self, prefix: str = "mirrors/aorc/precip/") -> str:
+        """Construct assumed s3 key for mirror dataset
+
+        Args:
+            prefix (str, optional): prefix to attach to zip file. Defaults to "mirrors/aorc/precip/".
+
+        Returns:
+            str: mirror dataset s3 key
+        """
         if prefix[-1] != "/":
             prefix += "/"
         url_parts = self.url.split("/")

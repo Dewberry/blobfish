@@ -19,6 +19,16 @@ class NCMetadata:
 
 
 def check_metadata(s3_resource, bucket: str, zipped_data_key: str) -> NCMetadata:
+    """Checks metadata for zipped netCDF data
+
+    Args:
+        s3_resource: s3 resource to use in downloading data
+        bucket (str): Bucket holding zipped data
+        zipped_data_key (str): zipped data key
+
+    Returns:
+        NCMetadata: Dataset attributes that have been verified by netCDF attributes
+    """
     logging.info(f"Checking netCDF resources in {zipped_data_key} for metadata")
     with TemporaryDirectory() as tmpdir:
         zipped_data_basename = os.path.basename(zipped_data_key)
@@ -34,6 +44,14 @@ def check_metadata(s3_resource, bucket: str, zipped_data_key: str) -> NCMetadata
 
 
 def check_nc4s(nc4_paths: list[str]) -> NCMetadata:
+    """Function to check netCDF data from files
+
+    Args:
+        nc4_paths (list[str]): List of netCDF file paths
+
+    Returns:
+        NCMetadata: Dataset attributes that have been verified by netCDF attributes
+    """
     ds = xr.open_mfdataset(nc4_paths, concat_dim="time", combine="nested")
     # Use time difference between first and second record as temporal resolution
     time_ds = ds.isel(time=slice(0, 2))
