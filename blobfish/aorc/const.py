@@ -1,3 +1,4 @@
+"""Constants"""
 from classes.mirror import RFCInfo
 
 # First available dataset in the AORC repository

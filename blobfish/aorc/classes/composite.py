@@ -1,3 +1,4 @@
+"""Classes used during composite datast creation"""
 import datetime
 import logging
 import re

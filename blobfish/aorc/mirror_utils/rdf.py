@@ -1,5 +1,4 @@
 """ Utilities used in creating RDF metadata for s3 mirror creation """
-
 import datetime
 import logging
 

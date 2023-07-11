@@ -1,3 +1,4 @@
+"""Classes used in mirroring process"""
 import datetime
 from dataclasses import dataclass
 from shapely.geometry import Polygon, MultiPolygon

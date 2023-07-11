@@ -1,3 +1,4 @@
+"""General functions to set up formatting and enable custom logging"""
 import logging
 
 

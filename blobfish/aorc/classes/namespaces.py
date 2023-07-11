@@ -1,3 +1,4 @@
+"""Classes and namespace constants used in RDF creation"""
 from rdflib import URIRef
 from rdflib.namespace import DefinedNamespace, Namespace
 

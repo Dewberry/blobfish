@@ -1,3 +1,4 @@
+"""Geospatial and network request functions used in composite dataset creation"""
 import logging
 
 import requests

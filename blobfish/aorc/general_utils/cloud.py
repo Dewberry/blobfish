@@ -1,3 +1,4 @@
+"""General functions to interface with AWS"""
 import boto3
 import logging
 

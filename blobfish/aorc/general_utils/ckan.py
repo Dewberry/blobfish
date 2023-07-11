@@ -1,3 +1,4 @@
+"""General functions to interface with CKAN instance"""
 import logging
 
 import requests

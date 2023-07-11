@@ -1,3 +1,4 @@
+"""Cloud utilities used during composite dataset creation"""
 import datetime
 import os
 from io import BytesIO

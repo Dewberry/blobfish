@@ -1,3 +1,4 @@
+"""Functions interfacing with meilisearch used in transposition dataset creation"""
 import datetime
 import logging
 from typing import Any, Iterator

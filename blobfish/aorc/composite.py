@@ -1,3 +1,4 @@
+"""Main script to create hourly zarr datasets from s3 mirrored zipped monthly netCDF datasets"""
 import datetime
 import os
 from tempfile import TemporaryDirectory

@@ -1,3 +1,4 @@
+"""Main script to generate aorc:TranspositionDataset instances summarizing output from SST modeling with metadata in meilisearch"""
 import datetime
 from urllib.parse import quote
 

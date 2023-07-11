@@ -1,3 +1,4 @@
+"""RDF functions used during transposition dataset creation"""
 import datetime
 import logging
 

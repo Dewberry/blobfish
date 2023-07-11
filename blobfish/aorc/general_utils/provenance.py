@@ -1,4 +1,4 @@
-""" Functions used to retrieve information used in determining data provenance, like git and docker info"""
+"""Functions used to retrieve information used in determining data provenance, like git and docker info"""
 import logging
 import os
 import sys

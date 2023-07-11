@@ -1,7 +1,5 @@
-from typing import Any
-import rdflib
+"""Common classes used in AORC data pipeline"""
 from dataclasses import dataclass
-from pyshacl import validate
 
 
 @dataclass

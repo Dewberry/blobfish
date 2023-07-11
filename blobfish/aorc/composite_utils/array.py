@@ -1,3 +1,4 @@
+"""Functions used in xarray dataset processing for composite dataset creation"""
 import xarray as xr
 import zarr.storage as storage
 

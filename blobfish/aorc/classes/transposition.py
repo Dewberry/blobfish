@@ -1,3 +1,4 @@
+"""Classes used in producing transposition dataset metadata"""
 import datetime
 import os
 from dataclasses import dataclass, field

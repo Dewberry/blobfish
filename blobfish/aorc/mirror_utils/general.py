@@ -1,4 +1,4 @@
-""" Synchronous operations for creating AORC data mirror on s3"""
+"""Synchronous operations for creating AORC data mirror on s3"""
 from __future__ import annotations
 
 import datetime

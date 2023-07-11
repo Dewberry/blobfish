@@ -1,3 +1,4 @@
+"""Array functions used in pulling metadata from netCDF data during mirror dataset creation"""
 import datetime
 import logging
 import os

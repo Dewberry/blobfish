@@ -1,3 +1,4 @@
+"""Geospatial, cloud, and network request functions used during transposition dataset creation"""
 import datetime
 import json
 import logging

@@ -1,4 +1,4 @@
-""" Asynchronous operations for creating AORC data mirror on s3"""
+"""Asynchronous operations for creating AORC data mirror on s3"""
 import asyncio
 import datetime
 import io
