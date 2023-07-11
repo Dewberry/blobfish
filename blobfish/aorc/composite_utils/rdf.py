@@ -1,3 +1,4 @@
+import logging
 from typing import Iterator
 
 from classes.composite import RetrievedMirror
@@ -8,6 +9,7 @@ from rdflib.namespace._GEO import GEO
 
 
 def retrieve_mirror_dataset_metadata(ckan_base_url: str, rfc_count: int) -> Iterator[list[RetrievedMirror]]:
+    logging.info("Retreiving mirror dataset metadata")
     if not ckan_base_url.endswith("/"):
         ckan_base_url += "/"
     mirror_catalog_url = ckan_base_url + "aorc_MirrorDataset/catalog.ttl"
@@ -40,6 +42,7 @@ def retrieve_mirror_dataset_metadata(ckan_base_url: str, rfc_count: int) -> Iter
 
 
 def verify_date_rfc_count(catalog_graph: Graph, rfc_count: int) -> Iterator[tuple[Literal, Literal]]:
+    logging.info(f"Verifying match between mirror dataset count and RFC count")
     query_string = """
         SELECT ?sd ?ed
                     (COUNT(?s) AS ?date_count)
@@ -56,6 +59,5 @@ def verify_date_rfc_count(catalog_graph: Graph, rfc_count: int) -> Iterator[tupl
             raise ValueError(
                 f"Expected start date {result_row.sd} and end date {result_row.ed} to have number of matches equal to number of RFCs ({rfc_count}); Instead got {result_row.date_count}"
             )
-            # pass
         else:
             yield result_row.sd, result_row.ed

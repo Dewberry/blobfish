@@ -28,6 +28,7 @@ if __name__ == "__main__":
 
     from const import MS_INDEX, HEC_DSS_URI
     from dotenv import load_dotenv
+    from general_utils.logs import log_setup
     from general_utils.cloud import create_s3_resource, extract_bucketname_and_keyname
     from general_utils.provenance import get_command_list, retrieve_meta
     from general_utils.ckan import create_ckan_resource
@@ -40,6 +41,8 @@ if __name__ == "__main__":
     from transposition_utils.rdf import retrieve_composite_dataset_uris
 
     load_dotenv()
+
+    log_setup()
 
     ms_host = os.environ["MEILI_HOST"]
     ms_api_key = os.environ["MEILI_KEY"]

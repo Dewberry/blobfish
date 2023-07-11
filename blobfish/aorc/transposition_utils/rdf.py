@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 from classes.namespaces import AORC
 from general_utils.ckan import query_ckan_catalog
@@ -8,6 +9,7 @@ from rdflib import DCAT, DCTERMS, XSD, Literal, URIRef
 def retrieve_composite_dataset_uris(
     ckan_base_url: str, start: datetime.datetime, end: datetime.datetime
 ) -> list[URIRef]:
+    logging.info("Retrieving composite dataset metadata from CKAN")
     if not ckan_base_url.endswith("/"):
         ckan_base_url += "/"
     mirror_catalog_url = ckan_base_url + "aorc_CompositeDataset/catalog.ttl"

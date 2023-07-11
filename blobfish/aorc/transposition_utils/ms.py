@@ -1,4 +1,5 @@
 import datetime
+import logging
 from typing import Any, Iterator
 
 from classes.transposition import TranspositionMetadata
@@ -6,6 +7,7 @@ from meilisearch import Client
 
 
 def create_meilisearch_client(host: str, api_key: str) -> Client:
+    logging.info("Creating meilisearch client")
     ms_client = Client(host, api_key=api_key)
     return ms_client
 
@@ -23,6 +25,7 @@ def paginate_search_result(ms_client: Client, index: str, query: str) -> Iterato
 
 
 def retrieve_ms_data(ms_client: Client, index: str) -> Iterator[TranspositionMetadata]:
+    logging.info(f"Retrieving transposition model metadata from meilisearch index {index}")
     for hit in paginate_search_result(ms_client, index, ""):
         start_date_str = hit["start"]["datetime"]
         duration = hit["duration"]

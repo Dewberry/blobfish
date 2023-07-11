@@ -1,4 +1,5 @@
-import rdflib
+import logging
+
 import requests
 from rdflib import Graph
 
@@ -26,6 +27,7 @@ def create_ckan_resource(
 
 
 def query_ckan_catalog(catalog_url: str) -> Graph:
+    logging.info(f"Querying CKAN catalog {catalog_url}")
     graph = Graph()
     if catalog_url.endswith(".ttl"):
         with requests.get(catalog_url) as resp:

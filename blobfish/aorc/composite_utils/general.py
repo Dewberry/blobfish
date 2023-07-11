@@ -1,3 +1,5 @@
+import logging
+
 import requests
 import shapely.wkt
 from shapely.geometry import MultiPolygon
@@ -63,11 +65,14 @@ def upload_composite_to_ckan(
     }
     data.update(kwargs)
 
+    logging.info(f"Uploading aorc:CompositeDataset instance to {upload_endpoint}: {data}")
+
     response = requests.post(upload_endpoint, headers=headers, json=data)
     return response.status_code
 
 
 def create_composite_wkt(mirror_wkts: list[str]) -> str:
+    logging.info("Merging geometries from RFC regions into composite coverage area")
     polys = [shapely.wkt.loads(wkt) for wkt in mirror_wkts]
     multipoly = MultiPolygon(polys)
     return multipoly.convex_hull.wkt

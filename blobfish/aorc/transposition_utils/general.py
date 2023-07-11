@@ -8,6 +8,7 @@ from shapely import convex_hull
 
 
 def stream_geojson_from_s3(s3_resource, bucket: str, key: str) -> Polygon | MultiPolygon:
+    logging.info(f"Streaming geojson data from s3://{bucket}/{key}")
     response = s3_resource.meta.client.get_object(Bucket=bucket, Key=key)
     geojson_data = response["Body"].read().decode("utf-8")
     geojson = json.loads(geojson_data)

@@ -25,6 +25,8 @@ def create_composite_s3_path(bucket: str, start_time: datetime.datetime) -> str:
 
 
 if __name__ == "__main__":
+    import logging
+
     from classes.composite import DatasetTracker
     from composite_utils.array import create_composite_dataset, upload_zarr
     from composite_utils.cloud import check_zarr_modification, stream_s3_zipped
@@ -34,9 +36,12 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
     from general_utils.ckan import create_ckan_resource
     from general_utils.cloud import create_s3_resource
+    from general_utils.logs import log_setup
     from general_utils.provenance import get_command_list, retrieve_meta
 
     load_dotenv()
+
+    log_setup()
 
     bucket = os.environ["MIRROR_BUCKET"]
     access_key_id = os.environ["AWS_ACCESS_KEY_ID"]
@@ -54,6 +59,7 @@ if __name__ == "__main__":
         composite_location_name = "Contiguous United States"
         with TemporaryDirectory() as tmpdir:
             with DatasetTracker() as tracker:
+                logging.info("Streaming data from zipped netCDF format to hourly zarr format")
                 for mirror in mirror_list:
                     nc_paths = stream_s3_zipped(s3_resource, mirror.url, tmpdir)
                     tracker.register_netcdfs(mirror.uri, nc_paths)
