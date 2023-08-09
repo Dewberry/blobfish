@@ -14,53 +14,53 @@ aorc: a owl:Ontology .
 
 aorc:CommandList a rdfs:Class,
         owl:Class ;
-    rdfs:comment"A list of commands to be interpreted by a software agent" ;
+    rdfs:comment "A list of commands to be interpreted by a software agent" ;
     rdfs:subClassOf rdf:List .
 
 aorc:CompositeDataset a rdfs:Class,
         owl:Class ;
-    rdfs:comment"An AORC dataset which is the resultant product of stitching together multiple AORC datasets into one spatially continuous dataset" ;
+    rdfs:comment "An AORC dataset which is the resultant product of stitching together multiple AORC datasets into one spatially continuous dataset" ;
     rdfs:subClassOf dcat:Dataset .
 
 aorc:DockerCompose a rdfs:Class,
         owl:Class ;
-    rdfs:comment"A file which dictates what containers are used and what modifications are done to these containers when they are orchestrated together. This includes what local data is copied to the container and what other containers are on the same network" ;
+    rdfs:comment "A file which dictates what containers are used and what modifications are done to these containers when they are orchestrated together. This includes what local data is copied to the container and what other containers are on the same network" ;
     rdfs:subClassOf schema:SoftwareSourceCode .
 
 aorc:DockerContainer a rdfs:Class,
         owl:Class ;
-    rdfs:comment"A container which is a modified copy of a docker image" ;
+    rdfs:comment "A container which is a modified copy of a docker image" ;
     rdfs:subClassOf schema:SoftwareApplication .
 
 aorc:DockerImage a rdfs:Class,
         owl:Class ;
-    rdfs:comment"A set of instructions for constructing a computing environment that can be reused and modified for individual use" ;
+    rdfs:comment "A set of instructions for constructing a computing environment that can be reused and modified for individual use" ;
     rdfs:subClassOf schema:SoftwareSourceCode .
 
 aorc:DockerProcess a rdfs:Class,
         owl:Class ;
-    rdfs:comment"An activity started by a docker container" ;
+    rdfs:comment "An activity started by a docker container" ;
     rdfs:subClassOf prov:Activity .
 
 aorc:MirrorDataset a rdfs:Class,
         owl:Class ;
-    rdfs:comment"An AORC dataset which has been downloaded from its original web address to a secondary location" ;
+    rdfs:comment "An AORC dataset which has been downloaded from its original web address to a secondary location" ;
     rdfs:subClassOf dcat:Dataset .
 
 aorc:RFC a rdfs:Class,
         owl:Class ;
-    rdfs:comment"A River Forecast Center; an office under the National Oceanic and Atmospheric Administration" ;
+    rdfs:comment "A River Forecast Center; an office under the National Oceanic and Atmospheric Administration" ;
     rdfs:subClassOf dct:Location,
         org:OrganizationalUnit .
 
 aorc:SourceDataset a rdfs:Class,
         owl:Class ;
-    rdfs:comment"An AORC dataset which is located at its original web address" ;
+    rdfs:comment "An AORC dataset which is located at its original web address" ;
     rdfs:subClassOf dcat:Dataset .
 
 aorc:TranspositionDataset a rdfs:Class,
         owl:Class ;
-    rdfs:comment"A dataset which is the resultant product of stochastic storm transposition modeling using AORC precipitation data summarized over a specified time window and geographic location" ;
+    rdfs:comment "A dataset which is the resultant product of stochastic storm transposition modeling using AORC precipitation data summarized over a specified time window and geographic location" ;
     rdfs:subClassOf dcat:Dataset .
 
 # Object Properties
